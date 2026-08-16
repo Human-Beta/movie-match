@@ -13,4 +13,5 @@ When a new version becomes active, update this section to point to its specifica
 - [Active v0.1 specification](v0.1.md) — current behavior, rules, and scope.
 - [Product vision](vision.md) — the problem, audience, principles, and roadmap.
 - [Technology stack](stack.md) — agreed technologies and architectural boundaries.
+- [Database development](database.md) — Supabase configuration and migration workflow.
 - [Future ideas](ideas.md) — ideas that are outside the active specification.

@@ -23,8 +23,15 @@ If documents allow different interpretations of the current product scope, follo
 1. Before implementation, read the relevant task file, `docs/README.md`, the active specification it links to, and the applicable parts of `docs/stack.md`.
 2. Do not add product scope without an explicit user decision. Record future ideas in `docs/ideas.md`.
 3. Do not add technologies speculatively or create a separate backend unless the specification requires it.
-4. Never commit secrets, local `.env` files, or generated artifacts.
+4. Never commit secrets, local `.env` files, or disposable build artifacts. Commit database migrations together with the schema changes that generated them.
 5. Before completing a task, run the relevant checks. Update its status in `tasks/README.md` only after its acceptance criteria are satisfied.
+
+## Data access and database security
+
+- Treat browser code as untrusted. Send product mutations through a validated Next.js server boundary and execute them with Drizzle.
+- Use the browser Supabase integration only for explicitly approved read or Realtime capabilities. Do not expose the full browser `SupabaseClient` or call the Supabase Data API for product mutations.
+- Keep Data API access opt-in. For every product table in an exposed schema, enable RLS and grant `anon` or `authenticated` only the minimum read access and policies required by the feature. Never grant those roles `INSERT`, `UPDATE`, or `DELETE` for product tables.
+- Treat the restricted TypeScript API as a developer guardrail, not a security boundary. Enforce browser access with Postgres privileges and RLS in the same migration that introduces or exposes a table.
 
 ## Tooling
 
@@ -48,3 +55,13 @@ Start every commit message with exactly one prefix that reflects the commit's pr
 - `[<task-id>] <message>` for task implementation, for example `[002] Add project documentation`;
 - `[chore] <message>` for small technical or maintenance changes;
 - `[refactor] <message>` for refactoring that does not change behavior.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

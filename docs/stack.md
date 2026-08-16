@@ -43,6 +43,8 @@ SEO may become useful later for public pages, but it is not the reason for choos
 - One repository and one Next.js application.
 - No separate NestJS, Express, Fastify, or other backend service.
 - Use Supabase for Postgres and realtime, not as a reason to add unnecessary services.
+- Send commands and product mutations through validated Next.js server boundaries and Drizzle. Use the browser Supabase integration only for explicitly approved read or Realtime capabilities.
+- Keep Supabase Data API access opt-in: browser roles receive no table writes, and any required reads must be protected by RLS and explicit least-privilege grants.
 - Use shadcn/ui only when a ready-made component genuinely saves time.
 - The QR library should do one job: generate a room join code.
 - Add new technologies only for a concrete need in the current v0.1 specification.

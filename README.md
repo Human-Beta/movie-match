@@ -20,10 +20,15 @@ The project requires Node.js 24.15.0 and pnpm 11.0.9. Their versions are pinned 
 
 ```bash
 pnpm install
+cp .env.example .env.local
+cp docker-compose.example.yml docker-compose.yml
+docker compose --env-file .env.local up -d postgres
+pnpm db:migrate
 pnpm dev
 ```
 
 The app is available at [http://localhost:3000](http://localhost:3000) after startup.
+See [Database development](docs/database.md) for Supabase variables and migration commands.
 
 ## Checks
 

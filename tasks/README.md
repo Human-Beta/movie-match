@@ -6,7 +6,7 @@
 
 - [x] [001 — Project bootstrap](001-project-bootstrap.md)
 - [x] [002 — Project documentation and agent instructions](002-project-documentation-and-agent-instructions.md)
-- [ ] [003 — Supabase and Drizzle setup](003-supabase-drizzle-setup.md)
+- [x] [003 — Supabase and Drizzle setup](003-supabase-drizzle-setup.md)
 
 ## Backlog
 
@@ -24,4 +24,3 @@
 - [ ] 015 — Search again or close room
 - [ ] 016 — Room expiration
 - [ ] 017 — Polish and deployment
-
