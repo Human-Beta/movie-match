@@ -4,7 +4,7 @@
 
 ## Детально описані задачі
 
-- [ ] [001 — Project bootstrap](001-project-bootstrap.md)
+- [x] [001 — Project bootstrap](001-project-bootstrap.md)
 - [ ] [002 — Project documentation and agent instructions](002-project-documentation-and-agent-instructions.md)
 - [ ] [003 — Supabase and Drizzle setup](003-supabase-drizzle-setup.md)
 
