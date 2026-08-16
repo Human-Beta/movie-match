@@ -1,0 +1,16 @@
+# Product documentation
+
+This directory contains the product context, active specification, technology decisions, and deferred ideas.
+
+## Active specification
+
+The active product specification is [v0.1.md](v0.1.md). It is the primary source of truth for current product behavior and scope.
+
+When a new version becomes active, update this section to point to its specification. Keep previous version specifications as historical records unless explicitly asked to remove them.
+
+## Documentation map
+
+- [Active v0.1 specification](v0.1.md) — current behavior, rules, and scope.
+- [Product vision](vision.md) — the problem, audience, principles, and roadmap.
+- [Technology stack](stack.md) — agreed technologies and architectural boundaries.
+- [Future ideas](ideas.md) — ideas that are outside the active specification.
