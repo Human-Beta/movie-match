@@ -57,6 +57,6 @@ pnpm db:generate
 pnpm db:migrate
 ```
 
-Drizzle Kit writes generated migration files to `drizzle/`. Commit schema changes and their generated migrations together. Product tables begin in task 004, so task 003 leaves the Drizzle schema empty and contains only the Data API security baseline migration.
+Drizzle Kit writes generated migration files to `drizzle/`. Commit schema changes and their generated migrations together. Keep Data API access opt-in: migrations that introduce product tables must enable RLS, and migrations that expose browser reads or Realtime events must grant only the access required by that feature.
 
 Both migration commands load `DATABASE_URL` from `.env.local`. If it is missing or invalid, the command exits with a message that names the variable.
