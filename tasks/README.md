@@ -7,10 +7,10 @@
 - [x] [001 — Project bootstrap](001-project-bootstrap.md)
 - [x] [002 — Project documentation and agent instructions](002-project-documentation-and-agent-instructions.md)
 - [x] [003 — Supabase and Drizzle setup](003-supabase-drizzle-setup.md)
+- [x] [004 — Database schema](004-database-schema.md)
 
 ## Backlog
 
-- [ ] 004 — Database schema
 - [ ] 005 — Create and restore TV room
 - [ ] 006 — Join room from phone
 - [ ] 007 — Realtime room participants

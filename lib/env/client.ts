@@ -17,7 +17,7 @@ const result = clientEnvSchema.safeParse({
 
 if (!result.success) {
   const details = result.error.issues
-    .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+    .map(issue => `${issue.path.join(".")}: ${issue.message}`)
     .join("\n");
 
   throw new Error(`Invalid browser environment variables:\n${details}`);
