@@ -25,6 +25,7 @@ If documents allow different interpretations of the current product scope, follo
 3. Do not add technologies speculatively or create a separate backend unless the specification requires it.
 4. Never commit secrets, local `.env` files, or disposable build artifacts. Commit database migrations together with the schema changes that generated them.
 5. Before completing a task, run the relevant checks. Update its status in `tasks/README.md` only after its acceptance criteria are satisfied.
+6. Publish every completed, verified AI change batch so it is available for review in GitHub. Before editing on `main`, create a short-lived branch. After the required checks pass, commit only the intended changes with a repository-compliant message, push the branch, and create a pull request against `main` when the branch has no open pull request; otherwise verify that the pull request head matches the pushed commit. Temporary implementation and review-fix commits are acceptable because `$review-finalize` will fold them into the approved logical history. Do not publish read-only work, failed or unresolved changes, unrelated working-tree content, secrets, or explicitly local experiments, and honor an explicit user request not to publish.
 
 ## Data access and database security
 

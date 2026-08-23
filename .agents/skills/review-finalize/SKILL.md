@@ -40,11 +40,11 @@ Assign stable IDs `C1`, `C2`, and so on within the plan. For each candidate show
 
 ## Plan a meaningful commit history
 
-Inspect every commit and the complete `base...HEAD` diff. Classify commits by purpose and identify review-fix, fixup, typo, formatting-only, and "fix the previous commit" commits.
+Inspect every commit and the complete `base...HEAD` diff. Classify commits by purpose and identify AI checkpoint, review-fix, fixup, typo, formatting-only, and "fix the previous commit" commits.
 
 - Prefer one commit for a focused task or feature pull request.
 - Keep multiple commits only when each is independently coherent, has a meaningful purpose, and does not merely repair an earlier commit in the same pull request.
-- Fold review fixes and mechanical follow-ups into the logical commit they complete.
+- Fold AI checkpoints, review fixes, and mechanical follow-ups into the logical commit they complete.
 - Preserve genuinely separate changes as separate commits with repository-compliant messages.
 - Never rewrite the base branch or commits outside the pull request range.
 
