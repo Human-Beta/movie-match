@@ -51,9 +51,9 @@ It adds the production build. The existing pre-commit hook continues to format a
 
 ## Complete solo review flow
 
-### 1. Implement and verify
+### 1. Implement, verify, and publish
 
-Implement one task or focused change on its short-lived branch. Keep the implementation in its Codex task and run `pnpm verify` plus the task-specific checks before review.
+Implement one task or focused change on its short-lived branch. If work starts on `main`, create the branch before editing. Keep the implementation in its Codex task and run `pnpm verify` plus the task-specific checks. After every completed, verified AI change batch, create a repository-compliant checkpoint commit and push it. If the branch has no open pull request, create one against `main` with an accurate title and body; otherwise verify that its remote head equals the pushed commit. This applies to feature implementation, fixes accepted from `/review`, refactors, and `$review-notes` fixes. A read-only answer or failed, unresolved, explicitly local experiment is not published.
 
 ### 2. Run the AI first pass
 
@@ -76,11 +76,11 @@ To inspect a subset, ask, for example:
 
 Codex keeps the original numbering and expands only those findings. Each expansion uses `Проблема`, `Доказ і вплив`, and `Рішення`. It includes a minimal `Приклад` only for a small fix. A large fix gets a `Високорівневий план` with the affected modules, classes, functions, or methods and their responsibilities, not a full implementation dump.
 
-Tell Codex which finding numbers to fix. After consequential fixes, run `pnpm verify` and `/review` again. `/review` findings are working analysis; the durable log is reserved for the human-selected notes from the IDE, which keeps it useful rather than recording every AI hypothesis.
+Tell Codex which finding numbers to fix. After the fixes pass verification, Codex commits and pushes that batch before `/review` runs again. `/review` findings are working analysis; the durable log is reserved for the human-selected notes from the IDE, which keeps it useful rather than recording every AI hypothesis.
 
-### 3. Open or update the pull request
+### 3. Confirm the pull request
 
-Commit and push the AI-reviewed implementation, then open or update the pull request. Human review may begin while CI runs, but the current-head `Verify` check must pass before merge.
+The first published AI change batch creates the pull request, so this is normally only a confirmation step. Verify that the pull request title and body describe the current scope and that its head equals the pushed local commit. Human review may begin while CI runs, but the current-head `Verify` check must pass before merge.
 
 ### 4. Review the pull request in the IDE
 
@@ -108,15 +108,17 @@ The skill resolves the pull request and pending review from GitHub, so it does n
 4. scans every changed pull-request file for sibling instances and adversarially removes false positives;
 5. applies the original fix and confirmed in-scope sibling fixes on added or modified lines;
 6. runs `pnpm verify` and task-specific checks;
-7. creates or updates the durable PR review log;
-8. verifies that every source note ID is in the log;
-9. only then deletes the private pending review.
+7. creates one checkpoint commit for the verified fixes and pushes it without rewriting history;
+8. verifies that the pull request remote head equals the pushed commit;
+9. creates or updates the durable PR review log with that pushed SHA;
+10. verifies that every source note ID is in the log;
+11. only then deletes the private pending review.
 
 Confirmed pre-existing occurrences are recorded separately and are not changed merely as cleanup. An ambiguous changed-line occurrence, an unresolved note, a failed check, or a failed log update keeps the entire pending review intact.
 
 Use `$review-notes preview` for a completely read-only classification and similar scan. Preview mode changes neither code nor GitHub state.
 
-The skill never commits or pushes, and the log labels edits as locally applied rather than already present in the pull request. Inspect the local result, then explicitly ask Codex to commit and push the review fixes when satisfied.
+The skill commits and pushes every successfully verified fix batch automatically. It keeps the pending review intact if verification, commit, push, remote-head confirmation, or durable-log verification fails. The resulting checkpoint commit may be temporary: `$review-finalize` later folds it into the approved logical history.
 
 ### 6. Re-review and repeat
 
