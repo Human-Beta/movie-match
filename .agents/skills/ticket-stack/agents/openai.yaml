@@ -1,0 +1,7 @@
+interface:
+  display_name: "Ticket Stack"
+  short_description: "Run Movie Match tasks as stacked PRs"
+  default_prompt: "Use $ticket-stack next 3 to implement, verify, publish, and independently review the next three detailed Movie Match tasks."
+
+policy:
+  allow_implicit_invocation: false
