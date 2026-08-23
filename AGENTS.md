@@ -64,6 +64,7 @@ If documents allow different interpretations of the current product scope, follo
 
 - Use `main` as the primary integration branch.
 - Do implementation work on short-lived branches scoped to one task or focused change. Merge them through a pull request when practical, then delete them.
+- When an unmerged short-lived branch needs the latest `main` and rewriting it is safe, rebase it onto `main` instead of merging `main` into it solely for synchronization. Do not rewrite a shared branch without an explicit decision.
 - Do not create long-lived branches for product versions by default.
 - Mark completed product releases with annotated Git tags using Semantic Versioning: `vMAJOR.MINOR.PATCH`, for example `v0.1.0`.
 - Increment the patch version for backward-compatible fixes and the minor version for a new pre-1.0 feature set.
