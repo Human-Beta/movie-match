@@ -33,6 +33,8 @@ Before a change is merged:
 6. The final commits are logical units rather than a sequence of implementation commits followed by commits that only repair them.
 7. The human author has inspected the complete final pull request diff in the IDE.
 
+For a stacked pull request, every diff and review uses the pull request's current base branch. A descendant becomes stale when an upstream branch is rewritten or merged and must be restacked, verified, and reviewed again before it can pass these gates.
+
 ## Fast local checks
 
 Use the cheaper command while iterating:
@@ -53,11 +55,11 @@ It adds the production build. The existing pre-commit hook continues to format a
 
 ### 1. Implement, verify, and publish
 
-Implement one task or focused change on its short-lived branch. If work starts on `main`, create the branch before editing. Keep the implementation in its Codex task and run `pnpm verify` plus the task-specific checks. After every completed, verified AI change batch, create a repository-compliant checkpoint commit and push it. If the branch has no open pull request, create one against `main` with an accurate title and body; otherwise verify that its remote head equals the pushed commit. This applies to feature implementation, fixes accepted from `/review`, refactors, and `$review-notes` fixes. A read-only answer or failed, unresolved, explicitly local experiment is not published.
+Implement one task or focused change on its short-lived branch. If work starts on `main`, create the branch before editing. Keep the implementation in its Codex task and run `pnpm verify` plus the task-specific checks. After every completed, verified AI change batch, create a repository-compliant checkpoint commit and push it. If the branch has no open pull request, create one with an accurate title and body against `main` or, for an explicitly declared dependent stack, against its immediate predecessor branch; otherwise verify that its remote head equals the pushed commit and that its base is still correct. This applies to feature implementation, fixes accepted from `/review`, refactors, and `$review-notes` fixes. A read-only answer or failed, unresolved, explicitly local experiment is not published.
 
 ### 2. Run the AI first pass
 
-In the implementation task, run `/review` and choose **Review against a base branch**, using `main` as the base. The command uses a dedicated reviewer and does not modify the working tree. Keep review delivery in the current task so accepted findings can be fixed without copying them between tasks.
+In an ordinary implementation task, run `/review` and choose **Review against a base branch**, using the pull request's actual base branch. This is normally `main`; for a stacked pull request, it is the immediate predecessor branch. The command uses a dedicated reviewer and does not modify the working tree. A declared orchestration workflow may instead run the same read-only review in a separate child context, but it must relay the exact findings back to the implementation or orchestrator task so the human can select fixes without losing the review result.
 
 The initial response is deliberately compact and in Ukrainian:
 
@@ -123,6 +125,14 @@ The skill commits and pushes every successfully verified fix batch automatically
 ### 6. Re-review and repeat
 
 Refresh the pull request in the IDE and inspect the updated diff. If more work is needed, create another private pending review and repeat `$review-notes`. Each batch is appended to the same durable log, so later tasks retain the complete decision history. After consequential review fixes are pushed, run `/review` again before finalization.
+
+### Stacked pull requests
+
+Use a stack only when a downstream task depends on code or contracts introduced by an unmerged predecessor. Keep one task per branch and pull request. The first pull request targets `main`; each descendant targets its immediate predecessor so its review shows only its own changes.
+
+When an upstream branch is rewritten or merged, process descendants from nearest to farthest. Rebase only the descendant-owned commit range onto the new parent, push with `--force-with-lease` against the previously observed remote head, and retarget the pull request when its predecessor has merged. Then rerun `pnpm verify`, wait for fresh GitHub checks, and run `/review` against the new current base. Any earlier downstream review is stale until these steps pass.
+
+Review and merge the stack in dependency order. `$review-finalize` may rewrite the current pull request branch, so restack every descendant after applying an approved finalization plan. Never merge a descendant before its predecessors.
 
 ### 7. Plan finalization
 
