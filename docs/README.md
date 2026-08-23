@@ -14,4 +14,5 @@ When a new version becomes active, update this section to point to its specifica
 - [Product vision](vision.md) — the problem, audience, principles, and roadmap.
 - [Technology stack](stack.md) — agreed technologies and architectural boundaries.
 - [Database development](database.md) — Supabase configuration and migration workflow.
+- [Review workflow](review.md) — automated checks, AI review, human review, and follow-up commands.
 - [Future ideas](ideas.md) — ideas that are outside the active specification.
