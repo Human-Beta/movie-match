@@ -1,0 +1,7 @@
+interface:
+  display_name: "Review Notes"
+  short_description: "Fix private PR notes and log outcomes"
+  default_prompt: "Use $review-notes to process my private pending review, scan for similar issues, apply safe fixes, and update the PR review log."
+
+policy:
+  allow_implicit_invocation: false

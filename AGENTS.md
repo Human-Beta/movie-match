@@ -33,6 +33,27 @@ If documents allow different interpretations of the current product scope, follo
 - Keep Data API access opt-in. For every product table in an exposed schema, enable RLS and grant `anon` or `authenticated` only the minimum read access and policies required by the feature. Never grant those roles `INSERT`, `UPDATE`, or `DELETE` for product tables.
 - Treat the restricted TypeScript API as a developer guardrail, not a security boundary. Enforce browser access with Postgres privileges and RLS in the same migration that introduces or exposes a table.
 
+## Code Review Rules
+
+### Task and product scope
+
+- Compare changed behavior with the relevant task acceptance criteria and the active specification. Flag both missing required behavior and added product or technology scope. Safe path: implement the smallest complete change required by the task and record unrelated ideas in `docs/ideas.md`.
+
+### Browser and server trust boundary
+
+- Flag product mutations that browser code sends directly to Supabase or that bypass validated Next.js server code and Drizzle. Flag browser read or Realtime access that is not explicitly required by the active task or lacks least-privilege grants and RLS. Safe path: keep mutations server-side and expose only the specific read or Realtime capability the feature requires.
+
+### Schema and access changes
+
+- Require a committed Drizzle migration and metadata for each schema change. When a migration introduces or exposes a product table, require RLS and the corresponding least-privilege Postgres grants in the same change; browser roles must never receive product-table `INSERT`, `UPDATE`, or `DELETE` privileges.
+
+### Review output
+
+- Write review findings in Ukrainian.
+- In the initial review response, output only actionable findings. Number them in one stable list, sort them from highest to lowest impact (`P0` through `P3`), and use this compact format: `1. [P1] path/to/file.ts:42 — <one-sentence problem and concrete impact>`. Do not include solutions, code examples, a review summary, or praise in this first pass. If there are no findings, say so plainly in one sentence.
+- Keep the original numbering in follow-up discussion. Interpret requests such as "discuss the first 5" as the first five findings from the initial ranked list.
+- When expanding selected findings, use the same structure for each: `Проблема`, `Доказ і вплив`, and `Рішення`. Add `Приклад` only when a small code fragment makes the fix materially clearer. For a large change, provide a `Високорівневий план` naming the affected modules, classes, functions, or methods and their responsibilities instead of writing the full implementation.
+
 ## Tooling
 
 - Prefer the installed GitHub CLI (`gh`) for GitHub operations such as repository metadata, issues, pull requests, reviews, checks, workflow runs, and releases.

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Review Finalize"
+  short_description: "Finalize conventions, commits, and PR gates"
+  default_prompt: "Use $review-finalize to plan the final conventions, logical commit history, and merge-readiness checks for the current pull request."
+
+policy:
+  allow_implicit_invocation: false
