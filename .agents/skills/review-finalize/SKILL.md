@@ -1,6 +1,6 @@
 ---
 name: review-finalize
-description: "Finalize a solo Movie Match pull request by reading its durable review log, proposing reusable conventions, planning or applying an approved logical commit history, and checking merge readiness. Use only when explicitly invoked after review notes are resolved."
+description: "Finalize a solo Movie Match pull request by revalidating review outcomes, checking code-documentation alignment and test coverage, proposing reusable conventions, planning or applying an approved logical commit history, and checking merge readiness. Use only when explicitly invoked after review notes are resolved."
 ---
 
 # Finalize a solo pull request
@@ -24,6 +24,25 @@ State the selected mode and pull request head SHA before proceeding.
 5. Find the viewer-authored PR conversation comment marked `<!-- movie-match-review-log:v1 -->` and any numbered continuation parts. Parse every batch and note. If no log exists, continue but state that there is no durable human-review history from which to derive conventions.
 6. Read `docs/README.md`, the active specification, applicable `docs/stack.md` sections, the relevant task file, `tasks/README.md`, `AGENTS.md`, and applicable nested instruction files.
 7. Revalidate every review-log note and confirmed changed-line sibling against the current pull request head and current files. Never trust a historical `applied locally`, `answered`, `already satisfied`, or `declined` label as proof that the current pull request still satisfies it. Treat a missing fix or regression as unresolved.
+
+## Audit documentation and tests against the implementation
+
+Perform these audits from the current pull request head rather than trusting task status, PR text, or earlier verification claims.
+
+### Documentation alignment
+
+Compare the complete diff and current behavior with every applicable source of truth loaded during preflight. Check both directions:
+
+- documented product behavior, architecture, dependencies, schema, security boundaries, and task status that the code does not implement;
+- implemented behavior, dependencies, schema, or architectural decisions that applicable documentation describes differently or omits when the documentation is expected to be exhaustive.
+
+Distinguish an intentional future idea from active behavior. Report every confirmed mismatch with file-and-line evidence, impact, and the document or code that would need correction. Do not silently treat documentation as correct because it was changed in the same pull request. Any mismatch affecting acceptance criteria, security boundaries, migration requirements, or task completion is a merge blocker; classify smaller stale statements by severity.
+
+### Test coverage
+
+Map the task acceptance criteria, changed behavior, review-log problem classes, and important success, failure, boundary, concurrency, retry, and data-integrity paths to concrete automated tests. Run the repository's configured coverage command when one exists; otherwise use available coverage support without adding a dependency in plan mode when practical. Treat numeric line or branch coverage as supporting evidence, not proof that behavior is adequately tested.
+
+Report each material untested behavior with its implementation location, why existing tests do not exercise it, severity, and the smallest appropriate test level (unit, integration, or browser). Clearly state whether coverage is adequate for merge. In plan mode, report gaps without adding tests. In apply mode, do not add product tests unless they were separately approved and are within the approved plan.
 
 ## Propose reusable conventions
 
@@ -63,6 +82,8 @@ Report these gates in both modes:
 7. The pull request title and body accurately describe the final behavior and verification.
 8. No pending private review remains and revalidation of the durable review log finds no unresolved changed-line issue.
 9. GitHub checks are green for the current remote head. A history rewrite makes previous check results stale.
+10. Applicable documentation matches the current implementation, with no unresolved blocker-level mismatch.
+11. Automated tests cover the task's material acceptance, failure, boundary, concurrency, retry, and data-integrity behavior, or every remaining gap is explicitly reported and accepted with a reason.
 
 ## Apply an approved plan safely
 
@@ -83,15 +104,19 @@ Only in `apply` mode, after all approval and preflight conditions hold:
 In `plan` mode return, in order:
 
 1. Blockers.
-2. Convention candidates `C*`, or none.
-3. Proposed final commit history `H*`, or confirmation that no rewrite is needed.
-4. Merge-readiness checklist.
-5. The exact approvals needed for `apply`.
+2. Code-documentation mismatches, or an evidence-based statement that none were found.
+3. Test-coverage gaps and adequacy assessment.
+4. Convention candidates `C*`, or none.
+5. Proposed final commit history `H*`, or confirmation that no rewrite is needed.
+6. Merge-readiness checklist.
+7. The exact approvals needed for `apply`.
 
 In `apply` mode return, in order:
 
 1. Applied conventions.
-2. Final commit list.
-3. Backup ref and pushed head SHA.
-4. Local verification and fresh GitHub check results.
-5. Remaining human action: inspect the final PR diff and merge manually when satisfied.
+2. Code-documentation alignment result.
+3. Test-coverage adequacy and remaining accepted gaps.
+4. Final commit list.
+5. Backup ref and pushed head SHA.
+6. Local verification and fresh GitHub check results.
+7. Remaining human action: inspect the final PR diff and merge manually when satisfied.
