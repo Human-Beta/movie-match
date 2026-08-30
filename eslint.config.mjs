@@ -23,6 +23,18 @@ export default defineConfig([
     },
   },
   {
+    files: ["**/*.{jsx,tsx}"],
+    rules: {
+      "react/button-has-type": "error",
+      "react/checked-requires-onchange-or-readonly": "error",
+      "react/jsx-no-leaked-render": "error",
+      "react/no-array-index-key": "error",
+      "react/no-danger": "error",
+      "react/no-unstable-nested-components": "error",
+      "react/prefer-read-only-props": "error",
+    },
+  },
+  {
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parserOptions: {
