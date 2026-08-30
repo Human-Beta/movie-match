@@ -8,7 +8,7 @@
 - [x] [002 — Project documentation and agent instructions](002-project-documentation-and-agent-instructions.md)
 - [x] [003 — Supabase and Drizzle setup](003-supabase-drizzle-setup.md)
 - [x] [004 — Database schema](004-database-schema.md)
-- [ ] [005 — Create and restore TV room](005-create-and-restore-tv-room.md)
+- [x] [005 — Create and restore TV room](005-create-and-restore-tv-room.md)
 - [ ] [006 — Join room from phone](006-join-room-from-phone.md)
 - [ ] [007 — Realtime room participants](007-realtime-room-participants.md)
 
@@ -24,3 +24,4 @@
 - [ ] 015 — Search again or close room
 - [ ] 016 — Room expiration
 - [ ] 017 — Polish and deployment
+- [ ] 018 — Automated browser, Server Action, and database integration coverage

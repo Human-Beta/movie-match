@@ -1,21 +1,31 @@
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
-import "./globals.css";
+import { DEFAULT_LOCALE } from "@/i18n/config";
 
-export const metadata: Metadata = {
-  title: "Movie Match",
-  description: "Find a movie everyone wants to watch.",
-};
+import "@/app/globals.css";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Metadata");
+
+  return {
+    title: "Movie Match",
+    description: t("description"),
+  };
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
-}>) {
+}>): ReactNode {
   return (
-    <html lang="uk">
-      <body>{children}</body>
+    <html lang={DEFAULT_LOCALE}>
+      <body>
+        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+      </body>
     </html>
   );
 }
