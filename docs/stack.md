@@ -15,9 +15,10 @@ This document records the technology decisions for the movie-matching MVP. The s
 | Realtime        | **Supabase Realtime**      | Synchronize state between the TV screen and phones                                           |
 | ORM             | **Drizzle ORM**            | Type-safe database schema and Postgres queries                                               |
 | Validation      | **Zod**                    | Validate input at client and server boundaries                                               |
+| Localization    | **next-intl**              | Centralize Ukrainian product messages and keep future locale expansion straightforward       |
 | Hosting         | **Vercel**                 | Deploy the Next.js application                                                               |
 | Package manager | **pnpm**                   | Manage dependencies and project commands                                                     |
-| QR code         | **A small QR library**     | Generate the room join link; choose the specific package during implementation               |
+| QR code         | **react-qr-code**          | Generate the room join QR code without scanner or external-service scope                     |
 
 ## Why Next.js and React
 
@@ -46,7 +47,8 @@ SEO may become useful later for public pages, but it is not the reason for choos
 - Send commands and product mutations through validated Next.js server boundaries and Drizzle. Use the browser Supabase integration only for explicitly approved read or Realtime capabilities.
 - Keep Supabase Data API access opt-in: browser roles receive no table writes, and any required reads must be protected by RLS and explicit least-privilege grants.
 - Use shadcn/ui only when a ready-made component genuinely saves time.
-- The QR library should do one job: generate a room join code.
+- Keep `react-qr-code` limited to rendering join QR codes; do not add scanner or external-service scope without a concrete requirement.
+- Keep `next-intl` configured for Ukrainian only in v0.1; do not add locale routing, a locale switcher, or another message catalog without a product decision.
 - Add new technologies only for a concrete need in the current v0.1 specification.
 
 ## Outside this decision's scope

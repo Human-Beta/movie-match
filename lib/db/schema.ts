@@ -16,33 +16,15 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-export const roomStatusEnum = pgEnum("room_status", [
-  "waiting",
-  "playing",
-  "matched",
-  "exhausted",
-  "closed",
-]);
+export const roomStatusEnum = pgEnum("room_status", ["waiting", "playing", "matched", "exhausted", "closed"]);
 
-export const participantRoleEnum = pgEnum("participant_role", [
-  "host",
-  "guest",
-]);
+export const participantRoleEnum = pgEnum("participant_role", ["host", "guest"]);
 
 export const yearFilterEnum = pgEnum("year_filter", ["any", "new", "old"]);
 
-export const roundStatusEnum = pgEnum("round_status", [
-  "voting",
-  "matched",
-  "no_match",
-]);
+export const roundStatusEnum = pgEnum("round_status", ["voting", "matched", "no_match"]);
 
-export const voteValueEnum = pgEnum("vote_value", [
-  "want_to_watch",
-  "could_watch",
-  "not_now",
-  "no",
-]);
+export const voteValueEnum = pgEnum("vote_value", ["want_to_watch", "could_watch", "not_now", "no"]);
 
 export const genres = pgTable(
   "genres",
@@ -50,10 +32,7 @@ export const genres = pgTable(
     id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
     name: varchar("name", { length: 50 }).notNull(),
   },
-  table => [
-    unique("genres_name_unique").on(table.name),
-    check("genres_name_not_blank", sql`btrim(${table.name}) <> ''`),
-  ],
+  table => [unique("genres_name_unique").on(table.name), check("genres_name_not_blank", sql`btrim(${table.name}) <> ''`)],
 ).enableRLS();
 
 export const movies = pgTable(
@@ -64,18 +43,13 @@ export const movies = pgTable(
     releaseYear: smallint("release_year").notNull(),
     runtimeMinutes: smallint("runtime_minutes").notNull(),
     posterPath: varchar("poster_path", { length: 500 }),
-    availableOnNetflix: boolean("available_on_netflix")
-      .default(false)
-      .notNull(),
+    availableOnNetflix: boolean("available_on_netflix").default(false).notNull(),
   },
   table => [
     check("movies_title_not_blank", sql`btrim(${table.title}) <> ''`),
     check("movies_release_year_check", sql`${table.releaseYear} >= 1888`),
     check("movies_runtime_minutes_check", sql`${table.runtimeMinutes} > 0`),
-    check(
-      "movies_poster_path_not_blank",
-      sql`${table.posterPath} is null or btrim(${table.posterPath}) <> ''`,
-    ),
+    check("movies_poster_path_not_blank", sql`${table.posterPath} is null or btrim(${table.posterPath}) <> ''`),
   ],
 ).enableRLS();
 
@@ -103,24 +77,21 @@ export const rooms = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     code: varchar("code", { length: 8 }).notNull(),
+    creationRequestId: uuid("creation_request_id"),
     status: roomStatusEnum("status").default("waiting").notNull(),
     netflixOnly: boolean("netflix_only").default(false).notNull(),
     underTwoHours: boolean("under_two_hours").default(false).notNull(),
     yearFilter: yearFilterEnum("year_filter").default("any").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true })
       .default(sql`now() + interval '1 hour'`)
       .notNull(),
   },
   table => [
     unique("rooms_code_unique").on(table.code),
+    unique("rooms_creation_request_id_unique").on(table.creationRequestId),
     check("rooms_code_format_check", sql`${table.code} ~ '^[A-Z0-9]{4,8}$'`),
-    check(
-      "rooms_lifetime_check",
-      sql`${table.expiresAt} = ${table.createdAt} + interval '1 hour'`,
-    ),
+    check("rooms_lifetime_check", sql`${table.expiresAt} = ${table.createdAt} + interval '1 hour'`),
     index("rooms_active_expires_at_idx")
       .on(table.expiresAt)
       .where(sql`${table.status} <> 'closed'`),
@@ -162,10 +133,7 @@ export const participants = pgTable(
     unique("participants_room_id_id_unique").on(table.roomId, table.id),
     unique("participants_access_token_hash_unique").on(table.accessTokenHash),
     check("participants_name_not_blank", sql`btrim(${table.name}) <> ''`),
-    check(
-      "participants_access_token_hash_check",
-      sql`char_length(btrim(${table.accessTokenHash})) >= 32`,
-    ),
+    check("participants_access_token_hash_check", sql`char_length(btrim(${table.accessTokenHash})) >= 32`),
   ],
 ).enableRLS();
 
@@ -180,10 +148,7 @@ export const rounds = pgTable(
     status: roundStatusEnum("status").default("voting").notNull(),
   },
   table => [
-    unique("rounds_room_round_number_unique").on(
-      table.roomId,
-      table.roundNumber,
-    ),
+    unique("rounds_room_round_number_unique").on(table.roomId, table.roundNumber),
     unique("rounds_room_id_id_unique").on(table.roomId, table.id),
     uniqueIndex("rounds_one_voting_per_room_unique")
       .on(table.roomId)
@@ -214,17 +179,11 @@ export const roundMovies = pgTable(
       foreignColumns: [rounds.roomId, rounds.id],
     }).onDelete("cascade"),
     unique("round_movies_room_movie_unique").on(table.roomId, table.movieId),
-    unique("round_movies_round_position_unique").on(
-      table.roundId,
-      table.position,
-    ),
+    unique("round_movies_round_position_unique").on(table.roundId, table.position),
     uniqueIndex("round_movies_selected_round_unique")
       .on(table.roundId)
       .where(sql`${table.isSelected} = true`),
-    check(
-      "round_movies_position_check",
-      sql`${table.position} between 1 and 3`,
-    ),
+    check("round_movies_position_check", sql`${table.position} between 1 and 3`),
   ],
 ).enableRLS();
 
@@ -240,32 +199,19 @@ export const votes = pgTable(
   table => [
     primaryKey({
       name: "votes_pkey",
-      columns: [
-        table.roomId,
-        table.roundId,
-        table.participantId,
-        table.movieId,
-      ],
+      columns: [table.roomId, table.roundId, table.participantId, table.movieId],
     }),
     foreignKey({
       name: "votes_round_movie_fk",
       columns: [table.roomId, table.roundId, table.movieId],
-      foreignColumns: [
-        roundMovies.roomId,
-        roundMovies.roundId,
-        roundMovies.movieId,
-      ],
+      foreignColumns: [roundMovies.roomId, roundMovies.roundId, roundMovies.movieId],
     }).onDelete("cascade"),
     foreignKey({
       name: "votes_room_participant_fk",
       columns: [table.roomId, table.participantId],
       foreignColumns: [participants.roomId, participants.id],
     }).onDelete("cascade"),
-    index("votes_round_movie_idx").on(
-      table.roomId,
-      table.roundId,
-      table.movieId,
-    ),
+    index("votes_round_movie_idx").on(table.roomId, table.roundId, table.movieId),
     index("votes_room_participant_idx").on(table.roomId, table.participantId),
   ],
 ).enableRLS();
@@ -308,16 +254,13 @@ export const roomGenresRelations = relations(roomGenres, ({ one }) => ({
   }),
 }));
 
-export const participantsRelations = relations(
-  participants,
-  ({ many, one }) => ({
-    room: one(rooms, {
-      fields: [participants.roomId],
-      references: [rooms.id],
-    }),
-    votes: many(votes),
+export const participantsRelations = relations(participants, ({ many, one }) => ({
+  room: one(rooms, {
+    fields: [participants.roomId],
+    references: [rooms.id],
   }),
-);
+  votes: many(votes),
+}));
 
 export const roundsRelations = relations(rounds, ({ many, one }) => ({
   room: one(rooms, {

@@ -2,6 +2,8 @@
 
 Movie Match uses Supabase Postgres for persistent data, Drizzle ORM for application queries, and Drizzle Kit for SQL migrations. The browser integration exposes only the Supabase Realtime methods needed to create and remove channels; it does not expose the full `SupabaseClient` or its Data API mutation methods.
 
+For a table-by-table explanation of the product model, see the [database schema domain guide](domain/database-schema.md).
+
 ## Data-access boundary
 
 Use the following split for all product features:

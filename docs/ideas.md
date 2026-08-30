@@ -322,6 +322,16 @@ The product should feel like evening entertainment, not productivity SaaS.
 
 ---
 
+## TV device detection
+
+A future version could recognize likely TV browsers and offer to open the TV flow automatically.
+
+Possible signals to investigate include the user agent, User-Agent Client Hints where available, display and input characteristics, installed-app context, or platform-specific TV browser APIs. Browser detection is not fully reliable, so any automatic redirect should have a safe fallback and a visible way to choose or leave TV mode manually.
+
+This idea should be validated on the actual target TV platforms before it becomes product behavior.
+
+---
+
 ## Localization
 
 v0.1 ships in Ukrainian only, but the product should support additional languages in later versions.
@@ -331,8 +341,7 @@ Future considerations:
 - choose the first additional languages based on real users;
 - keep Ukrainian as a first-class language;
 - localize humor and tone rather than translating jokes literally;
-- separate product copy from components when localization work begins;
-- avoid adding localization infrastructure before a dedicated task requires it.
+- extend the existing `next-intl` message catalog without adding locale routing or a language switcher until a future product decision requires them.
 
 ---
 
