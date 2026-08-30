@@ -8,6 +8,7 @@
   "packageManager": "pnpm@11.0.9",
   "scripts": {
     "dev": "next dev",
+    "dev:local": "docker compose --env-file .env.local up -d --wait postgres && pnpm db:migrate && next dev",
     "build": "next build --webpack",
     "start": "next start",
     "db:generate": "drizzle-kit generate",

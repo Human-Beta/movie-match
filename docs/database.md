@@ -26,7 +26,7 @@ Use the direct connection string for migrations when the machine supports IPv6. 
 
 ## Run PostgreSQL locally
 
-The repository includes `docker-compose.example.yml` for testing Drizzle migrations and server-side database code without connecting to a hosted project. Create local working files and start PostgreSQL:
+The repository includes `docker-compose.example.yml` for testing Drizzle migrations and server-side database code without connecting to a hosted project. Start a Docker engine, then create the local working files:
 
 ```bash
 cp docker-compose.example.yml docker-compose.yml
@@ -42,11 +42,10 @@ postgresql://postgres:postgres@127.0.0.1:54322/movie_match
 Then run:
 
 ```bash
-docker compose --env-file .env.local up -d postgres
-pnpm db:migrate
+pnpm dev:local
 ```
 
-The container exposes PostgreSQL only on localhost and creates local stand-ins for the Supabase Data API roles so the security migration can be tested. Stop it with `docker compose down`; add `--volumes` only when intentionally deleting the local database.
+This command waits for PostgreSQL to become healthy, applies pending migrations, and starts the application. JetBrains IDEs expose the same workflow through the shared **Local development** run configuration. The container exposes PostgreSQL only on localhost and creates local stand-ins for the Supabase Data API roles so the security migration can be tested. Stop it with `docker compose down`; add `--volumes` only when intentionally deleting the local database.
 
 This is deliberately a database-only setup. It does not provide Supabase Realtime, Data API, Auth, or Studio. Use a hosted Supabase project for those services. If the project later needs the complete Supabase platform offline, use the official Supabase CLI local stack instead of maintaining all Supabase services by hand in this Compose file.
 
