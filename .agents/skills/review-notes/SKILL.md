@@ -99,6 +99,8 @@ Never create a replacement review, submit a review, write a review body, force-p
 
 ## Report
 
+Make the report self-contained because the pending review may be deleted immediately afterward. For every answer, change, no-op, or declined decision, first include a concise `Запит` that safely quotes or faithfully restates the user's prompt and identifies its `path:line` anchor, then pair it directly with the corresponding `Відповідь` or `Результат`. Do not rely on the user reopening the pending review or the durable log to understand what each response addresses. Redact secrets and personal data from quoted text.
+
 Return, in order:
 
 1. Answers to questions.

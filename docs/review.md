@@ -145,9 +145,13 @@ $review-finalize
 The default `plan` mode is read-only. It reads the durable PR log and current Git history, revalidates every historical outcome against the current PR head, and then reports:
 
 - blockers such as remaining pending notes, unresolved log entries, scope drift, failing checks, or inaccurate PR metadata;
+- mismatches between the current implementation and applicable product, architecture, schema, security, task-status, or workflow documentation;
+- material test-coverage gaps mapped to acceptance criteria and important success, failure, boundary, concurrency, retry, and data-integrity paths;
 - genuine reusable convention candidates with IDs such as `C1` and their target instruction files;
 - a proposed logical final commit history with IDs such as `H1`;
 - the remaining merge-readiness gates.
+
+Coverage percentages are supporting evidence rather than a substitute for behavior-level analysis. Finalization must state whether coverage is adequate and identify the appropriate test level for every material gap.
 
 Convention candidates are deliberately conservative. One-off bugs are dropped, existing rules are deduplicated, and deterministic checks are directed to tooling instead of `AGENTS.md`.
 
