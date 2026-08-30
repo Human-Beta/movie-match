@@ -1,7 +1,7 @@
 import { defineConfig } from "drizzle-kit";
 import { config } from "dotenv";
 
-import { parseServerEnv } from "./lib/env/server-schema";
+import { parseServerEnv } from "@/lib/env/server-schema";
 
 config({ path: ".env.local", quiet: true });
 

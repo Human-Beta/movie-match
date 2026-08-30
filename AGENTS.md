@@ -26,10 +26,21 @@ If documents allow different interpretations of the current product scope, follo
 4. Never commit secrets, local `.env` files, or disposable build artifacts. Commit database migrations together with the schema changes that generated them.
 5. Before completing a task, run the relevant checks. Update its status in `tasks/README.md` only after its acceptance criteria are satisfied.
 6. Publish every completed, verified AI change batch so it is available for review in GitHub. Before editing on `main`, create a short-lived branch. After the required checks pass, commit only the intended changes, push the branch, and create or update its pull request. Target `main` unless the branch is an explicitly declared member of a dependent pull-request stack; a stacked pull request targets its immediate predecessor branch and must identify that dependency. Verify that the pull request head matches the pushed commit. After an upstream branch is rewritten or merged, restack affected descendants in dependency order, retarget them when appropriate, rerun required checks and review, and never merge a descendant before its dependencies. Temporary implementation and review-fix commits are acceptable because `$review-finalize` will fold them into the approved logical history. Do not publish read-only work, failed or unresolved changes, unrelated working-tree content, secrets, or explicitly local experiments, and honor an explicit user request not to publish.
+7. When a schema migration changes an enum, table, field, relationship, constraint, or browser-access boundary, update `docs/domain/database-schema.md` in the same change.
+
+## Code organization
+
+- Prefer the simplest cohesive structure that satisfies the current task. Do not create files, classes, wrappers, or abstraction layers without a concrete responsibility, runtime boundary, reuse case, or meaningful reduction in complexity.
+- Keep modules focused rather than growing one large file with unrelated responsibilities. Apply the same organizational pattern consistently to code with the same role, while allowing different roles to use different patterns when that distinction is explicit.
+- Use TypeScript `type` aliases for object contracts. Use `interface` only when a third-party API specifically requires declaration merging, and document that exception at the declaration.
+- Wrap React component props object types in `Readonly<...>` so components cannot mutate incoming props.
+- Use exact validated input types for internal functions. Reserve `unknown` for genuinely untrusted boundaries and narrow it immediately with runtime validation.
+- Implement repositories and services as classes. Supply replaceable collaborators through constructor injection instead of passing dependency bags to individual service methods, and keep the production constructor call simple through sensible defaults.
 
 ## Data access and database security
 
 - Treat browser code as untrusted. Send product mutations through a validated Next.js server boundary and execute them with Drizzle.
+- For browser mutations that may be retried, reloaded, or lose their response, persist an idempotency key before sending the request, enforce uniqueness server-side, and clear it only after a confirmed terminal outcome.
 - Use the browser Supabase integration only for explicitly approved read or Realtime capabilities. Do not expose the full browser `SupabaseClient` or call the Supabase Data API for product mutations.
 - Keep Data API access opt-in. For every product table in an exposed schema, enable RLS and grant `anon` or `authenticated` only the minimum read access and policies required by the feature. Never grant those roles `INSERT`, `UPDATE`, or `DELETE` for product tables.
 - Treat the restricted TypeScript API as a developer guardrail, not a security boundary. Enforce browser access with Postgres privileges and RLS in the same migration that introduces or exposes a table.

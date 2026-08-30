@@ -1,5 +1,5 @@
 import "server-only";
 
-import { parseServerEnv } from "./server-schema";
+import { parseServerEnv } from "@/lib/env/server-schema";
 
 export const serverEnv = parseServerEnv(process.env);
