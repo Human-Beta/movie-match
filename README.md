@@ -17,17 +17,17 @@ Repository working rules are documented in [AGENTS.md](AGENTS.md).
 ## Local development
 
 The project requires Node.js 24.15.0 and pnpm 11.0.9. Their versions are pinned in `.nvmrc` and `package.json`.
+Start Docker Desktop (or another Docker engine), then prepare the local files once:
 
 ```bash
 pnpm install
 cp .env.example .env.local
 cp docker-compose.example.yml docker-compose.yml
-docker compose --env-file .env.local up -d postgres
-pnpm db:migrate
-pnpm dev
+pnpm dev:local
 ```
 
 The app is available at [http://localhost:3000](http://localhost:3000) after startup.
+JetBrains IDEs also provide the shared **Local development** run configuration, which runs the same command.
 See [Database development](docs/database.md) for Supabase variables and migration commands.
 
 ## Checks
