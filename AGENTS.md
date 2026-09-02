@@ -35,15 +35,26 @@ If documents allow different interpretations of the current product scope, follo
 - Use TypeScript `type` aliases for object contracts. Use `interface` only when a third-party API specifically requires declaration merging, and document that exception at the declaration.
 - Wrap React component props object types in `Readonly<...>` so components cannot mutate incoming props.
 - Use exact validated input types for internal functions. Reserve `unknown` for genuinely untrusted boundaries and narrow it immediately with runtime validation.
+- Prefer explicit named result types for module boundaries and call sites. Avoid deriving those contracts with `ReturnType<typeof ...>` unless preserving an inferred adapter or third-party type is more accurate than naming it.
+- Render or map every closed discriminated union with an exhaustive `switch` and terminate the default branch with `assertNever`; use conditional guards when the cases are not a closed union.
+- Normalize missing query or collection results to the absence sentinel declared by the contract; do not leak `undefined` from `.at()` or `.find()` when the contract declares `null`.
+- When helper logic belongs only to one class responsibility, implement it as a private method. Keep module-level helpers for shared logic, construction factories, or concerns independent of a class instance.
 - Implement repositories and services as classes. Supply replaceable collaborators through constructor injection instead of passing dependency bags to individual service methods, and keep the production constructor call simple through sensible defaults.
 
 ## Data access and database security
 
 - Treat browser code as untrusted. Send product mutations through a validated Next.js server boundary and execute them with Drizzle.
+- Keep credential-bearing fields out of reusable domain or public query selections. Select them only in the narrow repository operation that needs them, and explicitly rebuild every server-to-client result from an allowlist of public fields.
+- When the same credential format enters through more than one untrusted boundary, define one parser and reuse it before hashing, comparing, or persisting the value.
 - For browser mutations that may be retried, reloaded, or lose their response, persist an idempotency key before sending the request, enforce uniqueness server-side, and clear it only after a confirmed terminal outcome.
 - Use the browser Supabase integration only for explicitly approved read or Realtime capabilities. Do not expose the full browser `SupabaseClient` or call the Supabase Data API for product mutations.
 - Keep Data API access opt-in. For every product table in an exposed schema, enable RLS and grant `anon` or `authenticated` only the minimum read access and policies required by the feature. Never grant those roles `INSERT`, `UPDATE`, or `DELETE` for product tables.
 - Treat the restricted TypeScript API as a developer guardrail, not a security boundary. Enforce browser access with Postgres privileges and RLS in the same migration that introduces or exposes a table.
+
+## React and Next.js effects
+
+- Treat functions returned by hooks or providers as referentially unstable unless their API explicitly guarantees stable identity. Do not use such a function as an Effect dependency when that Effect updates state or invokes a Server Action that can trigger a React tree refresh; derive the required stable primitive value before the Effect or restructure the Effect around stable inputs.
+- Remember that setting or deleting cookies in a Server Action refreshes the current Next.js React tree. For every Server Action invoked automatically from an Effect, verify in a real browser that the action settles, runs only for its intended stable inputs, and does not enter a render/action loop.
 
 ## Code Review Rules
 
