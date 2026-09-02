@@ -1,11 +1,11 @@
 ---
 name: review-notes
-description: "Process the current GitHub user's private pending PR review comments as line-anchored prompts, scan for sibling instances, apply and verify clear fixes, commit and push them, and persist the pushed outcomes in the PR review log. Use only when explicitly invoked during the solo Movie Match review loop."
+description: "Process the current GitHub user's private pending PR review comments as line-anchored prompts, scan for sibling instances, apply and verify clear fixes, commit and push them, and persist only material outcomes in the PR review log. Use only when explicitly invoked during the solo Movie Match review loop."
 ---
 
 # Process private review notes
 
-Treat the current GitHub user's pending review as a temporary prompt queue for the local AI, not as feedback to publish. Respond in Ukrainian. The pull request review log is the durable memory that later Codex tasks use after the pending review is deleted.
+Treat the current GitHub user's pending review as a temporary prompt queue for the local AI, not as feedback to publish. Respond in Ukrainian. Answer every captured note, but use the pull request review log only as durable memory for material changes, unresolved concerns, and engineering or product decisions that later Codex tasks may need after the pending review is deleted.
 
 ## Modes
 
@@ -35,6 +35,13 @@ Read the current file and relevant task or specification context before acceptin
 
 Split mixed comments into their question and change-request parts. Do not broaden a local note into an unrelated refactor.
 
+After classification, assign each source note a persistence decision:
+
+- **Persist:** the outcome records a code, test, documentation, or configuration change; an unresolved concern; an actionable request that was declined or verified as already satisfied; a confirmed sibling issue; or a durable architecture, security, data-integrity, product-scope, testing, or reusable-convention decision.
+- **Do not persist:** the note is a transient information-only question, syntax or API explanation, conversational follow-up, acknowledgement, or clarification whose answer neither changes the pull request nor establishes a decision or invariant useful to future work.
+
+Persist a note only when its outcome would help a future task reconstruct a change, an unresolved concern, or a durable engineering or product decision. A question may be material when its answer establishes or rejects such a decision; the `question` classification alone is not sufficient reason to persist it. For a mixed comment, base persistence on its material part and omit transient question text from the durable entry. Record the decision and concise reason in the processing report, but do not write `Do not persist` notes to GitHub.
+
 ## Scan for sibling instances automatically
 
 Do this for every captured note before editing or deleting anything; there is no separate similar-issues command.
@@ -48,7 +55,7 @@ Do this for every captured note before editing or deleting anything; there is no
 
 ## Maintain the durable pull request review log
 
-In `fix` mode, create or update one compact PR conversation comment owned by the current viewer. Never publish the raw notes as inline review comments and never submit a GitHub review.
+In `fix` mode, create or update one compact PR conversation comment owned by the current viewer when the batch contains at least one note marked `Persist`. If every note is marked `Do not persist`, leave the log untouched. Never publish the raw notes as inline review comments and never submit a GitHub review.
 
 Use this shape:
 
@@ -63,8 +70,9 @@ Use this shape:
 ### Batch <UTC timestamp> · head `<sha>` · pending review `<review-id>`
 
 - Note `<comment-id>` — `<path>:<line>`
-  - Prompt: <original note, with secrets redacted>
+  - Prompt: <material part of the original note, with secrets redacted>
   - Classification: <question | change request | mixed | already satisfied | unresolved>
+  - Durable reason: <change, unresolved concern, actionable no-op or decline, sibling issue, or durable decision>
   - Problem class: <checkable class or none>
   - Similar scan: <confirmed changed-line and pre-existing locations, or none>
   - Outcome: <answer, applied and pushed change with commit SHA, no-op reason, explicit decline, or unresolved reason>
@@ -73,12 +81,12 @@ Use this shape:
 </details>
 ```
 
-- Create the root log through `POST repos/{owner}/{repo}/issues/{number}/comments` or update a log part through `PATCH repos/{owner}/{repo}/issues/comments/{comment-id}`. Search the complete ordered chain for each pending-review comment ID. If an entry exists, update it in the part that already contains it; otherwise append it to the last part. Never recreate, move, or discard an earlier entry during an ordinary upsert.
+- Create the root log through `POST repos/{owner}/{repo}/issues/{number}/comments` or update a log part through `PATCH repos/{owner}/{repo}/issues/comments/{comment-id}`. Search the complete ordered chain for each `Persist` note ID. If an entry exists, update it in the part that already contains it; otherwise append it to the last part. Never create entries for `Do not persist` notes, and never recreate, move, or discard an earlier entry during an ordinary upsert.
 - Keep entries concise but retain enough of the original prompt, normalized problem class, decision, and result for a new task to reconstruct why the code changed and to propose future conventions.
 - Record an applied change as present in the pull request only after fetching the remote branch and verifying that its head equals the pushed commit SHA. If no code change was required, record the already-published current head SHA.
 - Redact credentials, tokens, personal data, and other secrets before writing to GitHub. Remember that a PR conversation comment follows the repository's visibility.
 - Before updating a part, serialize its complete proposed body and leave a safe margin below GitHub's current comment-body limit. If a new entry would exceed that threshold, create the next contiguous continuation comment instead, beginning with `<!-- movie-match-review-log:v1:part-N -->`, then update the root with links to every continuation in numerical order. Never split one note entry across parts.
-- After every write, fetch the root and every linked continuation again, reconstruct the ordered chain, and verify that each source note ID appears exactly once and that all previously stored note IDs remain present. Treat a failed verification as a failed log update.
+- After every write, fetch the root and every linked continuation again, reconstruct the ordered chain, and verify that each `Persist` source note ID appears exactly once and that all previously stored note IDs remain present. `Do not persist` source IDs are not required in the chain. Treat a failed verification as a failed log update.
 - In `preview` mode, do not create or update the log.
 
 ## Finish safely
@@ -91,8 +99,8 @@ In `fix` mode:
 2. Run `pnpm verify` plus any task-specific checks required by the affected code.
 3. If this run changed files, stage only those intended changes, inspect the staged diff for unrelated content or secrets, and create one repository-compliant checkpoint commit. Prefer the active task prefix; use `[chore]` only when the change is genuinely maintenance work. Record the verified pre-commit tree. If a commit hook changes that tree, rerun the required checks on the committed content before continuing.
 4. Fetch the pull request head again. If it no longer equals the recorded starting SHA, stop without pushing or deleting the pending review. Otherwise push the new commit normally, never with force, then fetch and verify that the remote pull request head equals the local commit. If this run changed no files, skip the commit and push and use the already-verified current head.
-5. Upsert every note, its automatic sibling scan, its pushed commit SHA or no-op head SHA, and the verification result into the durable PR review-log chain. Fetch every part again and verify that every source comment ID appears exactly once and that no previously stored entry was lost.
-6. Delete the pending review only when every note has been answered, pushed, verified as already satisfied, or explicitly declined by the user; all required checks pass; the remote head verification succeeds; and the durable log update has been verified.
+5. Upsert every `Persist` note, its automatic sibling scan, its pushed commit SHA or no-op head SHA, durable reason, and verification result into the durable PR review-log chain. Do not upsert `Do not persist` notes. Fetch every part again and verify that every `Persist` source comment ID appears exactly once and that no previously stored entry was lost. If the batch has no `Persist` notes, leave the existing chain unchanged and report that no durable update was needed.
+6. Delete the pending review only when every note has been answered, pushed, verified as already satisfied, or explicitly declined by the user; every persistence decision has been made; all required checks pass; the remote head verification succeeds; and any required durable log update has been verified. A fully answered `Do not persist` note does not block deletion merely because it was omitted from the log.
 7. If any note remains ambiguous, any required check fails, the remote branch changes unexpectedly, the commit or push fails, or the review log cannot be verified, keep the entire pending review intact so the raw prompts remain recoverable. The log may record the attempt as unresolved, but it never substitutes for the still-live raw notes.
 
 Never create a replacement review, submit a review, write a review body, force-push, rewrite history, switch branches, or merge the pull request. `$review-finalize` owns history cleanup; the human owns the final merge.
@@ -110,5 +118,6 @@ Return, in order:
 5. Unresolved notes requiring a decision.
 6. Verification results.
 7. The checkpoint commit SHA, push result, and verified pull request head, or the reason no commit was needed.
-8. The durable review-log comment URL and whether it was created, updated, or left untouched.
-9. Whether the pending review was deleted or deliberately retained.
+8. Notes intentionally omitted from the durable log, with their comment IDs and concise `Do not persist` reasons.
+9. The durable review-log comment URL and whether it was created, updated, or left untouched.
+10. Whether the pending review was deleted or deliberately retained.
