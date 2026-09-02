@@ -15,6 +15,7 @@
     "db:migrate": "drizzle-kit migrate",
     "test": "tsx --test",
     "test:coverage": "node --import tsx --test --experimental-test-coverage",
+    "test:join:db": "tsx --conditions=react-server --test lib/participants/participant-repository.integration.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

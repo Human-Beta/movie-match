@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import type { Clock } from "@/lib/clock";
 import { RoomCreationAttemptsExhaustedError, RoomCreationRequestUnavailableError } from "@/lib/rooms/errors";
-import { RoomService, type Clock, type RoomRepository, type RoomServiceOptions, type RoomSnapshot, type RoomStatus } from "@/lib/rooms/room-service";
+import { RoomService, type RoomRepository, type RoomServiceOptions, type RoomSnapshot, type RoomStatus } from "@/lib/rooms/room-service";
 
 const now = new Date("2026-08-23T12:00:00.000Z");
 const future = new Date("2026-08-23T13:00:00.000Z");

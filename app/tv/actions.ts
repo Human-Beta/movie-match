@@ -35,7 +35,7 @@ export async function openTvRoom(input: OpenTvRoomInput): Promise<OpenTvRoomResu
   if (!parsedInput.success) {
     return {
       status: "error",
-      message: t("savedRoomCheckFailure"),
+      message: t("error.savedRoomCheck"),
       resetCreationRequest: true,
     };
   }
@@ -48,7 +48,7 @@ export async function openTvRoom(input: OpenTvRoomInput): Promise<OpenTvRoomResu
     if (error instanceof RoomCreationRequestUnavailableError) {
       return {
         status: "error",
-        message: t("previousRoomUnavailable"),
+        message: t("error.previousRoomUnavailable"),
         resetCreationRequest: true,
       };
     }
@@ -57,7 +57,7 @@ export async function openTvRoom(input: OpenTvRoomInput): Promise<OpenTvRoomResu
 
     return {
       status: "error",
-      message: t("openFailure"),
+      message: t("error.open"),
     };
   }
 }

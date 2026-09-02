@@ -15,7 +15,7 @@ export function JoinQrCode({ roomCode }: Readonly<{ roomCode: string }>): ReactN
   const joinUrl = origin ? new URL(`/join/${roomCode}`, origin).toString() : null;
 
   if (!joinUrl) {
-    return <div className="flex min-h-72 items-center justify-center rounded-3xl bg-white p-6 text-slate-700">{t("preparingQr")}</div>;
+    return <div className="flex min-h-72 items-center justify-center rounded-3xl bg-white p-6 text-slate-700">{t("qr.preparing")}</div>;
   }
 
   return (
@@ -27,7 +27,7 @@ export function JoinQrCode({ roomCode }: Readonly<{ roomCode: string }>): ReactN
           level="M"
           size={256}
           style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-          title={t("qrTitle", { roomCode })}
+          title={t("qr.title", { roomCode })}
           value={joinUrl}
           viewBox="0 0 256 256"
         />
