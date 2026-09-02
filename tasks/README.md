@@ -22,6 +22,6 @@
 - [ ] 013 — No-match next round
 - [ ] 014 — Match screen
 - [ ] 015 — Search again or close room
-- [ ] 016 — Room expiration
+- [ ] 016 — Room expiration and cascading cleanup of expired room data
 - [ ] 017 — Polish and deployment
-- [ ] 018 — Automated browser, Server Action, and database integration coverage
+- [ ] [018 — Automated browser, Server Action, and database integration coverage](018-automated-integration-coverage.md)
