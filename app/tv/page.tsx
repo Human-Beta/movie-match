@@ -23,6 +23,9 @@ function getOrCreateCreationRequestId(): string {
 
 export default function TvPage(): ReactNode {
   const t = useTranslations("TvPage");
+  const saveErrorMessage = t("error.save");
+  const storageUnavailableMessage = t("error.storageUnavailable");
+  const transportErrorMessage = t("error.transport");
   const router = useRouter();
   const startedRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -43,7 +46,7 @@ export default function TvPage(): ReactNode {
         savedRoomCode = window.localStorage.getItem(TV_ROOM_STORAGE_KEY);
         creationRequestId = getOrCreateCreationRequestId();
       } catch {
-        setErrorMessage(t("storageUnavailable"));
+        setErrorMessage(storageUnavailableMessage);
         return;
       }
 
@@ -52,7 +55,7 @@ export default function TvPage(): ReactNode {
       try {
         result = await openTvRoom({ savedRoomCode, creationRequestId });
       } catch {
-        setErrorMessage(t("transportError"));
+        setErrorMessage(transportErrorMessage);
         return;
       }
 
@@ -69,13 +72,13 @@ export default function TvPage(): ReactNode {
         window.localStorage.setItem(TV_ROOM_STORAGE_KEY, result.roomCode);
         window.localStorage.removeItem(TV_ROOM_CREATION_REQUEST_STORAGE_KEY);
       } catch {
-        setErrorMessage(t("saveFailure"));
+        setErrorMessage(saveErrorMessage);
         return;
       }
 
       router.replace(`/tv/${result.roomCode}`);
     });
-  }, [router, startTransition, t]);
+  }, [router, saveErrorMessage, startTransition, storageUnavailableMessage, transportErrorMessage]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-50">
@@ -83,20 +86,20 @@ export default function TvPage(): ReactNode {
         <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
         {errorMessage ? (
           <>
-            <h1 className="text-3xl font-bold">{t("openFailureTitle")}</h1>
+            <h1 className="text-3xl font-bold">{t("error.title")}</h1>
             <p className="mt-4 text-lg text-slate-300">{errorMessage}</p>
             <button
               className="mt-8 rounded-full bg-amber-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-amber-300"
               type="button"
               onClick={() => window.location.reload()}
             >
-              {t("retry")}
+              {t("action.retry")}
             </button>
           </>
         ) : (
           <>
-            <h1 className="text-3xl font-bold">{t("preparingTitle")}</h1>
-            <p className="mt-4 text-lg text-slate-300">{isPending ? t("checkingSaved") : t("starting")}</p>
+            <h1 className="text-3xl font-bold">{t("status.preparingTitle")}</h1>
+            <p className="mt-4 text-lg text-slate-300">{isPending ? t("status.checkingSaved") : t("status.starting")}</p>
           </>
         )}
       </section>

@@ -21,7 +21,7 @@ export function NewRoomLink(): ReactNode {
         }
       }}
     >
-      {t("newRoom")}
+      {t("action.newRoom")}
     </Link>
   );
 }

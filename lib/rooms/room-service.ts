@@ -1,3 +1,4 @@
+import { SystemClock, type Clock } from "@/lib/clock";
 import { RoomCreationAttemptsExhaustedError, RoomCreationRequestUnavailableError } from "@/lib/rooms/errors";
 import { generateRoomCode, normalizeRoomCode } from "@/lib/rooms/room-code";
 
@@ -17,21 +18,11 @@ export type RoomRepository = {
   tryCreate(code: string, creationRequestId: string): Promise<RoomSnapshot | null>;
 };
 
-export type Clock = {
-  now(): Date;
-};
-
 export type RoomServiceOptions = {
   clock?: Clock;
   generateCode?: () => string;
   maxCreateAttempts?: number;
 };
-
-class SystemClock implements Clock {
-  now(): Date {
-    return new Date();
-  }
-}
 
 export class RoomService {
   private readonly clock: Clock;
