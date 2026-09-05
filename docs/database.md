@@ -49,6 +49,32 @@ This command waits for PostgreSQL to become healthy, applies pending migrations,
 
 This is deliberately a database-only setup. It does not provide Supabase Realtime, Data API, Auth, or Studio. Use a hosted Supabase project for those services. If the project later needs the complete Supabase platform offline, use the official Supabase CLI local stack instead of maintaining all Supabase services by hand in this Compose file.
 
+## Run the app over local HTTPS
+
+On macOS, run the development server over HTTPS when testing secure browser APIs from phones on the same network:
+
+```bash
+pnpm dev:https
+```
+
+The script installs `mkcert` with Homebrew when available, trusts its local development CA on the Mac, detects the active LAN IPv4 address and macOS `.local` hostname, and starts Next.js on all network interfaces. It creates the certificate, private key, and a copy of the public root CA under the gitignored `.local/https/` directory. Set `MOVIE_MATCH_LAN_IP` or `MOVIE_MATCH_LOCAL_HOSTNAME` before the command only when automatic detection selects the wrong interface or hostname.
+
+Before opening the printed HTTPS URL on a phone for the first time, transfer only `.local/https/rootCA.pem` to that phone, install it as a CA profile, and enable full trust for it in the operating-system certificate settings. Never transfer or expose the `rootCA-key.pem` file from the `mkcert` CA directory. The phone and Mac must be on the same network, and client isolation must be disabled on that network.
+
+## Verify hosted participant Realtime
+
+Apply the committed migrations to a hosted Supabase project, then configure its connection string, project URL, and publishable key in the ignored `.env.local`. Start the app and open `/tv` plus its join URL in three isolated browser contexts: one TV, phone 1, and phone 2.
+
+Use the TV browser's Network panel with Preserve log enabled to distinguish Broadcast invalidation from the five-second authoritative fallback:
+
+1. Before either phone joins, confirm the TV's Realtime WebSocket receives a successful room-channel join reply. The topic must contain the internal room UUID rather than the short room code.
+2. Join phone 1 immediately after a scheduled snapshot request. Before the next fallback interval, confirm an incoming `participants_changed` Broadcast frame with an empty payload, a subsequent participant snapshot Server Action request, and then `1/2` plus the host's name on the TV.
+3. Repeat for phone 2. Confirm the same event-then-refetch sequence produces `2/2`, and phone 1 changes from waiting to ready. Reload the TV and one joined phone to confirm both restore the authoritative database state.
+4. Send two duplicate `participants_changed` events with a forged participant-shaped payload. The UI must ignore the payload, perform one coalesced authoritative refetch, and never render the forged participant.
+5. Run the app with an unreachable Supabase project URL and repeat a join. The committed join must still succeed after the bounded Broadcast attempts, and the open TV must converge through its next waiting-state snapshot refresh without a manual reload.
+
+Do not record project keys, room topics, participant credentials, or database passwords in screenshots, logs, or committed files. The Realtime check does not require a service-role or secret key, browser Data API access, Postgres Changes publication, or product-table grants.
+
 ## Create and apply migrations
 
 After changing `lib/db/schema.ts`, generate a migration and inspect the generated SQL before applying it:

@@ -8,6 +8,7 @@
   "packageManager": "pnpm@11.0.9",
   "scripts": {
     "dev": "next dev",
+    "dev:https": "bash scripts/dev-https.sh",
     "dev:local": "docker compose --env-file .env.local up -d --wait postgres && pnpm db:migrate && next dev",
     "build": "next build --webpack",
     "start": "next start",
@@ -16,6 +17,7 @@
     "test": "tsx --test",
     "test:coverage": "node --import tsx --test --experimental-test-coverage",
     "test:join:db": "tsx --conditions=react-server --test lib/participants/participant-repository.integration.ts",
+    "test:participants:db": "tsx --conditions=react-server --test lib/participants/participant-repository.integration.ts lib/participants/participant-snapshot-repository.integration.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -1,15 +1,10 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
+import { loadDatabase, type DatabaseProvider } from "@/lib/db/database-provider";
 import { participants, rooms } from "@/lib/db/schema";
 import type { LockedParticipantRoom, ParticipantRepository, ParticipantRoom, ParticipantRoomSnapshot } from "@/lib/participants/participant-service";
-
-async function loadParticipantDatabase(): Promise<(typeof import("@/lib/db"))["db"]> {
-  const { db } = await import("@/lib/db");
-
-  return db;
-}
 
 const roomSelection = {
   id: rooms.id,
@@ -24,12 +19,8 @@ const participantSelection = {
   role: participants.role,
 };
 
-type ParticipantDatabase = Awaited<ReturnType<typeof loadParticipantDatabase>>;
-
-type ParticipantDatabaseProvider = () => Promise<ParticipantDatabase>;
-
 export class DrizzleParticipantRepository implements ParticipantRepository {
-  constructor(private readonly getDatabase: ParticipantDatabaseProvider = loadParticipantDatabase) {}
+  constructor(private readonly getDatabase: DatabaseProvider = loadDatabase) {}
 
   async inspectRoom(roomCode: string, accessTokenHash: string | null): Promise<ParticipantRoomSnapshot> {
     const database = await this.getDatabase();
@@ -42,25 +33,23 @@ export class DrizzleParticipantRepository implements ParticipantRepository {
         return { room: null, participant: null, participantCount: 0 };
       }
 
-      const roomParticipants = await transaction
-        .select({
-          ...participantSelection,
-          accessTokenHash: participants.accessTokenHash,
-        })
+      const participantCountRows = await transaction
+        .select({ participantCount: sql<number>`count(*)::int` })
         .from(participants)
         .where(eq(participants.roomId, room.id));
-      const participant = accessTokenHash ? (roomParticipants.find(candidate => candidate.accessTokenHash === accessTokenHash) ?? null) : null;
+      const participantCount = participantCountRows.at(0)?.participantCount ?? 0;
+      const participantRows = accessTokenHash
+        ? await transaction
+            .select(participantSelection)
+            .from(participants)
+            .where(and(eq(participants.roomId, room.id), eq(participants.accessTokenHash, accessTokenHash)))
+            .limit(1)
+        : [];
 
       return {
         room,
-        participant: participant
-          ? {
-              id: participant.id,
-              name: participant.name,
-              role: participant.role,
-            }
-          : null,
-        participantCount: roomParticipants.length,
+        participant: participantRows.at(0) ?? null,
+        participantCount,
       };
     });
   }

@@ -37,9 +37,11 @@ If documents allow different interpretations of the current product scope, follo
 - Use exact validated input types for internal functions. Reserve `unknown` for genuinely untrusted boundaries and narrow it immediately with runtime validation.
 - Prefer explicit named result types for module boundaries and call sites. Avoid deriving those contracts with `ReturnType<typeof ...>` unless preserving an inferred adapter or third-party type is more accurate than naming it.
 - Render or map every closed discriminated union with an exhaustive `switch` and terminate the default branch with `assertNever`; use conditional guards when the cases are not a closed union.
+- For an obvious mapping from a two-value scalar union, prefer a direct conditional or ternary; reserve exhaustive `switch`/`assertNever` handling for discriminated unions or cases where additional branches materially improve clarity.
 - Normalize missing query or collection results to the absence sentinel declared by the contract; do not leak `undefined` from `.at()` or `.find()` when the contract declares `null`.
 - When helper logic belongs only to one class responsibility, implement it as a private method. Keep module-level helpers for shared logic, construction factories, or concerns independent of a class instance.
 - Implement repositories and services as classes. Supply replaceable collaborators through constructor injection instead of passing dependency bags to individual service methods, and keep the production constructor call simple through sensible defaults.
+- Reuse `Database`, `DatabaseProvider`, and `loadDatabase` from `lib/db/database-provider.ts` in Drizzle repositories; do not create repository-local database loader functions or duplicate loader-derived database types.
 
 ## Data access and database security
 
