@@ -1,4 +1,5 @@
 import type { JoinParticipantResult, ParticipantRole } from "@/lib/participants/participant-service";
+import type { ParticipantClientRoomState } from "@/lib/participants/public-participant-snapshot";
 
 export type PublicParticipantIdentity = {
   name: string;
@@ -11,11 +12,15 @@ export type JoinRoomActionState =
   | { status: "unavailable" }
   | { status: "full" }
   | { status: "error"; message: string }
-  | { status: "joined"; participant: PublicParticipantIdentity };
+  | { status: "joined"; participant: PublicParticipantIdentity; room: ParticipantClientRoomState };
 
-export function toJoinRoomActionState(result: JoinParticipantResult): JoinRoomActionState {
+export function toJoinRoomActionState(result: JoinParticipantResult, room: ParticipantClientRoomState | null): JoinRoomActionState {
   if (result.status !== "joined") {
     return result;
+  }
+
+  if (room === null) {
+    return { status: "unavailable" };
   }
 
   return {
@@ -24,5 +29,6 @@ export function toJoinRoomActionState(result: JoinParticipantResult): JoinRoomAc
       name: result.participant.name,
       role: result.participant.role,
     },
+    room,
   };
 }

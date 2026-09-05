@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { JoinRoomForm } from "@/app/join/[roomCode]/join-form";
 import { FullRoomState, JoinedRoomState, UnavailableRoomState } from "@/app/join/[roomCode]/room-states";
 import { assertNever } from "@/lib/assert-never";
-import { getParticipantJoinView } from "@/lib/participants";
+import { getParticipantClientRoomState, getParticipantJoinView } from "@/lib/participants";
 import { getParticipantCookieName } from "@/lib/participants/participant-cookie";
 import { normalizeRoomCode } from "@/lib/rooms/room-code";
 
@@ -24,15 +24,23 @@ export default async function JoinRoomPage({
       return <UnavailableRoomState />;
     case "full":
       return <FullRoomState />;
-    case "joined":
+    case "joined": {
+      const room = await getParticipantClientRoomState(view.roomId);
+
+      if (room === null) {
+        return <UnavailableRoomState />;
+      }
+
       return (
         <JoinedRoomState
           participant={{
             name: view.participant.name,
             role: view.participant.role,
           }}
+          room={room}
         />
       );
+    }
     case "form":
       return <JoinRoomForm roomCode={view.roomCode} />;
     default:

@@ -2,16 +2,13 @@ import "server-only";
 
 import { eq } from "drizzle-orm";
 
+import { loadDatabase, type DatabaseProvider } from "@/lib/db/database-provider";
 import { rooms } from "@/lib/db/schema";
 
 import type { RoomRepository, RoomSnapshot } from "@/lib/rooms/room-service";
 
 export class DrizzleRoomRepository implements RoomRepository {
-  private async getDatabase(): Promise<(typeof import("@/lib/db"))["db"]> {
-    const { db } = await import("@/lib/db");
-
-    return db;
-  }
+  constructor(private readonly getDatabase: DatabaseProvider = loadDatabase) {}
 
   async findByCode(code: string): Promise<RoomSnapshot | null> {
     const database = await this.getDatabase();

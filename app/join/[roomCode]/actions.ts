@@ -7,7 +7,7 @@ import { getTranslations } from "next-intl/server";
 
 import type { JoinRoomActionState } from "@/app/join/[roomCode]/join-action-state";
 import { toJoinRoomActionState } from "@/app/join/[roomCode]/join-action-state";
-import { getParticipantJoinRequestExpiresAt, joinRoomParticipant } from "@/lib/participants";
+import { getParticipantClientRoomState, getParticipantJoinRequestExpiresAt, joinRoomParticipant } from "@/lib/participants";
 import { joinRoomInputSchema } from "@/lib/participants/join-input";
 import {
   getExpiredParticipantCookieOptions,
@@ -16,6 +16,7 @@ import {
   getParticipantJoinRequestCookieName,
 } from "@/lib/participants/participant-cookie";
 import { generateParticipantAccessToken, parseParticipantAccessToken } from "@/lib/participants/participant-token";
+import { notifyParticipantRoomChanged } from "@/lib/realtime/participant-broadcast-server";
 import { roomCodeSchema } from "@/lib/rooms/room-code";
 
 export type PrepareJoinRoomResult = { status: "ready" } | { status: "error"; message: string };
@@ -96,7 +97,21 @@ export async function joinRoomAction(_previousState: JoinRoomActionState, formDa
 
     cookieStore.set(joinRequestCookieName, "", getExpiredParticipantCookieOptions(process.env.NODE_ENV === "production"));
 
-    return toJoinRoomActionState(result);
+    if (result.status !== "joined") {
+      return toJoinRoomActionState(result, null);
+    }
+
+    const room = await getParticipantClientRoomState(result.roomId);
+
+    if (result.participantCreated) {
+      try {
+        await notifyParticipantRoomChanged(result.roomId);
+      } catch {
+        // The waiting-state authoritative refresh recovers from a failed invalidation.
+      }
+    }
+
+    return toJoinRoomActionState(result, room);
   } catch {
     console.error("Failed to join a room.");
 

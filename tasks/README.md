@@ -10,7 +10,7 @@
 - [x] [004 — Database schema](004-database-schema.md)
 - [x] [005 — Create and restore TV room](005-create-and-restore-tv-room.md)
 - [x] [006 — Join room from phone](006-join-room-from-phone.md)
-- [ ] [007 — Realtime room participants](007-realtime-room-participants.md)
+- [x] [007 — Realtime room participants](007-realtime-room-participants.md)
 
 ## Backlog
 

@@ -45,14 +45,19 @@ export type JoinParticipantInput = JoinRoomInput & {
 };
 
 export type JoinRoomView =
-  { status: "form"; roomCode: string } | { status: "full" } | { status: "unavailable" } | { status: "joined"; participant: ParticipantIdentity };
+  | { status: "form"; roomCode: string }
+  | { status: "full" }
+  | { status: "unavailable" }
+  | { status: "joined"; roomId: string; participant: ParticipantIdentity };
 
 export type JoinParticipantResult =
   | { status: "full" }
   | { status: "unavailable" }
   | {
       status: "joined";
+      roomId: string;
       participant: ParticipantIdentity;
+      participantCreated: boolean;
       newSession: { rawAccessToken: string; expiresAt: Date } | null;
     };
 
@@ -99,7 +104,7 @@ export class ParticipantService {
     }
 
     if (snapshot.participant) {
-      return { status: "joined", participant: snapshot.participant };
+      return { status: "joined", roomId: room.id, participant: snapshot.participant };
     }
 
     if (room.status !== "waiting") {
@@ -130,7 +135,9 @@ export class ParticipantService {
         if (existingParticipant) {
           return {
             status: "joined",
+            roomId: openRoom.id,
             participant: existingParticipant,
+            participantCreated: false,
             newSession: null,
           };
         }
@@ -141,7 +148,9 @@ export class ParticipantService {
       if (retriedParticipant) {
         return {
           status: "joined",
+          roomId: openRoom.id,
           participant: retriedParticipant,
+          participantCreated: false,
           newSession: {
             rawAccessToken: input.joinRequestToken,
             expiresAt: openRoom.expiresAt,
@@ -168,7 +177,9 @@ export class ParticipantService {
 
       return {
         status: "joined",
+        roomId: openRoom.id,
         participant,
+        participantCreated: true,
         newSession: {
           rawAccessToken: input.joinRequestToken,
           expiresAt: openRoom.expiresAt,
