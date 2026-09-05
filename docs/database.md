@@ -49,6 +49,18 @@ This command waits for PostgreSQL to become healthy, applies pending migrations,
 
 This is deliberately a database-only setup. It does not provide Supabase Realtime, Data API, Auth, or Studio. Use a hosted Supabase project for those services. If the project later needs the complete Supabase platform offline, use the official Supabase CLI local stack instead of maintaining all Supabase services by hand in this Compose file.
 
+## Run the app over local HTTPS
+
+On macOS, run the development server over HTTPS when testing secure browser APIs from phones on the same network:
+
+```bash
+pnpm dev:https
+```
+
+The script installs `mkcert` with Homebrew when available, trusts its local development CA on the Mac, detects the active LAN IPv4 address and macOS `.local` hostname, and starts Next.js on all network interfaces. It creates the certificate, private key, and a copy of the public root CA under the gitignored `.local/https/` directory. Set `MOVIE_MATCH_LAN_IP` or `MOVIE_MATCH_LOCAL_HOSTNAME` before the command only when automatic detection selects the wrong interface or hostname.
+
+Before opening the printed HTTPS URL on a phone for the first time, transfer only `.local/https/rootCA.pem` to that phone, install it as a CA profile, and enable full trust for it in the operating-system certificate settings. Never transfer or expose the `rootCA-key.pem` file from the `mkcert` CA directory. The phone and Mac must be on the same network, and client isolation must be disabled on that network.
+
 ## Verify hosted participant Realtime
 
 Apply the committed migrations to a hosted Supabase project, then configure its connection string, project URL, and publishable key in the ignored `.env.local`. Start the app and open `/tv` plus its join URL in three isolated browser contexts: one TV, phone 1, and phone 2.
