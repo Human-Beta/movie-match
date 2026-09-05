@@ -73,7 +73,7 @@ export function JoinRoomForm({ roomCode }: Readonly<{ roomCode: string }>): Reac
 
   switch (state.status) {
     case "joined":
-      return <JoinedRoomState participant={state.participant} />;
+      return <JoinedRoomState participant={state.participant} room={state.room} />;
     case "full":
       return <FullRoomState />;
     case "unavailable":
