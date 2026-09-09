@@ -27,12 +27,13 @@ export default async function JoinRoomPage({
     case "joined": {
       const room = await getParticipantClientRoomState(view.roomId);
 
-      if (room === null) {
+      if (room === null || normalizedRoomCode === null) {
         return <UnavailableRoomState />;
       }
 
       return (
         <JoinedRoomState
+          roomCode={normalizedRoomCode}
           participant={{
             name: view.participant.name,
             role: view.participant.role,

@@ -102,6 +102,20 @@ The genres selected as filters for a room. No rows means that every genre is all
 
 The pair `(room_id, genre_id)` is the primary key. An additional `(genre_id, room_id)` index supports genre-first lookups.
 
+### `room_filter_saves`
+
+Successful host filter-save receipts. The dedicated table scopes request IDs to the filter-save command; it stores no participant credentials or historical filter payloads.
+
+| Field          | Purpose                                                                               |
+| -------------- | ------------------------------------------------------------------------------------- |
+| `room_id`      | References `rooms.id`; deleting the room removes its receipts.                        |
+| `request_id`   | Browser-generated UUID persisted with the pending filter values before submission.    |
+| `payload_hash` | SHA-256 of the validated, canonical filter values, including sorted unique genre IDs. |
+
+The primary key `(room_id, request_id)` prevents duplicate receipts. A receipt commits in the same transaction as the scalar filters and complete `room_genres` replacement. The transaction locks the `rooms` row, verifies the unexpired `waiting` state and room-scoped host credential, then either saves once or handles a retry. Matching retries return the current filters without applying the old payload again; a different payload using an existing key is rejected.
+
+RLS is enabled, and `anon`, `authenticated`, and `service_role` receive no table privileges. Access remains server-side through Drizzle. Expiration cleanup can remove these receipts through the room foreign-key cascade.
+
 ### `participants`
 
 The two people connected to a room from their phones.
@@ -161,7 +175,7 @@ The composite primary key `(room_id, round_id, participant_id, movie_id)` permit
 
 - A movie has many genres through `movie_genres`.
 - A room has selected genres through `room_genres`.
-- A room has participants and ordered rounds.
+- A room has participants, filter-save receipts, and ordered rounds.
 - A round has exactly three `round_movies` when round creation completes.
 - A participant votes on the round's movies through `votes`.
 

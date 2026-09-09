@@ -117,6 +117,21 @@ export const roomGenres = pgTable(
   ],
 ).enableRLS();
 
+export const roomFilterSaves = pgTable(
+  "room_filter_saves",
+  {
+    roomId: uuid("room_id")
+      .notNull()
+      .references(() => rooms.id, { onDelete: "cascade" }),
+    requestId: uuid("request_id").notNull(),
+    payloadHash: varchar("payload_hash", { length: 64 }).notNull(),
+  },
+  table => [
+    primaryKey({ name: "room_filter_saves_pkey", columns: [table.roomId, table.requestId] }),
+    check("room_filter_saves_payload_hash_check", sql`${table.payloadHash} ~ '^[a-f0-9]{64}$'`),
+  ],
+).enableRLS();
+
 export const participants = pgTable(
   "participants",
   {
@@ -240,6 +255,7 @@ export const movieGenresRelations = relations(movieGenres, ({ one }) => ({
 export const roomsRelations = relations(rooms, ({ many }) => ({
   genres: many(roomGenres),
   participants: many(participants),
+  filterSaves: many(roomFilterSaves),
   rounds: many(rounds),
 }));
 
@@ -290,5 +306,12 @@ export const votesRelations = relations(votes, ({ one }) => ({
   participant: one(participants, {
     fields: [votes.roomId, votes.participantId],
     references: [participants.roomId, participants.id],
+  }),
+}));
+
+export const roomFilterSavesRelations = relations(roomFilterSaves, ({ one }) => ({
+  room: one(rooms, {
+    fields: [roomFilterSaves.roomId],
+    references: [rooms.id],
   }),
 }));

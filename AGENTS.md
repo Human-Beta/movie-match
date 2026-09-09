@@ -34,7 +34,7 @@ If documents allow different interpretations of the current product scope, follo
 - Keep modules focused rather than growing one large file with unrelated responsibilities. Apply the same organizational pattern consistently to code with the same role, while allowing different roles to use different patterns when that distinction is explicit.
 - Use TypeScript `type` aliases for object contracts. Use `interface` only when a third-party API specifically requires declaration merging, and document that exception at the declaration.
 - Wrap React component props object types in `Readonly<...>` so components cannot mutate incoming props.
-- Use exact validated input types for internal functions. Reserve `unknown` for genuinely untrusted boundaries and narrow it immediately with runtime validation.
+- Use exact validated input types whenever the application has a defined contract, including typed Server Actions that still validate their runtime payload. Reserve `unknown` for rare boundaries whose input contract is genuinely unspecified and for caught or rejected values, then narrow it immediately.
 - Prefer explicit named result types for module boundaries and call sites. Avoid deriving those contracts with `ReturnType<typeof ...>` unless preserving an inferred adapter or third-party type is more accurate than naming it.
 - Render or map every closed discriminated union with an exhaustive `switch` and terminate the default branch with `assertNever`; use conditional guards when the cases are not a closed union.
 - For an obvious mapping from a two-value scalar union, prefer a direct conditional or ternary; reserve exhaustive `switch`/`assertNever` handling for discriminated unions or cases where additional branches materially improve clarity.
@@ -42,6 +42,8 @@ If documents allow different interpretations of the current product scope, follo
 - When helper logic belongs only to one class responsibility, implement it as a private method. Keep module-level helpers for shared logic, construction factories, or concerns independent of a class instance.
 - Implement repositories and services as classes. Supply replaceable collaborators through constructor injection instead of passing dependency bags to individual service methods, and keep the production constructor call simple through sensible defaults.
 - Reuse `Database`, `DatabaseProvider`, and `loadDatabase` from `lib/db/database-provider.ts` in Drizzle repositories; do not create repository-local database loader functions or duplicate loader-derived database types.
+- Always wrap `if` statement bodies in braces, including single-statement returns and throws.
+- Keep one-off Tailwind utility composition inline. When multiple call sites share the same semantic UI element and interaction states, extract a focused React component that owns the common classes and exposes only intentional variants; keep feature-only reuse local until it crosses a module boundary. Use Tailwind theme tokens or custom CSS utilities/component classes only for cross-cutting styling behavior that a React component cannot own cleanly. Do not introduce a custom class merely to shorten one long `className`, and do not create speculative UI primitives before a concrete reuse case exists.
 
 ## Data access and database security
 
