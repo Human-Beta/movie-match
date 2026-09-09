@@ -87,3 +87,17 @@ pnpm db:migrate
 Drizzle Kit writes generated migration files to `drizzle/`. Commit schema changes and their generated migrations together. Keep Data API access opt-in: migrations that introduce product tables must enable RLS, and migrations that expose browser reads or Realtime events must grant only the access required by that feature.
 
 Both migration commands load `DATABASE_URL` from `.env.local`. If it is missing or invalid, the command exits with a message that names the variable.
+
+## Verify host filters
+
+After applying migrations to local PostgreSQL, run the targeted repository checks with an explicit local test connection:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/movie_match_test pnpm test:filters:db
+```
+
+Create the test database and apply migrations first. The suite rejects remote hosts, creates isolated rooms and genre fixtures, and removes its fixtures afterward. It covers host authorization, atomic filter replacement, concurrent saves, lost-response replay after a newer save, rollback, room-state guards, RLS/privileges, and receipt cascade deletion.
+
+For browser verification, run the app against the test database and open a TV plus two isolated phone contexts. Join the first phone as host, edit filters before the guest joins, then confirm the participant refresh preserves the draft. Save every control, reload, clear genre selections, and repeat. An empty genre catalog must leave the other controls usable. Interrupt a save response and reload: the same pending request should remain available for explicit retry, with editing disabled until the result is confirmed. The guest must remain on its waiting screen without filter controls.
+
+The read-only filter-loading Server Action should settle after initial mounting and explicit retry only; it must not repeat after unrelated participant refreshes. Check this in a real browser alongside the existing cookie-triggered join flow. Keep test catalog fixtures and browser artifacts out of commits.

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import type { PublicParticipantIdentity } from "@/app/join/[roomCode]/join-action-state";
+import { HostFilters } from "@/app/join/[roomCode]/host-filters";
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
 import { useRoomParticipantSnapshot } from "@/app/room-participants/use-room-participant-snapshot";
 import { assertNever } from "@/lib/assert-never";
@@ -43,9 +44,11 @@ export function FullRoomState(): ReactNode {
 }
 
 export function JoinedRoomState({
+  roomCode,
   participant,
   room,
 }: Readonly<{
+  roomCode: string;
   participant: PublicParticipantIdentity;
   room: ParticipantClientRoomState;
 }>): ReactNode {
@@ -65,7 +68,7 @@ export function JoinedRoomState({
       statusMessage = t("status.waiting");
       break;
     case "ready":
-      statusMessage = t("status.ready");
+      statusMessage = participant.role === "host" ? t("status.hostReady") : t("status.ready");
       break;
     case "advanced":
       statusMessage = t("status.advanced");
@@ -86,6 +89,7 @@ export function JoinedRoomState({
         </p>
         <p className="mt-8 rounded-2xl bg-slate-950/60 p-5 leading-7 text-slate-300 ring-1 ring-white/10">{statusMessage}</p>
       </div>
+      {participant.role === "host" && snapshot.roomState === "waiting" ? <HostFilters roomCode={roomCode} /> : null}
     </PageShell>
   );
 }

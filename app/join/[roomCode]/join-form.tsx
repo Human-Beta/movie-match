@@ -8,6 +8,7 @@ import { joinRoomAction, prepareJoinRoomAction } from "@/app/join/[roomCode]/act
 import type { PrepareJoinRoomResult } from "@/app/join/[roomCode]/actions";
 import type { JoinRoomActionState } from "@/app/join/[roomCode]/join-action-state";
 import { FullRoomState, JoinedRoomState, UnavailableRoomState } from "@/app/join/[roomCode]/room-states";
+import { PrimaryButton } from "@/app/ui/primary-button";
 import { assertNever } from "@/lib/assert-never";
 
 function getErrorMessage(state: JoinRoomActionState, preparationError: string | null): string | null {
@@ -73,7 +74,7 @@ export function JoinRoomForm({ roomCode }: Readonly<{ roomCode: string }>): Reac
 
   switch (state.status) {
     case "joined":
-      return <JoinedRoomState participant={state.participant} room={state.room} />;
+      return <JoinedRoomState roomCode={roomCode} participant={state.participant} room={state.room} />;
     case "full":
       return <FullRoomState />;
     case "unavailable":
@@ -123,13 +124,9 @@ export function JoinRoomForm({ roomCode }: Readonly<{ roomCode: string }>): Reac
             </p>
           ) : null}
 
-          <button
-            className="w-full rounded-full bg-amber-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-wait disabled:opacity-60"
-            disabled={isPending || !isPrepared}
-            type="submit"
-          >
+          <PrimaryButton busy={isPending} className="w-full" disabled={isPending || !isPrepared} submit>
             {t(getSubmitLabelKey(isPreparing, isJoining))}
-          </button>
+          </PrimaryButton>
         </form>
       </section>
     </main>

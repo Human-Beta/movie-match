@@ -66,3 +66,15 @@ On reload, server code reads the room-specific participant cookie, validates its
 Future host and voting commands must repeat server-side room, participant, and role checks. Possession of the cookie identifies a participant but does not by itself authorize every operation.
 
 Participant cookies expire no later than the room. The database stores only unique hashes, and public action state is rebuilt explicitly so raw credentials and internal participant identifiers do not reach the client.
+
+## Host filter saves
+
+The host form stores a UUID and the exact pending filter values in the current tab's `sessionStorage`, under `movie-match.filter-save.{ROOM_CODE}`, before calling the save Server Action. This non-secret request ID is separate from the participant credential, which remains in its existing HttpOnly cookie. Tab-scoped storage survives reload while keeping independent tabs' pending edits separate.
+
+The server validates the room code, UUID, strict boolean fields, year enum, and positive integer genre IDs; it deduplicates and sorts genre IDs before hashing a fixed-order allowlist of the filter values. Under a `rooms` row lock it verifies the room-scoped host credential and unexpired `waiting` state, checks that genres exist, replaces the filters, and inserts a `room_filter_saves` receipt atomically.
+
+A repeated request with the same payload returns the currently saved filters. It never reapplies its original values, even when another save has committed since then. Reusing the ID with different values returns a terminal conflict. New saves must use new IDs. Future start-game commands must lock the same room row so the game cannot start with a partially updated filter set.
+
+A transport or unexpected server failure leaves the pending request intact and locks editing until the host explicitly retries. Reload restores this pending payload and offers the same retry. A confirmed saved, validation-error, conflict, or unavailable response clears only the matching pending ID. If storage cannot persist the request, no mutation is sent. A read-only initial Server Action loads the authorized filters and genres; it sets no cookies and depends only on the room code and an explicit retry counter. Participant snapshot updates do not reload the form or replace its draft.
+
+The filter contract lives in `lib/room-filters/room-filter-values.ts`: Netflix requires the manually maintained availability flag; runtime is strictly below 120 minutes; new releases are after 2010 and old releases include 2010. Categories combine with AND, selected genres with OR, and an empty genre set means any genre. Task 010 consumes these persisted values when generating a round.
