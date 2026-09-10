@@ -41,6 +41,12 @@
 - Перевірити rollback: помилка в locked transaction не залишає частково створеного participant.
 - Додавати repository integration tests для майбутніх migrations, constraints, cascade cleanup і RLS/browser-access boundaries, коли відповідні задачі реалізують ці можливості.
 
+### P2 — Movie catalog seed lifecycle
+
+- На ізольованій PostgreSQL перевірити `migrations → seed → повторний seed`: кількість фільмів, жанрів і звʼязків не змінюється, а їхні identities зберігаються.
+- Перевірити контрольоване оновлення того самого `seedKey`, конфлікт із не-seed movie identity та rollback після помилки всередині transaction.
+- Додати сторонні movie, room filter і round fixtures та підтвердити, що seed не видаляє і не перепривʼязує їх.
+
 ### P2 — General browser lifecycle candidates
 
 - Reload, back/forward navigation і повторний mount не створюють дубльованих mutations або subscriptions.

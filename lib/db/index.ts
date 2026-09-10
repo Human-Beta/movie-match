@@ -10,3 +10,7 @@ import * as schema from "@/lib/db/schema";
 const client = postgres(serverEnv.DATABASE_URL, { prepare: false });
 
 export const db = drizzle(client, { schema });
+
+export async function closeDatabase(): Promise<void> {
+  await client.end();
+}
