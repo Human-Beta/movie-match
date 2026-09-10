@@ -39,6 +39,7 @@ export const movies = pgTable(
   "movies",
   {
     id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+    seedKey: varchar("seed_key", { length: 100 }),
     title: varchar("title", { length: 200 }).notNull(),
     releaseYear: smallint("release_year").notNull(),
     runtimeMinutes: smallint("runtime_minutes").notNull(),
@@ -46,6 +47,8 @@ export const movies = pgTable(
     availableOnNetflix: boolean("available_on_netflix").default(false).notNull(),
   },
   table => [
+    unique("movies_seed_key_unique").on(table.seedKey),
+    check("movies_seed_key_not_blank", sql`${table.seedKey} is null or btrim(${table.seedKey}) <> ''`),
     check("movies_title_not_blank", sql`btrim(${table.title}) <> ''`),
     check("movies_release_year_check", sql`${table.releaseYear} >= 1888`),
     check("movies_runtime_minutes_check", sql`${table.runtimeMinutes} > 0`),

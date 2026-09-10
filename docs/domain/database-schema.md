@@ -56,11 +56,14 @@ The first-party movie catalog used to generate rounds.
 | Field                  | Purpose                                                                                  |
 | ---------------------- | ---------------------------------------------------------------------------------------- |
 | `id`                   | Integer identity primary key.                                                            |
+| `seed_key`             | Optional unique stable identity for catalog records managed by the versioned seed.       |
 | `title`                | Non-blank movie title, limited to 200 characters.                                        |
 | `release_year`         | Release year; the database rejects values earlier than 1888.                             |
 | `runtime_minutes`      | Positive runtime in minutes.                                                             |
 | `poster_path`          | Optional non-blank path or URL-like value for poster artwork, limited to 500 characters. |
 | `available_on_netflix` | Manually maintained availability flag; defaults to `false`.                              |
+
+`seed_key` is null for movies created outside the maintained seed. Re-running the seed updates a movie through this key without changing its integer ID; removing an entry from the source file does not delete its existing row.
 
 ### `movie_genres`
 

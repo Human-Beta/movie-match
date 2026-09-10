@@ -88,6 +88,27 @@ Drizzle Kit writes generated migration files to `drizzle/`. Commit schema change
 
 Both migration commands load `DATABASE_URL` from `.env.local`. If it is missing or invalid, the command exits with a message that names the variable.
 
+## Seed the movie catalog
+
+The version-controlled catalog source is `lib/movie-catalog/movie-seed-catalog.ts`. Apply every migration before running the explicit seed command:
+
+```bash
+pnpm db:migrate
+pnpm db:seed
+```
+
+Both commands target the database selected by the server-only `DATABASE_URL` in `.env.local`. Check that URL's host and database name before running them; the seed output never prints the connection string. Seeding is not part of a migration, build, request, or application startup.
+
+The catalog must contain at least 50 manually curated real movies and a canonical Ukrainian genre list. The initial owner-curated catalog may exceed 100 movies and should not be truncated solely to meet an arbitrary upper bound. Each movie has a stable lowercase `seedKey`, Ukrainian title, release year, runtime, one or more genre keys, and manually verified Netflix availability. Poster data is optional. When a poster is present, keep its path together with the source URL and usage terms in the source entry; otherwise use `poster: null` rather than an invented URL.
+
+Record the catalog's manual curation context, two-letter Netflix region, and verification date in its `metadata`. Netflix availability is a snapshot maintained for v0.1, not a live lookup. To update the catalog, edit the source file and keep the same `seedKey` for the same movie even when correcting its title or other fields. Use a new key for a different movie, including a remake with the same title.
+
+The initial source contains 119 owner-selected feature films. The supplied list was normalized by removing series and an exact duplicate, expanding the two `Kill Bill` volumes into separate records, and deferring titles that had not been released by the catalog verification date. Factual metadata was manually cross-checked against official distributor or classification-board pages and established film references. Netflix availability was checked for region `UA` on 2026-09-10; only [The Fundamentals of Caring](https://www.netflix.com/ua/title/80097349), [Boxer](https://www.netflix.com/ua/title/81620854), and [The Life List](https://www.netflix.com/ua/title/81246107) had confirmed Ukrainian Netflix catalog pages and are marked available. Recheck the complete snapshot before changing the verification date because licensed availability can change independently for every title.
+
+The command validates the complete source before opening the database transaction. It rejects invalid fields, duplicate movie identities or links, unknown genres, and a catalog that does not exercise both year, runtime, and Netflix filter values or multi-genre matching. The transaction serializes seed runs, reuses genre and movie IDs, synchronizes genre links for included seed-managed movies, and rolls back on a conflict or write failure. It never truncates catalog tables and does not delete movies or genres removed from the source, so foreign records, room filters, and round references remain intact.
+
+Before changing a shared or production catalog, first run migrations and the seed against an isolated local database. Run the same seed twice and inspect counts and IDs; then verify a controlled field update retains the movie ID. The dedicated PostgreSQL seed integration suite remains required before task 009 can be marked complete.
+
 ## Verify host filters
 
 After applying migrations to local PostgreSQL, run the targeted repository checks with an explicit local test connection:
