@@ -1,5 +1,7 @@
 # 009 — Movie seed data
 
+> Нотатка про завершення: каталог і seed workflow готові. За явним рішенням власника продукту решту автоматизованого PostgreSQL coverage для seed lifecycle перенесено до [018 — Automated browser, Server Action, and database integration coverage](018-automated-integration-coverage.md).
+
 ## Goal
 
 Наповнити first-party каталог щонайменше 50 вручну підібраними реальними фільмами та дати відтворювану команду seed, щоб фільтри й генерація раундів працювали на узгоджених даних v0.1.

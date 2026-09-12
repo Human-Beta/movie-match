@@ -43,6 +43,7 @@
 
 ### P2 — Movie catalog seed lifecycle
 
+- Цей розділ містить автоматизоване PostgreSQL coverage, перенесене під час закриття задачі 009; каталог і seed workflow задачі 009 вважаються завершеними незалежно від цього follow-up coverage.
 - На ізольованій PostgreSQL перевірити `migrations → seed → повторний seed`: кількість фільмів, жанрів і звʼязків не змінюється, а їхні identities зберігаються.
 - Перевірити контрольоване оновлення того самого `seedKey`, конфлікт із не-seed movie identity та rollback після помилки всередині transaction.
 - Додати сторонні movie, room filter і round fixtures та підтвердити, що seed не видаляє і не перепривʼязує їх.
