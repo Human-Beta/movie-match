@@ -40,13 +40,13 @@
 - Є дані для обох year groups, runtime groups, Netflix values і multi-genre filtering; усі фільми мають щонайменше один жанр.
 - Постери можна пропускати; кожне надане посилання чи локальний asset перевірено, а його походження задокументовано.
 - Документація дозволяє відтворити початкове наповнення та безпечно повторити seed без знання історії цієї задачі.
-- `pnpm verify`, перевірки dataset і PostgreSQL seed integration проходять.
+- `pnpm verify` і автоматизовані перевірки структури committed dataset проходять. PostgreSQL seed lifecycle coverage, явно перенесене до задачі 018, не є completion gate цієї задачі.
 
 ## Verification
 
 - Перевірити структуру всього committed dataset, кількість фільмів, дублікати й genre references.
-- На ізольованій БД: migrations → seed → snapshot IDs/counts/links → seed повторно → порівняння; окремо перевірити update та rollback.
-- Додати fixtures із не-seed записами й room/round references, щоб перевірити, що повторний seed не змінює чужі дані та не порушує зовнішні ключі. Після тесту прибрати fixtures.
+- Запустити `pnpm verify`, включно з автоматизованою валідацією committed owner-curated catalog.
+- PostgreSQL scenarios для `migrations → seed → повторний seed`, стабільності IDs/counts/links, update, rollback, сторонніх записів і room/round references належать [018 — Automated browser, Server Action, and database integration coverage](018-automated-integration-coverage.md) та не блокують завершення цієї задачі.
 
 ## Out of Scope
 
