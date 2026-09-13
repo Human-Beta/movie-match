@@ -27,8 +27,9 @@
 
 ### Database release
 
-- До відкриття URL застосувати всі committed Drizzle migrations до обраної Supabase production database. Перевірити, що RLS і browser-role restrictions залишаються такими, як у committed SQL; browser roles не отримують `INSERT`, `UPDATE` або `DELETE` для product tables.
-- Після migrations один раз явно запустити `pnpm db:seed` проти цієї production database. Seed не є частиною build, request або startup; перед запуском перевірити host/database у `DATABASE_URL` без виведення connection string.
+- Створити versioned GitHub Actions release workflow для production. Він запускається тільки після merge/release exact verified commit з `main`, має production environment protection і `concurrency`, що не дозволяє двом production release одночасно змінювати одну database.
+- Workflow з окремого GitHub Environment secret запускає Drizzle migrations до обраної Supabase production database **до** Vercel production deploy. Не запускати migrations у Next.js startup, Vercel build або кожному preview deployment. Для migration job застосовувати окремий server-only connection string, придатний для DDL; production runtime у Vercel і далі використовує transaction pooler `DATABASE_URL`.
+- Після migrations workflow один раз явно запускає `pnpm db:seed` проти цієї production database. Seed не є частиною build, request або startup; перед запуском перевірити host/database у `DATABASE_URL` без виведення connection string. На наступних application deploy seed не запускається автоматично: його додають лише контрольованим кроком зміни каталогу.
 - Перевірити, що seeded catalog містить очікувані 119 movie records і коректні genre links. Повторний seed запускати лише за потреби, але він має завершитися без дублікатів.
 - Зафіксувати для власника продукту release commit SHA, час deployment, Supabase project identifier без credentials, застосовані migration IDs і результат seed. Не створювати у репозиторії production inventory із секретами.
 
@@ -42,12 +43,15 @@
 ### Operational boundary
 
 - Перед deployment виконати `pnpm verify` на exact release commit і перевірити зелений GitHub `Verify` для цього самого SHA.
+- Після успішних migrations release workflow виконує або явно ініціює Vercel production deploy саме цього SHA, а потім перевіряє його успіх. Production deployment не повинен автоматично стартувати від push у спосіб, який може обігнати migration step; за потреби вимкнути auto-production deploy і запускати його з workflow.
+- Падіння migration, seed або deployment зупиняє release до наступного кроку та залишає в log лише non-secret diagnostic information. Schema rollback не є способом відновлення: зміни схеми мають бути forward-compatible.
 - У разі application-level regression дозволено повернути Vercel на попередній immutable deployment. Не виконувати destructive schema rollback, `TRUNCATE` або видалення production rooms/catalog, бо committed migrations є forward-only.
 - Не додавати caching, analytics, feature flags, accounts, адмін-панель, background jobs або іншу продуктову/інфраструктурну scope під виглядом deployment task.
 
 ## Acceptance Criteria
 
 - Є один доступний HTTPS production URL, який віддає exact verified commit після задачі 009 і має успішний Vercel production build.
+- Є versioned GitHub Actions production release workflow, який серіалізує release, застосовує migrations перед Vercel deploy і не розкриває database credentials у logs. Наступний deploy не може обігнати migration step.
 - Production Supabase database містить усі committed migrations і seeded catalog із 119 фільмами; seed не створив дублікатів, а RLS/browser write restrictions збережені.
 - `pnpm verify` і GitHub `Verify` пройшли для того самого release SHA, який фактично розгорнуто.
 - TV і два ізольовані phone contexts у production проходять create/join/restore/host-filter flow; третій participant не може приєднатися, а guest не отримує host controls.
@@ -58,6 +62,7 @@
 ## Verification
 
 - `pnpm verify` і GitHub `Verify` на exact release SHA.
+- GitHub Actions production release workflow: перевірка його trigger/protection/concurrency, успішний порядок `migrate → initial seed → deploy`, і відсутність secrets у logs.
 - Vercel production build/deployment status для цього SHA.
 - Production database: `migrate → seed`, перевірка 119 movies, genre links, RLS і відсутності browser write grants.
 - Real-browser smoke: TV + host + guest, participant Realtime, reload/restoration, third-join rejection, host filter save/reload і guest access boundary.
