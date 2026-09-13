@@ -52,6 +52,7 @@ jobs:
 
       - name: Confirm the verified main commit
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_SHA: ${{ inputs.release_sha }}
         run: |
           set -euo pipefail
