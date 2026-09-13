@@ -36,6 +36,25 @@ test("sends a minimal public invalidation through the Broadcast REST endpoint", 
   assert.deepEqual(JSON.parse(String(request.init.body)), {});
 });
 
+test("sends game invalidation on the same room topic without product rows", async () => {
+  const requests: Array<{ input: URL | RequestInfo; init?: RequestInit }> = [];
+  const publisher = new ParticipantBroadcastPublisher(config, {
+    fetchImpl: (async (input: URL | RequestInfo, init?: RequestInit) => {
+      requests.push({ input, init });
+      return new Response(null, { status: 202 });
+    }) as typeof fetch,
+  });
+
+  assert.equal(await publisher.publishRoomChanged(topic), true);
+  const request = requests.at(0);
+  assert.ok(request?.init);
+  assert.equal(
+    request.input.toString(),
+    "https://project-ref.supabase.co/realtime/v1/api/broadcast/room%3A11111111-1111-4111-8111-111111111111/events/room_changed",
+  );
+  assert.deepEqual(JSON.parse(String(request.init.body)), {});
+});
+
 test("retries failures with a bounded exponential delay and then succeeds", async () => {
   let calls = 0;
   const waits: number[] = [];

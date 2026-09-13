@@ -26,6 +26,10 @@ export const roundStatusEnum = pgEnum("round_status", ["voting", "matched", "no_
 
 export const voteValueEnum = pgEnum("vote_value", ["want_to_watch", "could_watch", "not_now", "no"]);
 
+export const roomGameCommandEnum = pgEnum("room_game_command", ["start", "restart"]);
+
+export const roomGameCommandOutcomeEnum = pgEnum("room_game_command_outcome", ["started", "exhausted"]);
+
 export const genres = pgTable(
   "genres",
   {
@@ -132,6 +136,23 @@ export const roomFilterSaves = pgTable(
   table => [
     primaryKey({ name: "room_filter_saves_pkey", columns: [table.roomId, table.requestId] }),
     check("room_filter_saves_payload_hash_check", sql`${table.payloadHash} ~ '^[a-f0-9]{64}$'`),
+  ],
+).enableRLS();
+
+export const roomGameCommands = pgTable(
+  "room_game_commands",
+  {
+    roomId: uuid("room_id")
+      .notNull()
+      .references(() => rooms.id, { onDelete: "cascade" }),
+    requestId: uuid("request_id").notNull(),
+    command: roomGameCommandEnum("command").notNull(),
+    payloadHash: varchar("payload_hash", { length: 64 }).notNull(),
+    outcome: roomGameCommandOutcomeEnum("outcome").notNull(),
+  },
+  table => [
+    primaryKey({ name: "room_game_commands_pkey", columns: [table.roomId, table.requestId] }),
+    check("room_game_commands_payload_hash_check", sql`${table.payloadHash} ~ '^[a-f0-9]{64}$'`),
   ],
 ).enableRLS();
 
@@ -259,6 +280,7 @@ export const roomsRelations = relations(rooms, ({ many }) => ({
   genres: many(roomGenres),
   participants: many(participants),
   filterSaves: many(roomFilterSaves),
+  gameCommands: many(roomGameCommands),
   rounds: many(rounds),
 }));
 
@@ -315,6 +337,13 @@ export const votesRelations = relations(votes, ({ one }) => ({
 export const roomFilterSavesRelations = relations(roomFilterSaves, ({ one }) => ({
   room: one(rooms, {
     fields: [roomFilterSaves.roomId],
+    references: [rooms.id],
+  }),
+}));
+
+export const roomGameCommandsRelations = relations(roomGameCommands, ({ one }) => ({
+  room: one(rooms, {
+    fields: [roomGameCommands.roomId],
     references: [rooms.id],
   }),
 }));

@@ -14,7 +14,7 @@
 - [x] [008 — Host filters](008-host-filters.md)
 - [x] [009 — Movie seed data](009-movie-seed-data.md)
 - [ ] [009.1 — Deploy the task-009 slice to production](009-1-deploy-task-009-slice.md)
-- [ ] [010 — Start game and generate round](010-start-game-and-generate-round.md)
+- [x] [010 — Start game and generate round](010-start-game-and-generate-round.md)
 - [ ] [011 — Voting](011-voting.md)
 - [ ] [012 — Match calculation](012-match-calculation.md)
 - [ ] [012.1 — Round result animation](012-1-round-result-animation.md)

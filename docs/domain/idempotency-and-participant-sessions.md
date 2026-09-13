@@ -10,6 +10,7 @@ Movie Match has no user accounts in v0.1, but browser operations still need stab
 | `creationRequestId`           | TV browser with `crypto.randomUUID()`         | TV `localStorage` until a terminal result | Raw UUID in `rooms.creation_request_id` | Idempotent room creation; not a credential               |
 | Raw participant access token  | Server from 32 cryptographically random bytes | Room-scoped `HttpOnly` cookie             | Never                                   | Join idempotency and participant session credential      |
 | Participant access-token hash | Server with SHA-256                           | Never                                     | `participants.access_token_hash`        | Finds the participant without storing the raw credential |
+| Game command request ID       | Host browser with `crypto.randomUUID()`       | Host tab `sessionStorage` until terminal  | `room_game_commands.request_id`         | Idempotent game start and list restart                   |
 
 The participant token is an opaque bearer credential, not a JWT. Supabase Auth is not part of this flow.
 
@@ -78,3 +79,13 @@ A repeated request with the same payload returns the currently saved filters. It
 A transport or unexpected server failure leaves the pending request intact and locks editing until the host explicitly retries. Reload restores this pending payload and offers the same retry. A confirmed saved, validation-error, conflict, or unavailable response clears only the matching pending ID. If storage cannot persist the request, no mutation is sent. A read-only initial Server Action loads the authorized filters and genres; it sets no cookies and depends only on the room code and an explicit retry counter. Participant snapshot updates do not reload the form or replace its draft.
 
 The filter contract lives in `lib/room-filters/room-filter-values.ts`: Netflix requires the manually maintained availability flag; runtime is strictly below 120 minutes; new releases are after 2010 and old releases include 2010. Categories combine with AND, selected genres with OR, and an empty genre set means any genre. Task 010 consumes these persisted values when generating a round.
+
+## Game start and list restart
+
+Before the host sends a start or restart command, the current tab stores a UUID under the room- and command-scoped `sessionStorage` key `movie-match.game-command.{COMMAND}.{ROOM_CODE}`. The UUID is non-secret; the existing HttpOnly participant cookie remains the only participant credential. If browser storage is unavailable or corrupt, the UI does not send the mutation.
+
+The server validates only the normalized room code and UUID from the browser. It derives the command kind from the invoked Server Action, hashes a canonical allowlist containing that command and room code, and performs authorization and generation inside a Drizzle transaction that locks the `rooms` row. It rechecks the room-scoped host credential, expiration, state, persisted participant membership, and current saved filters. Movie IDs, roles, filters, and generated order are never accepted from the client.
+
+`room_game_commands` stores the request ID, command, payload hash, and committed `started` or `exhausted` outcome in the same transaction as the room transition. A matching retry returns that receipt even after later game-state changes; reusing the key for another command conflicts. The browser clears only the matching request after a terminal response. Transport and unexpected failures retain it for explicit retry, while authoritative snapshot refresh also recovers a committed round whose response was lost.
+
+Start and filter-save commands serialize on the same room row, so a generated round uses one complete persisted filter set. Restart first verifies that the full filtered catalog contains three candidates, then deletes only that room's round history through cascades and creates round 1 in the same transaction. An insufficient catalog records `exhausted` without deleting history, and replaying a successful restart cannot delete the newly created round.

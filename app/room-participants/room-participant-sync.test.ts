@@ -12,17 +12,37 @@ import {
 import type { ParticipantSnapshotActionResult, PublicParticipantSnapshot } from "@/lib/participants/public-participant-snapshot";
 
 const waitingSnapshot: PublicParticipantSnapshot = {
+  currentRound: null,
   roomState: "waiting",
   participantCount: 1,
   participants: [{ name: "Олена", role: "host" }],
 };
 const readySnapshot: PublicParticipantSnapshot = {
+  currentRound: null,
   roomState: "waiting",
   participantCount: 2,
   participants: [
     { name: "Олена", role: "host" },
     { name: "Марко", role: "guest" },
   ],
+};
+const playingSnapshot: PublicParticipantSnapshot = {
+  ...readySnapshot,
+  roomState: "playing",
+  currentRound: {
+    roundId: "55555555-5555-4555-8555-555555555555",
+    roundNumber: 1,
+    status: "voting",
+    movies: [
+      { movieId: 1, position: 1, title: "Перший", posterPath: null, releaseYear: 2010, runtimeMinutes: 90, genres: [] },
+      { movieId: 2, position: 2, title: "Другий", posterPath: null, releaseYear: 2011, runtimeMinutes: 100, genres: [] },
+      { movieId: 3, position: 3, title: "Третій", posterPath: null, releaseYear: 2012, runtimeMinutes: 110, genres: [] },
+    ],
+  },
+};
+const exhaustedSnapshot: PublicParticipantSnapshot = {
+  ...readySnapshot,
+  roomState: "exhausted",
 };
 
 type ScheduledTimer = {
@@ -235,7 +255,7 @@ test("coalesces burst and forged invalidations into authoritative reads", async 
   sync.stop();
 });
 
-test("polls only while waiting below 2/2 and survives a snapshot transport failure", async () => {
+test("keeps polling while waiting at 2/2 so a missed game start still converges", async () => {
   const scheduler = new FakeScheduler();
   const tracker: SubscriptionTracker = { active: 0, maxActive: 0 };
   let reads = 0;
@@ -253,7 +273,7 @@ test("polls only while waiting below 2/2 and survives a snapshot transport failu
         throw new Error("simulated Server Action outage");
       }
 
-      return { status: "ready", snapshot: readySnapshot };
+      return { status: "ready", snapshot: reads === 2 ? readySnapshot : playingSnapshot };
     },
     onSnapshot: (nextSnapshot): void => {
       snapshots.push(nextSnapshot);
@@ -277,6 +297,50 @@ test("polls only while waiting below 2/2 and survives a snapshot transport failu
   assert.equal(reads, 2);
   assert.equal(rejectedErrors.length, 1);
   assert.deepEqual(snapshots, [readySnapshot]);
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 1);
+
+  scheduler.run(PARTICIPANT_SNAPSHOT_POLL_MS);
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+  assert.equal(reads, 3);
+  assert.deepEqual(snapshots, [readySnapshot, playingSnapshot]);
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 0);
+  sync.stop();
+});
+
+test("keeps polling while exhausted so a missed restart still converges", async () => {
+  const scheduler = new FakeScheduler();
+  const tracker: SubscriptionTracker = { active: 0, maxActive: 0 };
+  const snapshots: PublicParticipantSnapshot[] = [];
+  let reads = 0;
+  const sync = new RoomParticipantSync({
+    realtimeTopic: "room:33333333-3333-4333-8333-333333333333",
+    initialSnapshot: exhaustedSnapshot,
+    scheduler,
+    createSubscription: (): RoomParticipantSubscription => new FakeSubscription(tracker),
+    readSnapshot: async (): Promise<ParticipantSnapshotActionResult> => {
+      reads += 1;
+
+      return { status: "ready", snapshot: reads === 1 ? exhaustedSnapshot : playingSnapshot };
+    },
+    onSnapshot: (nextSnapshot): void => {
+      snapshots.push(nextSnapshot);
+    },
+  });
+
+  sync.start();
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 1);
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+  assert.deepEqual(snapshots, [exhaustedSnapshot]);
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 1);
+
+  scheduler.run(PARTICIPANT_SNAPSHOT_POLL_MS);
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+
+  assert.equal(reads, 2);
+  assert.deepEqual(snapshots, [exhaustedSnapshot, playingSnapshot]);
   assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 0);
   sync.stop();
 });

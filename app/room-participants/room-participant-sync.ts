@@ -31,7 +31,7 @@ export type RoomParticipantSyncOptions = {
 };
 
 function shouldPoll(snapshot: PublicParticipantSnapshot): boolean {
-  return snapshot.roomState === "waiting" && snapshot.participantCount < 2;
+  return snapshot.roomState === "waiting" || snapshot.roomState === "exhausted";
 }
 
 function toTransportStatus(status: ParticipantRealtimeSubscriptionStatus): ParticipantRealtimeTransportStatus {

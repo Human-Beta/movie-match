@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import type { PublicRoomMovie } from "@/lib/participants/public-participant-snapshot";
 import type { ParticipantSnapshotRepository, ParticipantSnapshotRecord } from "@/lib/participants/participant-snapshot-service";
 import {
   createParticipantRealtimeTopic,
@@ -28,6 +29,7 @@ function makeRecord(): ParticipantSnapshotRecord {
       expiresAt: new Date("2026-08-23T13:00:00.000Z"),
     },
     participants: [{ name: "Марко", role: "guest" }, hostWithPrivateFields],
+    currentRound: null,
   };
 }
 
@@ -52,6 +54,7 @@ test("sanitizes the authoritative snapshot to state, count, name, and role", () 
   const serializedSnapshot = JSON.stringify(snapshot);
 
   assert.deepEqual(snapshot, {
+    currentRound: null,
     roomState: "waiting",
     participantCount: 2,
     participants: [
@@ -87,6 +90,7 @@ test("returns a snapshot by topic without reflecting forged payload state", asyn
   const snapshot = await makeService().getSnapshotForTopic(topic);
 
   assert.deepEqual(snapshot, {
+    currentRound: null,
     roomState: "waiting",
     participantCount: 2,
     participants: [
@@ -96,6 +100,85 @@ test("returns a snapshot by topic without reflecting forged payload state", asyn
   });
   assert.equal(JSON.stringify(snapshot).includes(topic), false);
   assert.equal(await makeService().getSnapshotForTopic("room:ABC123"), null);
+});
+
+test("rebuilds an ordered public round allowlist without internal fields", () => {
+  const record = makeRecord();
+  const privateRound = {
+    roundId: "22222222-2222-4222-8222-222222222222",
+    roundNumber: 1,
+    status: "voting" as const,
+    movies: [
+      {
+        movieId: 20,
+        position: 2,
+        title: "Другий фільм",
+        posterPath: null,
+        releaseYear: 2012,
+        runtimeMinutes: 100,
+        genres: ["Драма"],
+        internalSeedKey: "must-not-reach-client",
+      },
+      {
+        movieId: 10,
+        position: 1,
+        title: "Перший фільм",
+        posterPath: "/poster.jpg",
+        releaseYear: 2011,
+        runtimeMinutes: 90,
+        genres: ["Комедія"],
+        availableOnNetflix: true,
+      },
+      {
+        movieId: 30,
+        position: 3,
+        title: "Третій фільм",
+        posterPath: null,
+        releaseYear: 2013,
+        runtimeMinutes: 110,
+        genres: ["Бойовик"],
+      },
+    ] as [PublicRoomMovie & { internalSeedKey: string }, PublicRoomMovie & { availableOnNetflix: boolean }, PublicRoomMovie],
+  };
+  record.currentRound = privateRound;
+
+  const snapshot = makeService().toPublicSnapshot(record);
+  assert.deepEqual(snapshot.currentRound, {
+    roundId: "22222222-2222-4222-8222-222222222222",
+    roundNumber: 1,
+    status: "voting",
+    movies: [
+      {
+        movieId: 10,
+        position: 1,
+        title: "Перший фільм",
+        posterPath: "/poster.jpg",
+        releaseYear: 2011,
+        runtimeMinutes: 90,
+        genres: ["Комедія"],
+      },
+      {
+        movieId: 20,
+        position: 2,
+        title: "Другий фільм",
+        posterPath: null,
+        releaseYear: 2012,
+        runtimeMinutes: 100,
+        genres: ["Драма"],
+      },
+      {
+        movieId: 30,
+        position: 3,
+        title: "Третій фільм",
+        posterPath: null,
+        releaseYear: 2013,
+        runtimeMinutes: 110,
+        genres: ["Бойовик"],
+      },
+    ],
+  });
+  assert.equal(JSON.stringify(snapshot).includes("internalSeedKey"), false);
+  assert.equal(JSON.stringify(snapshot).includes("availableOnNetflix"), false);
 });
 
 test("treats expired rooms as closed and withholds initial channel state", async () => {

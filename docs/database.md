@@ -147,3 +147,17 @@ Create the test database and apply migrations first. The suite rejects remote ho
 For browser verification, run the app against the test database and open a TV plus two isolated phone contexts. Join the first phone as host, edit filters before the guest joins, then confirm the participant refresh preserves the draft. Save every control, reload, clear genre selections, and repeat. An empty genre catalog must leave the other controls usable. Interrupt a save response and reload: the same pending request should remain available for explicit retry, with editing disabled until the result is confirmed. The guest must remain on its waiting screen without filter controls.
 
 The read-only filter-loading Server Action should settle after initial mounting and explicit retry only; it must not repeat after unrelated participant refreshes. Check this in a real browser alongside the existing cookie-triggered join flow. Keep test catalog fixtures and browser artifacts out of commits.
+
+## Verify game start and list restart
+
+After applying migrations to local PostgreSQL, run the focused game-round integration suite with an explicit local test connection:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/movie_match_test pnpm test:game:db
+```
+
+Create the test database and apply migrations first. The suite rejects remote hosts and uses isolated catalog, room, participant, round, and vote fixtures. It covers host and state guards, saved-filter boundaries, multi-genre deduplication, concurrent and replayed commands, history exclusion, `0/1/2/3` candidate behavior, rollback, restart cascades, room isolation, and browser-role denial for command receipts.
+
+For hosted verification, apply migrations and seed the curated catalog, then open one TV and two isolated phone contexts. Join both phones, save a filter change, and start from the host. Confirm all three screens show the same round number, movie IDs, metadata, and positions without a reload; the guest and TV must have no host controls. Repeat with an unsaved draft, interrupted response, duplicate click, and a dropped `room_changed` Broadcast frame. The saved request must recover one committed outcome, and the five-second waiting fallback must deliver a missed start even at `2/2`.
+
+Use temporary deterministic catalog fixtures to verify `0/1/2` eligible movies transition to the Ukrainian exhausted state, exactly three create a full round, and restart either preserves insufficient history or atomically replaces only that room's history with round 1. Reload and reconnect every screen, verify one room channel remains mounted and is cleaned up, and confirm the browser never receives receipt rows, participant credentials, or product rows in Broadcast payloads. Keep project keys, room topics, credentials, database URLs, and browser artifacts out of commits.

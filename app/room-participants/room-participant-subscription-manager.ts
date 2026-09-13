@@ -1,6 +1,6 @@
 import type { ParticipantRealtimeSubscriptionStatus, RoomParticipantSubscription } from "@/app/room-participants/room-participant-sync";
 import { browserTimerScheduler, type TimerId, type TimerScheduler } from "@/app/room-participants/timer-scheduler";
-import { PARTICIPANTS_CHANGED_EVENT } from "@/lib/realtime/participant-events";
+import { PARTICIPANTS_CHANGED_EVENT, ROOM_CHANGED_EVENT } from "@/lib/realtime/participant-events";
 
 export type BroadcastChannel = {
   on(type: "broadcast", filter: { event: string }, callback: () => void): BroadcastChannel;
@@ -111,11 +111,12 @@ export class RoomParticipantSubscriptionManager<TChannel extends BroadcastChanne
       subscribed: false,
     };
 
-    channel.on("broadcast", { event: PARTICIPANTS_CHANGED_EVENT }, () => {
+    const invalidate = (): void => {
       for (const listener of sharedChannel.invalidationListeners) {
         listener();
       }
-    });
+    };
+    channel.on("broadcast", { event: PARTICIPANTS_CHANGED_EVENT }, invalidate).on("broadcast", { event: ROOM_CHANGED_EVENT }, invalidate);
     this.channels.set(realtimeTopic, sharedChannel);
 
     return sharedChannel;
