@@ -109,6 +109,31 @@ The command validates the complete source before opening the database transactio
 
 Before changing a shared or production catalog, first run migrations and the seed against an isolated local database. Run the same seed twice and inspect counts and IDs; then verify a controlled field update retains the movie ID. The dedicated PostgreSQL seed integration suite remains required before task 009 can be marked complete.
 
+## Production release
+
+Production releases use the versioned [Production release workflow](../.github/workflows/production-release.yml). It is deliberately manual: it accepts only the current full SHA from `main` after the GitHub `Verify` check has succeeded, serializes releases, and is protected by the GitHub `production` environment. It applies migrations before building and deploying that exact commit to Vercel.
+
+Create the `production` GitHub Environment and configure its protection rule before the first run. Store these environment secrets there, never in the repository or workflow input:
+
+- `PRODUCTION_MIGRATION_DATABASE_URL`: a server-only Supabase direct connection or session pooler connection suitable for DDL. It must not use the transaction-pooler port `6543`.
+- `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`: credentials that let the workflow pull the configured Vercel project, build it, and deploy the prebuilt production output.
+
+Set the non-secret environment variable `PRODUCTION_SUPABASE_PROJECT_REF` to the production Supabase project reference. The workflow writes this identifier, the commit SHA, UTC time, migration file IDs, optional seed result, and deployment URL to the GitHub Actions job summary. It never writes a database URL or password to the summary.
+
+In Vercel production settings, set only the runtime variables below. `DATABASE_URL` must be the serverless transaction-pooler URL on port `6543`; it is distinct from the migration secret. The `NEXT_PUBLIC_` values are the only browser-visible variables.
+
+```text
+DATABASE_URL=<server-only transaction-pooler connection>
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_<key>
+```
+
+Disconnect Vercel's Git auto-deploy integration, or disable automatic production deployments for this project. Production deployments must be started only by the release workflow, otherwise a Vercel deployment can overtake its migration step.
+
+Dispatch the workflow with the verified current `main` SHA. Set `seed_catalog` to `true` only for the initial database population or an intentional catalog update; all other releases run migrations and deploy without seeding. The seed operation validates the catalog before writing and prints only aggregate counts. Before migrations or seeds, `pnpm db:target` displays just the selected host and database name, never credentials.
+
+If an application regression occurs, restore the previous immutable Vercel deployment. Do not roll back production schema migrations, truncate production tables, or delete rooms or catalog data.
+
 ## Verify host filters
 
 After applying migrations to local PostgreSQL, run the targeted repository checks with an explicit local test connection:
