@@ -2,7 +2,14 @@ import { z } from "zod";
 
 import { SystemClock, type Clock } from "@/lib/clock";
 import type { ParticipantRole } from "@/lib/participants/participant-service";
-import type { PublicParticipantSnapshot, PublicRoomParticipant } from "@/lib/participants/public-participant-snapshot";
+import {
+  isPublicRoomMovies,
+  type PublicParticipantSnapshot,
+  type PublicRoomMovie,
+  type PublicRoomMovies,
+  type PublicRoomParticipant,
+  type PublicRoomRound,
+} from "@/lib/participants/public-participant-snapshot";
 import { PARTICIPANT_ROOM_TOPIC_PREFIX } from "@/lib/realtime/participant-events";
 import { normalizeRoomCode } from "@/lib/rooms/room-code";
 import type { RoomStatus } from "@/lib/rooms/room-service";
@@ -17,6 +24,7 @@ export type ParticipantSnapshotRecord = {
     expiresAt: Date;
   };
   participants: PublicRoomParticipant[];
+  currentRound: PublicRoomRound | null;
 };
 
 export type ParticipantSnapshotRepository = {
@@ -136,6 +144,42 @@ export class ParticipantSnapshotService {
       roomState,
       participantCount: participants.length,
       participants,
+      currentRound: this.publicRound(record.currentRound),
+    };
+  }
+
+  private publicRound(round: PublicRoomRound | null): PublicRoomRound | null {
+    if (round === null) {
+      return null;
+    }
+
+    const orderedMovies = [...round.movies].sort((left, right) => left.position - right.position);
+
+    if (!isPublicRoomMovies(orderedMovies)) {
+      throw new Error("The current round must contain three movies in positions 1 through 3.");
+    }
+
+    return {
+      roundId: round.roundId,
+      roundNumber: round.roundNumber,
+      status: round.status,
+      movies: this.copyMovies(orderedMovies),
+    };
+  }
+
+  private copyMovies(movies: PublicRoomMovies): PublicRoomMovies {
+    return [this.copyMovie(movies[0]), this.copyMovie(movies[1]), this.copyMovie(movies[2])];
+  }
+
+  private copyMovie(movie: PublicRoomMovie): PublicRoomMovie {
+    return {
+      movieId: movie.movieId,
+      position: movie.position,
+      title: movie.title,
+      posterPath: movie.posterPath,
+      releaseYear: movie.releaseYear,
+      runtimeMinutes: movie.runtimeMinutes,
+      genres: [...movie.genres],
     };
   }
 

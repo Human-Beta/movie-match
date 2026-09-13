@@ -7,7 +7,7 @@ import type { ParticipantRealtimeSubscriptionStatus } from "@/app/room-participa
 type FakeChannel = {
   on(type: "broadcast", filter: { event: string }, callback: () => void): FakeChannel;
   subscribe(callback: (status: ParticipantRealtimeSubscriptionStatus) => void): void;
-  emitInvalidation(): void;
+  emitInvalidation(event?: "participants_changed" | "room_changed"): void;
   emitStatus(status: ParticipantRealtimeSubscriptionStatus): void;
 };
 
@@ -33,21 +33,21 @@ class FakeCleanupScheduler implements SubscriptionCleanupScheduler {
 }
 
 function makeFakeChannel(): FakeChannel {
-  let invalidationCallback: (() => void) | null = null;
+  const invalidationCallbacks = new Map<string, () => void>();
   let statusCallback: ((status: ParticipantRealtimeSubscriptionStatus) => void) | null = null;
 
   return {
     on(type, filter, callback): FakeChannel {
       assert.equal(type, "broadcast");
-      assert.equal(filter.event, "participants_changed");
-      invalidationCallback = callback;
+      assert.ok(["participants_changed", "room_changed"].includes(filter.event));
+      invalidationCallbacks.set(filter.event, callback);
       return this;
     },
     subscribe(callback): void {
       statusCallback = callback;
     },
-    emitInvalidation(): void {
-      invalidationCallback?.();
+    emitInvalidation(event = "participants_changed"): void {
+      invalidationCallbacks.get(event)?.();
     },
     emitStatus(status): void {
       statusCallback?.(status);
@@ -93,8 +93,9 @@ test("reuses one channel across a Strict Mode cleanup/remount and ignores stale 
   const channel = channels.at(0) ?? null;
   assert.ok(channel);
   channel.emitInvalidation();
+  channel.emitInvalidation("room_changed");
   assert.equal(firstInvalidations, 0);
-  assert.equal(secondInvalidations, 1);
+  assert.equal(secondInvalidations, 2);
 
   firstMount.dispose();
   cleanupScheduler.flush();

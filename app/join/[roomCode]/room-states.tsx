@@ -5,6 +5,8 @@ import type { ReactNode } from "react";
 
 import type { PublicParticipantIdentity } from "@/app/join/[roomCode]/join-action-state";
 import { HostFilters } from "@/app/join/[roomCode]/host-filters";
+import { RestartListControl } from "@/app/join/[roomCode]/restart-list-control";
+import { MovieCards } from "@/app/room-participants/movie-cards";
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
 import { useRoomParticipantSnapshot } from "@/app/room-participants/use-room-participant-snapshot";
 import { assertNever } from "@/lib/assert-never";
@@ -70,6 +72,29 @@ export function JoinedRoomState({
     case "ready":
       statusMessage = participant.role === "host" ? t("status.hostReady") : t("status.ready");
       break;
+    case "playing":
+      if (snapshot.currentRound === null) {
+        statusMessage = t("status.roundLoading");
+        break;
+      }
+
+      return (
+        <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-50">
+          <div className="mx-auto max-w-5xl">
+            <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
+            <p className="mb-8 text-slate-300">{t("status.votingSoon")}</p>
+            <MovieCards round={snapshot.currentRound} />
+          </div>
+        </main>
+      );
+    case "exhausted":
+      return (
+        <PageShell>
+          <h1 className="text-3xl font-bold tracking-tight">{t("status.exhaustedTitle")}</h1>
+          <p className="mt-4 text-lg leading-8 text-slate-300">{t("status.exhaustedDescription")}</p>
+          {participant.role === "host" ? <RestartListControl roomCode={roomCode} /> : null}
+        </PageShell>
+      );
     case "advanced":
       statusMessage = t("status.advanced");
       break;
@@ -89,7 +114,9 @@ export function JoinedRoomState({
         </p>
         <p className="mt-8 rounded-2xl bg-slate-950/60 p-5 leading-7 text-slate-300 ring-1 ring-white/10">{statusMessage}</p>
       </div>
-      {participant.role === "host" && snapshot.roomState === "waiting" ? <HostFilters roomCode={roomCode} /> : null}
+      {participant.role === "host" && snapshot.roomState === "waiting" ? (
+        <HostFilters participantCount={snapshot.participantCount} roomCode={roomCode} />
+      ) : null}
     </PageShell>
   );
 }

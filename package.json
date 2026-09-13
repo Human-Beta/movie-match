@@ -21,6 +21,7 @@
     "test:join:db": "tsx --conditions=react-server --test lib/participants/participant-repository.integration.ts",
     "test:participants:db": "tsx --conditions=react-server --test lib/participants/participant-repository.integration.ts lib/participants/participant-snapshot-repository.integration.ts",
     "test:filters:db": "tsx --conditions=react-server --test lib/room-filters/room-filter-repository.integration.ts",
+    "test:game:db": "tsx --conditions=react-server --test lib/game-rounds/game-round-repository.integration.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

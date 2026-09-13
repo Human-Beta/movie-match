@@ -1,4 +1,4 @@
-import { PARTICIPANTS_CHANGED_EVENT } from "@/lib/realtime/participant-events";
+import { PARTICIPANTS_CHANGED_EVENT, ROOM_CHANGED_EVENT } from "@/lib/realtime/participant-events";
 
 export const PARTICIPANT_BROADCAST_MAX_ATTEMPTS = 3;
 export const PARTICIPANT_BROADCAST_REQUEST_TIMEOUT_MS = 2_000;
@@ -45,10 +45,15 @@ export class ParticipantBroadcastPublisher {
   }
 
   async publishParticipantsChanged(realtimeTopic: string): Promise<boolean> {
-    const endpoint = new URL(
-      `realtime/v1/api/broadcast/${encodeURIComponent(realtimeTopic)}/events/${PARTICIPANTS_CHANGED_EVENT}`,
-      this.getProjectBaseUrl(),
-    );
+    return this.publish(realtimeTopic, PARTICIPANTS_CHANGED_EVENT);
+  }
+
+  async publishRoomChanged(realtimeTopic: string): Promise<boolean> {
+    return this.publish(realtimeTopic, ROOM_CHANGED_EVENT);
+  }
+
+  private async publish(realtimeTopic: string, event: string): Promise<boolean> {
+    const endpoint = new URL(`realtime/v1/api/broadcast/${encodeURIComponent(realtimeTopic)}/events/${event}`, this.getProjectBaseUrl());
 
     for (let attempt = 0; attempt < this.maxAttempts; attempt += 1) {
       if (await this.tryPublish(endpoint)) {

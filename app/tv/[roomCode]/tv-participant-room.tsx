@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
 import type { ParticipantRealtimeTransportStatus } from "@/app/room-participants/room-participant-sync";
+import { MovieCards } from "@/app/room-participants/movie-cards";
 import { useRoomParticipantSnapshot } from "@/app/room-participants/use-room-participant-snapshot";
 import { JoinQrCode } from "@/app/tv/[roomCode]/join-qr-code";
 import { NewRoomLink } from "@/app/tv/[roomCode]/new-room-link";
@@ -15,6 +16,8 @@ type TransportPresentation = {
   dotClassName: string;
   label: string;
 };
+
+const TV_ROOM_NAMESPACE = "TvRoom";
 
 function getTransportPresentation(
   status: ParticipantRealtimeTransportStatus,
@@ -33,7 +36,7 @@ function getTransportPresentation(
 }
 
 export function TvUnavailableRoom(): ReactNode {
-  const t = useTranslations("TvRoom");
+  const t = useTranslations(TV_ROOM_NAMESPACE);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-50">
@@ -48,7 +51,7 @@ export function TvUnavailableRoom(): ReactNode {
 }
 
 function TvAdvancedRoom(): ReactNode {
-  const t = useTranslations("TvRoom");
+  const t = useTranslations(TV_ROOM_NAMESPACE);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-50">
@@ -56,6 +59,39 @@ function TvAdvancedRoom(): ReactNode {
         <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
         <h1 className="text-4xl font-bold tracking-tight">{t("participants.advancedTitle")}</h1>
         <p className="mt-5 text-lg leading-8 text-slate-300">{t("participants.advancedDescription")}</p>
+      </section>
+    </main>
+  );
+}
+
+function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnapshot }>): ReactNode {
+  const t = useTranslations(TV_ROOM_NAMESPACE);
+
+  return (
+    <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-50 sm:py-16">
+      <div className="mx-auto max-w-6xl">
+        <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
+        {snapshot.currentRound === null ? (
+          <p className="text-lg text-slate-300" role="status">
+            {t("game.loading")}
+          </p>
+        ) : (
+          <MovieCards round={snapshot.currentRound} />
+        )}
+      </div>
+    </main>
+  );
+}
+
+function TvExhaustedRoom(): ReactNode {
+  const t = useTranslations(TV_ROOM_NAMESPACE);
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-50">
+      <section className="max-w-xl text-center">
+        <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
+        <h1 className="text-4xl font-bold tracking-tight">{t("game.exhaustedTitle")}</h1>
+        <p className="mt-5 text-lg leading-8 text-slate-300">{t("game.exhaustedDescription")}</p>
       </section>
     </main>
   );
@@ -70,7 +106,7 @@ export function TvParticipantRoom({
   realtimeTopic: string;
   roomCode: string;
 }>): ReactNode {
-  const t = useTranslations("TvRoom");
+  const t = useTranslations(TV_ROOM_NAMESPACE);
   const { snapshot, transportStatus } = useRoomParticipantSnapshot({ initialSnapshot, realtimeTopic });
   const roomView = getParticipantRoomView(snapshot);
   const transportPresentation = getTransportPresentation(transportStatus, {
@@ -84,6 +120,10 @@ export function TvParticipantRoom({
       return <TvUnavailableRoom />;
     case "advanced":
       return <TvAdvancedRoom />;
+    case "playing":
+      return <TvPlayingRoom snapshot={snapshot} />;
+    case "exhausted":
+      return <TvExhaustedRoom />;
     case "waiting":
     case "ready":
       break;

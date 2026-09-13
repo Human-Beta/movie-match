@@ -5,6 +5,8 @@ import { useEffect, useRef, useState, useTransition, type ReactNode } from "reac
 
 import { readRoomFiltersAction, saveRoomFiltersAction } from "@/app/join/[roomCode]/filter-actions";
 import { FilterRequestStorage } from "@/app/join/[roomCode]/filter-request-storage";
+import { startGameAction, type PublicGameCommandResult } from "@/app/join/[roomCode]/game-actions";
+import { GameCommandRequestStorage, type PendingGameCommand } from "@/app/join/[roomCode]/game-command-request-storage";
 import { PrimaryButton } from "@/app/ui/primary-button";
 import { assertNever } from "@/lib/assert-never";
 import {
@@ -20,11 +22,18 @@ type FilterLoadState =
   | { status: "error" }
   | { status: "storage_error" }
   | { status: "unavailable" }
-  | { status: "ready"; snapshot: RoomFilterSnapshot; pendingRequest: PendingFilterSave | null };
+  | {
+      status: "ready";
+      snapshot: RoomFilterSnapshot;
+      pendingFilterRequest: PendingFilterSave | null;
+      pendingGameRequest: PendingGameCommand | null;
+    };
 type Feedback = "idle" | "saved" | "retry" | "storage" | "validation_error" | "conflict";
 type VisibleFeedback = Exclude<Feedback, "idle">;
+type GameFeedback = "idle" | "retry" | "storage" | "started" | "exhausted" | "unavailable" | "validation_error" | "conflict";
+type VisibleGameFeedback = Exclude<GameFeedback, "idle">;
 
-export function HostFilters({ roomCode }: Readonly<{ roomCode: string }>): ReactNode {
+export function HostFilters({ participantCount, roomCode }: Readonly<{ participantCount: number; roomCode: string }>): ReactNode {
   const t = useTranslations("HostFilters");
   const [state, setState] = useState<FilterLoadState>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
@@ -39,8 +48,9 @@ export function HostFilters({ roomCode }: Readonly<{ roomCode: string }>): React
         switch (result.status) {
           case "ready":
             try {
-              const pendingRequest = new FilterRequestStorage(window.sessionStorage, roomCode).read();
-              setState({ ...result, pendingRequest });
+              const pendingFilterRequest = new FilterRequestStorage(window.sessionStorage, roomCode).read();
+              const pendingGameRequest = new GameCommandRequestStorage(window.sessionStorage, roomCode, "start").read();
+              setState({ ...result, pendingFilterRequest, pendingGameRequest });
             } catch {
               setState({ status: "storage_error" });
             }
@@ -95,7 +105,16 @@ export function HostFilters({ roomCode }: Readonly<{ roomCode: string }>): React
         </div>
       );
     case "ready":
-      return <HostFilterForm key={roomCode} roomCode={roomCode} initialSnapshot={state.snapshot} initialPendingRequest={state.pendingRequest} />;
+      return (
+        <HostFilterForm
+          key={roomCode}
+          roomCode={roomCode}
+          participantCount={participantCount}
+          initialSnapshot={state.snapshot}
+          initialPendingFilterRequest={state.pendingFilterRequest}
+          initialPendingGameRequest={state.pendingGameRequest}
+        />
+      );
     default:
       return assertNever(state);
   }
@@ -103,20 +122,30 @@ export function HostFilters({ roomCode }: Readonly<{ roomCode: string }>): React
 
 function HostFilterForm({
   roomCode,
+  participantCount,
   initialSnapshot,
-  initialPendingRequest,
+  initialPendingFilterRequest,
+  initialPendingGameRequest,
 }: Readonly<{
   roomCode: string;
+  participantCount: number;
   initialSnapshot: RoomFilterSnapshot;
-  initialPendingRequest: PendingFilterSave | null;
+  initialPendingFilterRequest: PendingFilterSave | null;
+  initialPendingGameRequest: PendingGameCommand | null;
 }>): ReactNode {
   const t = useTranslations("HostFilters");
-  const [filters, setFilters] = useState(initialPendingRequest?.filters ?? initialSnapshot.filters);
-  const [pendingRequest, setPendingRequest] = useState<PendingFilterSave | null>(initialPendingRequest);
+  const [filters, setFilters] = useState(initialPendingFilterRequest?.filters ?? initialSnapshot.filters);
+  const [savedFilters, setSavedFilters] = useState(initialSnapshot.filters);
+  const [pendingFilterRequest, setPendingFilterRequest] = useState<PendingFilterSave | null>(initialPendingFilterRequest);
+  const [pendingGameRequest, setPendingGameRequest] = useState<PendingGameCommand | null>(initialPendingGameRequest);
   const [unavailable, setUnavailable] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback>(initialPendingRequest ? "retry" : "idle");
+  const [feedback, setFeedback] = useState<Feedback>(initialPendingFilterRequest ? "retry" : "idle");
+  const [gameFeedback, setGameFeedback] = useState<GameFeedback>(initialPendingGameRequest ? "retry" : "idle");
   const [saving, startSaving] = useTransition();
-  const submitting = useRef(false);
+  const [starting, startStarting] = useTransition();
+  const savingRef = useRef(false);
+  const startingRef = useRef(false);
+  const hasUnsavedChanges = !equalFilters(filters, savedFilters);
 
   function updateFilters(next: RoomFilterValues): void {
     setFilters(next);
@@ -125,9 +154,9 @@ function HostFilterForm({
 
   function prepareRequest(storage: FilterRequestStorage): PendingFilterSave | null {
     try {
-      const request = pendingRequest ?? { requestId: crypto.randomUUID(), filters };
+      const request = pendingFilterRequest ?? { requestId: crypto.randomUUID(), filters };
       storage.persist(request);
-      setPendingRequest(request);
+      setPendingFilterRequest(request);
       return request;
     } catch {
       setFeedback("storage");
@@ -139,6 +168,7 @@ function HostFilterForm({
     switch (result.status) {
       case "saved":
         setFilters(result.filters);
+        setSavedFilters(result.filters);
         setFeedback("saved");
         break;
       case "unavailable":
@@ -166,24 +196,77 @@ function HostFilterForm({
     }
     // A terminal response confirms that this exact persisted request is resolved.
     storage.clear(request.requestId);
-    setPendingRequest(null);
+    setPendingFilterRequest(null);
     applyTerminalResult(result);
   }
 
   function save(): void {
-    if (submitting.current) {
+    if (savingRef.current) {
       return;
     }
-    submitting.current = true;
+    savingRef.current = true;
     startSaving(async () => {
       try {
         await submitSave();
       } catch {
         setFeedback("retry");
       } finally {
-        submitting.current = false;
+        savingRef.current = false;
       }
     });
+  }
+
+  function start(): void {
+    if (startingRef.current || savingRef.current || (pendingGameRequest === null && (hasUnsavedChanges || pendingFilterRequest !== null))) {
+      return;
+    }
+
+    startingRef.current = true;
+    startStarting(async () => {
+      const storage = new GameCommandRequestStorage(window.sessionStorage, roomCode, "start");
+      let request: PendingGameCommand;
+
+      try {
+        request = pendingGameRequest ?? { requestId: crypto.randomUUID() };
+        storage.persist(request);
+        setPendingGameRequest(request);
+      } catch {
+        setGameFeedback("storage");
+        startingRef.current = false;
+        return;
+      }
+
+      try {
+        const result = await startGameAction({ roomCode, requestId: request.requestId });
+
+        if (result.status === "error") {
+          setGameFeedback("retry");
+          return;
+        }
+
+        storage.clear(request.requestId);
+        setPendingGameRequest(null);
+        applyGameResult(result);
+      } catch {
+        setGameFeedback("retry");
+      } finally {
+        startingRef.current = false;
+      }
+    });
+  }
+
+  function applyGameResult(result: Exclude<PublicGameCommandResult, { status: "error" }>): void {
+    switch (result.status) {
+      case "started":
+      case "exhausted":
+      case "unavailable":
+      case "validation_error":
+      case "conflict":
+        setGameFeedback(result.status);
+        return;
+      default:
+        return assertNever(result);
+    }
   }
 
   if (unavailable) {
@@ -195,7 +278,7 @@ function HostFilterForm({
   }
 
   let submitLabel = t("save");
-  if (pendingRequest !== null) {
+  if (pendingFilterRequest !== null) {
     submitLabel = t("retry");
   }
   if (saving) {
@@ -209,16 +292,51 @@ function HostFilterForm({
         event.preventDefault();
         save();
       }}
-      aria-busy={saving}
+      aria-busy={saving || starting}
     >
       <h2 className="text-2xl font-bold">{t("title")}</h2>
       <p className="text-sm leading-6 text-slate-300">{t("description")}</p>
-      <FilterFields disabled={saving || pendingRequest !== null} filters={filters} genres={initialSnapshot.genres} onChange={updateFilters} />
+      <FilterFields
+        disabled={saving || starting || pendingFilterRequest !== null || pendingGameRequest !== null}
+        filters={filters}
+        genres={initialSnapshot.genres}
+        onChange={updateFilters}
+      />
       {feedback === "idle" ? null : <FilterFeedback feedback={feedback} />}
-      <PrimaryButton busy={saving} className="w-full" disabled={saving} submit>
+      <PrimaryButton busy={saving} className="w-full" disabled={saving || starting || pendingGameRequest !== null} submit>
         {submitLabel}
       </PrimaryButton>
+      <div className="border-t border-white/10 pt-6">
+        <p className="text-sm leading-6 text-slate-300">
+          {participantCount < 2 ? t("startWaiting") : hasUnsavedChanges ? t("startSaveFirst") : t("startReady")}
+        </p>
+        {gameFeedback === "idle" ? null : <GameFeedbackMessage feedback={gameFeedback} />}
+        <PrimaryButton
+          busy={starting}
+          className="mt-4 w-full"
+          disabled={
+            starting ||
+            saving ||
+            participantCount !== 2 ||
+            (pendingGameRequest === null && (hasUnsavedChanges || pendingFilterRequest !== null)) ||
+            gameFeedback === "storage"
+          }
+          onClick={start}
+        >
+          {starting ? t("starting") : pendingGameRequest === null ? t("start") : t("retryStart")}
+        </PrimaryButton>
+      </div>
     </form>
+  );
+}
+
+function equalFilters(left: RoomFilterValues, right: RoomFilterValues): boolean {
+  return (
+    left.netflixOnly === right.netflixOnly &&
+    left.underTwoHours === right.underTwoHours &&
+    left.yearFilter === right.yearFilter &&
+    left.genreIds.length === right.genreIds.length &&
+    [...left.genreIds].sort((a, b) => a - b).every((id, index) => id === [...right.genreIds].sort((a, b) => a - b)[index])
   );
 }
 
@@ -318,6 +436,22 @@ function FilterFeedback({ feedback }: Readonly<{ feedback: VisibleFeedback }>): 
       role={saved ? "status" : "alert"}
     >
       {t(feedback === "retry" ? "retryMessage" : feedback)}
+    </p>
+  );
+}
+
+function GameFeedbackMessage({ feedback }: Readonly<{ feedback: VisibleGameFeedback }>): ReactNode {
+  const t = useTranslations("HostFilters");
+  const completed = feedback === "started" || feedback === "exhausted";
+
+  return (
+    <p
+      className={`mt-4 rounded-xl p-4 text-sm leading-6 ring-1 ${
+        completed ? "bg-emerald-950/60 text-emerald-200 ring-emerald-400/20" : "bg-rose-950/60 text-rose-200 ring-rose-400/20"
+      }`}
+      role={completed ? "status" : "alert"}
+    >
+      {t(`startFeedback.${feedback}`)}
     </p>
   );
 }

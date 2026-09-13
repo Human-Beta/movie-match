@@ -36,6 +36,20 @@
       "when": 1788972660546,
       "tag": "0004_petite_miss_america",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789215906511,
+      "tag": "0005_nappy_purple_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789335370498,
+      "tag": "0006_kind_squirrel_girl",
+      "breakpoints": true
     }
   ]
 }

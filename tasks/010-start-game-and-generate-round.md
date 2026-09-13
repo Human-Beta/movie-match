@@ -48,14 +48,6 @@
 - Restart після вичерпання history за достатнього каталогу видаляє лише room-owned rounds/positions/votes, повертає номер `1` і дозволяє повторно показувати раніше показані фільми. Інші кімнати, учасники, фільтри та expiration не змінюються.
 - Повторний restart не стирає новий раунд; недостатній повний каталог залишає `exhausted` без нескінченного запиту або автоматичного reset.
 - Reload/reconnect відновлює той самий раунд; втрачена start invalidation при `2/2` компенсується fallback без ручного reload. На mounted screen залишається один room channel із cleanup.
-- `pnpm verify`, цільові PostgreSQL integration tests та hosted TV + два телефони smoke test проходять.
-
-## Verification
-
-- Unit/service tests: host authorization, state/expiration guards, idempotency, всі filter combinations і межі. Не перевіряти випадковість flaky статистичними assertions; перевіряти належність кандидатам, унікальність і розмір результату.
-- PostgreSQL integration: start transaction/rollback, конкурентні команди, history exclusion, multi-genre duplicates, `0/1/2/3` candidates, restart cascades й ізоляція кімнат. Для history/restart використовувати fixtures завершених раундів, не реалізовувати голосування завчасно.
-- Реальний браузер із hosted Supabase: start на host, синхронні картки на трьох екранах, втрата Broadcast, reconnect/reload, exhausted і restart; перевірити subscription cleanup та відсутність render/action loop.
-
 ## Out of Scope
 
 - Надсилання голосів і їхня приватність у voting flow — задача 011; match calculation — задача 012.

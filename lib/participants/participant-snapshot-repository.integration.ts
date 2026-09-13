@@ -81,6 +81,7 @@ test("real PostgreSQL snapshot selects and returns only public participant field
   const serializedSnapshot = JSON.stringify(snapshot);
 
   assert.deepEqual(snapshot, {
+    currentRound: null,
     roomState: "waiting",
     participantCount: 2,
     participants: [

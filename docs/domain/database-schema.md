@@ -38,6 +38,16 @@ The executable sources of truth are `lib/db/schema.ts` and the committed files u
 - `not_now` — a negative vote for the current choice.
 - `no` — the strongest negative vote.
 
+### `room_game_command`
+
+- `start` — creates the first round from the saved filters.
+- `restart` — replaces exhausted room history with a new first round.
+
+### `room_game_command_outcome`
+
+- `started` — the command atomically created a complete round.
+- `exhausted` — fewer than three eligible movies were available.
+
 ## Tables
 
 ### `genres`
@@ -119,6 +129,22 @@ The primary key `(room_id, request_id)` prevents duplicate receipts. A receipt c
 
 RLS is enabled, and `anon`, `authenticated`, and `service_role` receive no table privileges. Access remains server-side through Drizzle. Expiration cleanup can remove these receipts through the room foreign-key cascade.
 
+### `room_game_commands`
+
+Committed host start and list-restart receipts. The table makes game commands recoverable after double clicks, concurrent requests, reloads, and lost responses without storing participant credentials or client-provided movie choices.
+
+| Field          | Purpose                                                                |
+| -------------- | ---------------------------------------------------------------------- |
+| `room_id`      | References `rooms.id`; deleting the room removes its command receipts. |
+| `request_id`   | Browser-generated UUID persisted before the start or restart request.  |
+| `command`      | The canonical `room_game_command` kind: `start` or `restart`.          |
+| `payload_hash` | SHA-256 of the validated command kind and normalized room code.        |
+| `outcome`      | The committed `room_game_command_outcome`: `started` or `exhausted`.   |
+
+The primary key `(room_id, request_id)` scopes uniqueness to a room and conflicts when a key is reused for another command payload. The receipt is inserted in the same room-locking transaction as the complete three-position round or the `exhausted` transition. Matching retries return the recorded outcome before inspecting later game state, so an old request cannot create or delete a later round.
+
+RLS is enabled, and browser roles receive no table privileges. Access remains server-side through Drizzle, and room expiration cleanup removes receipts through the room foreign-key cascade.
+
 ### `participants`
 
 The two people connected to a room from their phones.
@@ -178,7 +204,7 @@ The composite primary key `(room_id, round_id, participant_id, movie_id)` permit
 
 - A movie has many genres through `movie_genres`.
 - A room has selected genres through `room_genres`.
-- A room has participants, filter-save receipts, and ordered rounds.
+- A room has participants, filter-save receipts, game-command receipts, and ordered rounds.
 - A round has exactly three `round_movies` when round creation completes.
 - A participant votes on the round's movies through `votes`.
 

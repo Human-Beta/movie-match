@@ -34,12 +34,26 @@
 - Перевірити `HttpOnly`, `SameSite=Lax`, room-scoped path, production `Secure` і expiration не пізніше `rooms.expiresAt`.
 - Переконатися, що raw token не зʼявляється в URL, DOM, browser-readable storage, serialized action state або логах тестового сервера.
 
+### P1 — Task 010 hosted game-round synchronization
+
+- Проти hosted Supabase відкрити TV і два ізольовані phone contexts, приєднати host та guest, зберегти фільтри й запустити гру через реальний Next.js Server Action.
+- Перевірити на всіх трьох екранах один persisted round `1` з тими самими трьома movie IDs, metadata та positions без ручного reload; TV і guest не отримують host controls.
+- Відтворити незбережений draft, duplicate click, втрачений action response, пропущений `room_changed` Broadcast, reconnect і reload. Перевірити один committed outcome, recovery через пʼятисекундний fallback при `2/2`, один room channel і cleanup без render/action loop.
+- Покрити `0/1/2` eligible movies, рівно три кандидати, exhausted UI та host-only restart; перевірити, що restart або зберігає недостатню history, або атомарно створює round `1` лише для своєї room.
+- Не фіксувати hosted credentials, room topics, browser artifacts або product rows у Broadcast payloads. Цей сценарій закриває відкладений acceptance criterion task 010.
+
 ### P2 — Repository integration against PostgreSQL
 
 - Покрити `ParticipantRepository.inspectRoom` реальною БД: room snapshot, participant lookup за token hash, participant count і нормалізацію відсутнього participant до `null`.
 - Зберегти concurrency coverage для одночасних другого і третього join та перевіряти не лише result, а й остаточні rows, унікальні roles і token hashes.
 - Перевірити rollback: помилка в locked transaction не залишає частково створеного participant.
 - Додавати repository integration tests для майбутніх migrations, constraints, cascade cleanup і RLS/browser-access boundaries, коли відповідні задачі реалізують ці можливості.
+
+### P2 — Task 010 game-command Server Action and UI boundary
+
+- У реальному Next.js runtime перевірити `startGameAction` і `restartMovieListAction`: room-scoped host cookie читається server-side, forged або missing session не створює writes, а terminal response викликає лише non-sensitive invalidation.
+- Перевірити React controls для start і restart: request ID persisted before submission, disabled/retry/terminal states коректні, а storage failure не надсилає mutation.
+- Підтвердити, що action response та DOM не містять participant credentials, receipt rows, client-provided movie selections або Broadcast payload data.
 
 ### P2 — Movie catalog seed lifecycle
 

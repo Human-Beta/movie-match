@@ -54,6 +54,7 @@ export function useRoomParticipantSnapshot({
     const sync = new RoomParticipantSync({
       realtimeTopic,
       initialSnapshot: {
+        currentRound: null,
         participantCount: initialParticipantCount,
         participants: [],
         roomState: initialRoomState,
@@ -74,6 +75,7 @@ export function useRoomParticipantSnapshot({
             current.realtimeTopic === realtimeTopic
               ? current.snapshot
               : {
+                  currentRound: null,
                   participantCount: initialParticipantCount,
                   participants: [],
                   roomState: initialRoomState,

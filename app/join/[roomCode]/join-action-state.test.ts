@@ -19,6 +19,7 @@ test("excludes participant credentials and internal identifiers from action stat
     {
       realtimeTopic: "room:11111111-1111-4111-8111-111111111111",
       snapshot: {
+        currentRound: null,
         roomState: "waiting",
         participantCount: 1,
         participants: [{ name: "Настя", role: "host" }],
@@ -33,6 +34,7 @@ test("excludes participant credentials and internal identifiers from action stat
     room: {
       realtimeTopic: "room:11111111-1111-4111-8111-111111111111",
       snapshot: {
+        currentRound: null,
         roomState: "waiting",
         participantCount: 1,
         participants: [{ name: "Настя", role: "host" }],

@@ -35,6 +35,7 @@ If documents allow different interpretations of the current product scope, follo
 - Use TypeScript `type` aliases for object contracts. Use `interface` only when a third-party API specifically requires declaration merging, and document that exception at the declaration.
 - Wrap React component props object types in `Readonly<...>` so components cannot mutate incoming props.
 - Use exact validated input types whenever the application has a defined contract, including typed Server Actions that still validate their runtime payload. Reserve `unknown` for rare boundaries whose input contract is genuinely unspecified and for caught or rejected values, then narrow it immediately.
+- At a boundary handling a product-fixed ordered collection, validate its cardinality and positions at runtime and expose a readonly tuple; do not construct the tuple with non-null assertions.
 - Prefer explicit named result types for module boundaries and call sites. Avoid deriving those contracts with `ReturnType<typeof ...>` unless preserving an inferred adapter or third-party type is more accurate than naming it.
 - Render or map every closed discriminated union with an exhaustive `switch` and terminate the default branch with `assertNever`; use conditional guards when the cases are not a closed union.
 - For an obvious mapping from a two-value scalar union, prefer a direct conditional or ternary; reserve exhaustive `switch`/`assertNever` handling for discriminated unions or cases where additional branches materially improve clarity.
@@ -54,6 +55,7 @@ If documents allow different interpretations of the current product scope, follo
 - Use the browser Supabase integration only for explicitly approved read or Realtime capabilities. Do not expose the full browser `SupabaseClient` or call the Supabase Data API for product mutations.
 - Keep Data API access opt-in. For every product table in an exposed schema, enable RLS and grant `anon` or `authenticated` only the minimum read access and policies required by the feature. Never grant those roles `INSERT`, `UPDATE`, or `DELETE` for product tables.
 - Treat the restricted TypeScript API as a developer guardrail, not a security boundary. Enforce browser access with Postgres privileges and RLS in the same migration that introduces or exposes a table.
+- Model a persisted workflow field with a closed canonical database value set as a PostgreSQL enum, and preserve that union through Drizzle rather than using asserted `varchar` values.
 
 ## React and Next.js effects
 
