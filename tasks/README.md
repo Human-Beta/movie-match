@@ -30,3 +30,4 @@
 - [ ] 017 — Polish and deployment
 - [ ] [018 — Automated browser, Server Action, and database integration coverage](018-automated-integration-coverage.md)
 - [ ] [019 — Refactor shared participant access and UI layouts](019-refactor-shared-participant-access-and-ui-layouts.md)
+- [ ] [020 — Movie poster sourcing and licensing](020-movie-poster-sourcing-and-licensing.md)
