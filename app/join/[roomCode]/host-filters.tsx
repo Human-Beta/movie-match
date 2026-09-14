@@ -30,7 +30,8 @@ type FilterLoadState =
     };
 type Feedback = "idle" | "saved" | "retry" | "storage" | "validation_error" | "conflict";
 type VisibleFeedback = Exclude<Feedback, "idle">;
-type GameFeedback = "idle" | "retry" | "storage" | "started" | "exhausted" | "unavailable" | "validation_error" | "conflict";
+type GameFeedback =
+  "idle" | "retry" | "storage" | "started" | "catalog_insufficient" | "list_exhausted" | "unavailable" | "validation_error" | "conflict";
 type VisibleGameFeedback = Exclude<GameFeedback, "idle">;
 
 export function HostFilters({ participantCount, roomCode }: Readonly<{ participantCount: number; roomCode: string }>): ReactNode {
@@ -258,7 +259,8 @@ function HostFilterForm({
   function applyGameResult(result: Exclude<PublicGameCommandResult, { status: "error" }>): void {
     switch (result.status) {
       case "started":
-      case "exhausted":
+      case "catalog_insufficient":
+      case "list_exhausted":
       case "unavailable":
       case "validation_error":
       case "conflict":
@@ -442,7 +444,7 @@ function FilterFeedback({ feedback }: Readonly<{ feedback: VisibleFeedback }>): 
 
 function GameFeedbackMessage({ feedback }: Readonly<{ feedback: VisibleGameFeedback }>): ReactNode {
   const t = useTranslations("HostFilters");
-  const completed = feedback === "started" || feedback === "exhausted";
+  const completed = feedback === "started" || feedback === "catalog_insufficient" || feedback === "list_exhausted";
 
   return (
     <p

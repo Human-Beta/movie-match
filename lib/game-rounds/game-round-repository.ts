@@ -15,7 +15,7 @@ export class DrizzleGameRoundRepository implements GameRoundRepository {
 
     return database.transaction(async transaction => {
       const roomRows = await transaction
-        .select({ id: rooms.id, status: rooms.status, expiresAt: rooms.expiresAt })
+        .select({ id: rooms.id, status: rooms.status, exhaustionReason: rooms.exhaustionReason, expiresAt: rooms.expiresAt })
         .from(rooms)
         .where(eq(rooms.code, roomCode))
         .limit(1)
@@ -137,9 +137,9 @@ export class DrizzleGameRoundRepository implements GameRoundRepository {
             })),
           );
         },
-        setRoomStatus: async status => {
+        setRoomStatus: async (status, exhaustionReason) => {
           const currentRoom = this.requireRoom(room);
-          await transaction.update(rooms).set({ status }).where(eq(rooms.id, currentRoom.id));
+          await transaction.update(rooms).set({ status, exhaustionReason }).where(eq(rooms.id, currentRoom.id));
         },
         saveCommand: async (requestId, receipt) => {
           const currentRoom = this.requireRoom(room);

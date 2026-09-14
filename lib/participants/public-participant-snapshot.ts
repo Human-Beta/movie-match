@@ -1,5 +1,5 @@
 import type { ParticipantRole } from "@/lib/participants/participant-service";
-import type { RoomStatus } from "@/lib/rooms/room-service";
+import type { RoomExhaustionReason, RoomStatus } from "@/lib/rooms/room-service";
 
 export type PublicRoomParticipant = {
   name: string;
@@ -31,6 +31,7 @@ export type PublicRoomRound = {
 
 export type PublicParticipantSnapshot = {
   roomState: RoomStatus;
+  exhaustionReason: RoomExhaustionReason | null;
   participantCount: number;
   participants: PublicRoomParticipant[];
   currentRound: PublicRoomRound | null;

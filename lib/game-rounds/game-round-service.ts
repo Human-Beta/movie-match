@@ -5,10 +5,10 @@ import type { ParticipantRole } from "@/lib/participants/participant-service";
 import { hashStoredParticipantAccessToken } from "@/lib/participants/participant-token";
 import type { GameCommandInput } from "@/lib/game-rounds/game-command-input";
 import type { RoomFilterValues } from "@/lib/room-filters/room-filter-values";
-import type { RoomStatus } from "@/lib/rooms/room-service";
+import type { RoomExhaustionReason, RoomStatus } from "@/lib/rooms/room-service";
 
 export type GameCommand = "start" | "restart";
-export type GameCommandOutcome = "started" | "exhausted";
+export type GameCommandOutcome = "started" | RoomExhaustionReason;
 
 export type GameCommandReceipt = {
   command: GameCommand;
@@ -19,6 +19,7 @@ export type GameCommandReceipt = {
 export type GameRoom = {
   id: string;
   status: RoomStatus;
+  exhaustionReason: RoomExhaustionReason | null;
   expiresAt: Date;
 };
 
@@ -31,7 +32,7 @@ export type LockedGameRoom = {
   getNextRoundNumber(): Promise<number>;
   deleteRoundHistory(): Promise<void>;
   createRound(roundNumber: number, movieIds: readonly [number, number, number]): Promise<void>;
-  setRoomStatus(status: "playing" | "exhausted"): Promise<void>;
+  setRoomStatus(status: "waiting" | "playing" | "exhausted", exhaustionReason: RoomExhaustionReason | null): Promise<void>;
   saveCommand(requestId: string, receipt: GameCommandReceipt): Promise<void>;
 };
 
@@ -94,7 +95,7 @@ export class GameRoundService {
         if (room.status !== "waiting" || (await locked.countParticipants()) !== 2) {
           return { status: "unavailable" };
         }
-      } else if (room.status !== "exhausted") {
+      } else if (room.status !== "exhausted" || room.exhaustionReason !== "list_exhausted") {
         return { status: "unavailable" };
       }
 
@@ -102,10 +103,12 @@ export class GameRoundService {
       const movieIds = [...new Set(await locked.selectEligibleMovieIds(filters, command === "start"))];
 
       if (!isMovieIdTriplet(movieIds)) {
-        await locked.setRoomStatus("exhausted");
-        await locked.saveCommand(input.requestId, { command, payloadHash, outcome: "exhausted" });
+        const fullCatalogMovieIds = command === "restart" ? movieIds : [...new Set(await locked.selectEligibleMovieIds(filters, false))];
+        const outcome: RoomExhaustionReason = isMovieIdTriplet(fullCatalogMovieIds) ? "list_exhausted" : "catalog_insufficient";
+        await locked.setRoomStatus("exhausted", outcome);
+        await locked.saveCommand(input.requestId, { command, payloadHash, outcome });
 
-        return { status: "completed", outcome: "exhausted", roomId: room.id };
+        return { status: "completed", outcome, roomId: room.id };
       }
 
       if (command === "restart") {
@@ -114,7 +117,7 @@ export class GameRoundService {
 
       const roundNumber = command === "restart" ? 1 : await locked.getNextRoundNumber();
       await locked.createRound(roundNumber, movieIds);
-      await locked.setRoomStatus("playing");
+      await locked.setRoomStatus("playing", null);
       await locked.saveCommand(input.requestId, { command, payloadHash, outcome: "started" });
 
       return { status: "completed", outcome: "started", roomId: room.id };

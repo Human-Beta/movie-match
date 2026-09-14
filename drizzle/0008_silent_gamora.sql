@@ -1,0 +1,1 @@
+ALTER TABLE "rooms" ADD CONSTRAINT "rooms_exhaustion_reason_check" CHECK (("rooms"."status" = 'exhausted') = ("rooms"."exhaustion_reason" is not null));

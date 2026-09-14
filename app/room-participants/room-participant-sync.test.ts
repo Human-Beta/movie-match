@@ -13,12 +13,14 @@ import type { ParticipantSnapshotActionResult, PublicParticipantSnapshot } from 
 
 const waitingSnapshot: PublicParticipantSnapshot = {
   currentRound: null,
+  exhaustionReason: null,
   roomState: "waiting",
   participantCount: 1,
   participants: [{ name: "Олена", role: "host" }],
 };
 const readySnapshot: PublicParticipantSnapshot = {
   currentRound: null,
+  exhaustionReason: null,
   roomState: "waiting",
   participantCount: 2,
   participants: [
@@ -43,6 +45,7 @@ const playingSnapshot: PublicParticipantSnapshot = {
 const exhaustedSnapshot: PublicParticipantSnapshot = {
   ...readySnapshot,
   roomState: "exhausted",
+  exhaustionReason: "list_exhausted",
 };
 
 type ScheduledTimer = {
