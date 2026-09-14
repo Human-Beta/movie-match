@@ -18,6 +18,8 @@ import {
 
 export const roomStatusEnum = pgEnum("room_status", ["waiting", "playing", "matched", "exhausted", "closed"]);
 
+export const roomExhaustionReasonEnum = pgEnum("room_exhaustion_reason", ["catalog_insufficient", "list_exhausted"]);
+
 export const participantRoleEnum = pgEnum("participant_role", ["host", "guest"]);
 
 export const yearFilterEnum = pgEnum("year_filter", ["any", "new", "old"]);
@@ -28,7 +30,7 @@ export const voteValueEnum = pgEnum("vote_value", ["want_to_watch", "could_watch
 
 export const roomGameCommandEnum = pgEnum("room_game_command", ["start", "restart"]);
 
-export const roomGameCommandOutcomeEnum = pgEnum("room_game_command_outcome", ["started", "exhausted"]);
+export const roomGameCommandOutcomeEnum = pgEnum("room_game_command_outcome", ["started", "catalog_insufficient", "list_exhausted"]);
 
 export const genres = pgTable(
   "genres",
@@ -86,6 +88,7 @@ export const rooms = pgTable(
     code: varchar("code", { length: 8 }).notNull(),
     creationRequestId: uuid("creation_request_id"),
     status: roomStatusEnum("status").default("waiting").notNull(),
+    exhaustionReason: roomExhaustionReasonEnum("exhaustion_reason"),
     netflixOnly: boolean("netflix_only").default(false).notNull(),
     underTwoHours: boolean("under_two_hours").default(false).notNull(),
     yearFilter: yearFilterEnum("year_filter").default("any").notNull(),
@@ -99,6 +102,7 @@ export const rooms = pgTable(
     unique("rooms_creation_request_id_unique").on(table.creationRequestId),
     check("rooms_code_format_check", sql`${table.code} ~ '^[A-Z0-9]{4,8}$'`),
     check("rooms_lifetime_check", sql`${table.expiresAt} = ${table.createdAt} + interval '1 hour'`),
+    check("rooms_exhaustion_reason_check", sql`(${table.status} = 'exhausted') = (${table.exhaustionReason} is not null)`),
     index("rooms_active_expires_at_idx")
       .on(table.expiresAt)
       .where(sql`${table.status} <> 'closed'`),

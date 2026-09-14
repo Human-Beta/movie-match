@@ -12,7 +12,8 @@ import { notifyRoomChanged } from "@/lib/realtime/participant-broadcast-server";
 
 export type PublicGameCommandResult =
   | { status: "started" }
-  | { status: "exhausted" }
+  | { status: "catalog_insufficient" }
+  | { status: "list_exhausted" }
   | { status: "unavailable" }
   | { status: "validation_error" }
   | { status: "conflict" }

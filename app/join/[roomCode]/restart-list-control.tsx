@@ -8,7 +8,7 @@ import { GameCommandRequestStorage, type PendingGameCommand } from "@/app/join/[
 import { PrimaryButton } from "@/app/ui/primary-button";
 import { assertNever } from "@/lib/assert-never";
 
-type RestartFeedback = "idle" | "retry" | "storage" | "stillExhausted" | "unavailable" | "conflict" | "validation_error";
+type RestartFeedback = "idle" | "retry" | "storage" | "unavailable" | "conflict" | "validation_error";
 
 export function RestartListControl({ roomCode }: Readonly<{ roomCode: string }>): ReactNode {
   const t = useTranslations("GameRound");
@@ -78,8 +78,9 @@ export function RestartListControl({ roomCode }: Readonly<{ roomCode: string }>)
           case "started":
             setFeedback("idle");
             return;
-          case "exhausted":
-            setFeedback("stillExhausted");
+          case "catalog_insufficient":
+          case "list_exhausted":
+            setFeedback("unavailable");
             return;
           case "unavailable":
           case "conflict":

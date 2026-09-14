@@ -133,7 +133,10 @@ test("PostgreSQL host filters preserve authorization, atomicity, retries and roo
   await context.test("rejects unavailable rooms under lock, including elapsed expiration", async () => {
     const request = { ...first, requestId: randomUUID() };
     for (const status of ["playing", "matched", "exhausted", "closed"] as const) {
-      await database.update(rooms).set({ status }).where(eq(rooms.id, room.id));
+      await database
+        .update(rooms)
+        .set({ status, exhaustionReason: status === "exhausted" ? "list_exhausted" : null })
+        .where(eq(rooms.id, room.id));
       assert.deepEqual(await service.save(request, host), { status: "unavailable" });
     }
     const expiredAt = new Date(Date.now() - 3600000);

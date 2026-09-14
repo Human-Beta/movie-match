@@ -5,6 +5,7 @@ import { generateRoomCode, normalizeRoomCode } from "@/lib/rooms/room-code";
 export const ROOM_CREATE_MAX_ATTEMPTS = 5;
 
 export type RoomStatus = "waiting" | "playing" | "matched" | "exhausted" | "closed";
+export type RoomExhaustionReason = "catalog_insufficient" | "list_exhausted";
 
 export type RoomSnapshot = {
   code: string;

@@ -35,6 +35,7 @@ export function useRoomParticipantSnapshot({
   });
   const initialParticipantCount = initialSnapshot.participantCount;
   const initialRoomState = initialSnapshot.roomState;
+  const initialExhaustionReason = initialSnapshot.exhaustionReason;
   const currentState: RoomParticipantSnapshotState =
     syncedState.realtimeTopic === realtimeTopic
       ? syncedState
@@ -55,6 +56,7 @@ export function useRoomParticipantSnapshot({
       realtimeTopic,
       initialSnapshot: {
         currentRound: null,
+        exhaustionReason: initialExhaustionReason,
         participantCount: initialParticipantCount,
         participants: [],
         roomState: initialRoomState,
@@ -76,6 +78,7 @@ export function useRoomParticipantSnapshot({
               ? current.snapshot
               : {
                   currentRound: null,
+                  exhaustionReason: initialExhaustionReason,
                   participantCount: initialParticipantCount,
                   participants: [],
                   roomState: initialRoomState,
@@ -94,7 +97,7 @@ export function useRoomParticipantSnapshot({
     return (): void => {
       sync.stop();
     };
-  }, [initialParticipantCount, initialRoomState, realtimeTopic]);
+  }, [initialExhaustionReason, initialParticipantCount, initialRoomState, realtimeTopic]);
 
   return currentState;
 }

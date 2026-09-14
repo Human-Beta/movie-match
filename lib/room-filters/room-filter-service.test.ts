@@ -13,7 +13,7 @@ const hostToken = generateParticipantAccessToken();
 const guestToken = generateParticipantAccessToken();
 
 class MemoryFilterRepository implements RoomFilterRepository {
-  room: FilterRoom | null = { status: "waiting", expiresAt: new Date(now.getTime() + 60000) };
+  room: FilterRoom | null = { status: "waiting", exhaustionReason: null, expiresAt: new Date(now.getTime() + 60000) };
   filters = defaults;
   writes = 0;
   saves = new Map<string, string>();
@@ -37,6 +37,9 @@ class MemoryFilterRepository implements RoomFilterRepository {
       saveFilters: async (input, hash) => {
         this.filters = input.filters;
         this.saves.set(input.requestId, hash);
+        if (this.room !== null) {
+          this.room = { ...this.room, status: "waiting", exhaustionReason: null };
+        }
         this.writes++;
       },
     });
@@ -72,11 +75,11 @@ test("only a current host can read or save filters in a waiting room", async () 
     assert.deepEqual(await service.save(input, token), { status: "unavailable" });
   }
   for (const status of ["playing", "matched", "exhausted", "closed"] as const) {
-    repository.room = { status, expiresAt: new Date(now.getTime() + 60000) };
+    repository.room = { status, exhaustionReason: null, expiresAt: new Date(now.getTime() + 60000) };
     assert.deepEqual(await service.read("ABCD", hostToken), { status: "unavailable" });
     assert.deepEqual(await service.save(input, hostToken), { status: "unavailable" });
   }
-  for (const room of [null, { status: "waiting" as const, expiresAt: now }]) {
+  for (const room of [null, { status: "waiting" as const, exhaustionReason: null, expiresAt: now }]) {
     repository.room = room;
     assert.deepEqual(await service.save(input, hostToken), { status: "unavailable" });
   }
@@ -100,4 +103,19 @@ test("saves valid filters, rejects absent genres and replays old saves without r
   });
   assert.equal(repository.writes, 2);
   assert.deepEqual(repository.filters, second.filters);
+});
+
+test("allows only the host to recover from an insufficient catalog by saving filters", async () => {
+  const repository = new MemoryFilterRepository();
+  repository.room = { status: "exhausted", exhaustionReason: "catalog_insufficient", expiresAt: new Date(now.getTime() + 60000) };
+  const service = new RoomFilterService(repository, { now: (): Date => now });
+  const input = { roomCode: "ABCD", requestId: randomUUID(), filters: { ...defaults, netflixOnly: true } };
+
+  assert.equal((await service.read("ABCD", hostToken)).status, "ready");
+  assert.deepEqual(await service.save(input, hostToken), { status: "saved", filters: input.filters });
+  assert.deepEqual(repository.room, { status: "waiting", exhaustionReason: null, expiresAt: new Date(now.getTime() + 60000) });
+
+  repository.room = { status: "exhausted", exhaustionReason: "list_exhausted", expiresAt: new Date(now.getTime() + 60000) };
+  assert.deepEqual(await service.save({ ...input, requestId: randomUUID() }, hostToken), { status: "unavailable" });
+  assert.deepEqual(await service.save({ ...input, requestId: randomUUID() }, guestToken), { status: "unavailable" });
 });

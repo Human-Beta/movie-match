@@ -113,12 +113,20 @@ test("PostgreSQL game rounds preserve atomic generation, idempotency, filters, a
   });
 
   async function createRoom(
-    options: { guest?: boolean; status?: "waiting" | "playing" | "matched" | "exhausted" | "closed" } = {},
+    options: {
+      guest?: boolean;
+      status?: "waiting" | "playing" | "matched" | "exhausted" | "closed";
+      exhaustionReason?: "catalog_insufficient" | "list_exhausted";
+    } = {},
   ): Promise<TestRoom> {
     const code = randomBytes(4).toString("hex").toUpperCase();
     const roomRows = await database
       .insert(rooms)
-      .values({ code, status: options.status ?? "waiting" })
+      .values({
+        code,
+        status: options.status ?? "waiting",
+        exhaustionReason: options.status === "exhausted" ? (options.exhaustionReason ?? "list_exhausted") : null,
+      })
       .returning({ id: rooms.id, expiresAt: rooms.expiresAt });
     const room = roomRows.at(0);
     assert.ok(room);
@@ -292,10 +300,14 @@ test("PostgreSQL game rounds preserve atomic generation, idempotency, filters, a
       await setFilters(room.id, { netflixOnly: false, underTwoHours: false, yearFilter: "any", genreIds: [candidateCase.genreId] });
       const result = await service.start({ roomCode: room.code, requestId: randomUUID() }, room.hostToken);
       assert.equal(result.status, "completed");
-      assert.equal(result.outcome, candidateCase.expected === 3 ? "started" : "exhausted");
+      assert.equal(result.outcome, candidateCase.expected === 3 ? "started" : "catalog_insufficient");
       assert.equal((await database.select().from(roundMovies).where(eq(roundMovies.roomId, room.id))).length, candidateCase.expected === 3 ? 3 : 0);
-      const roomState = await database.select({ status: rooms.status }).from(rooms).where(eq(rooms.id, room.id));
+      const roomState = await database
+        .select({ status: rooms.status, exhaustionReason: rooms.exhaustionReason })
+        .from(rooms)
+        .where(eq(rooms.id, room.id));
       assert.equal(roomState.at(0)?.status, candidateCase.expected === 3 ? "playing" : "exhausted");
+      assert.equal(roomState.at(0)?.exhaustionReason, candidateCase.expected === 3 ? null : "catalog_insufficient");
     }
   });
 
@@ -303,7 +315,7 @@ test("PostgreSQL game rounds preserve atomic generation, idempotency, filters, a
     const room = await createRoom();
     await assert.rejects(
       repository.inLockedRoom(room.code, async (_lockedRoom, locked) => {
-        await locked.setRoomStatus("playing");
+        await locked.setRoomStatus("playing", null);
         await locked.createRound(1, [eligibleA.id, eligibleB.id, 2_147_483_647]);
       }),
     );
@@ -313,7 +325,7 @@ test("PostgreSQL game rounds preserve atomic generation, idempotency, filters, a
   });
 
   await context.test("restart verifies candidates before cascading only its own history and safely replays", async () => {
-    const room = await createRoom({ status: "exhausted" });
+    const room = await createRoom({ status: "exhausted", exhaustionReason: "list_exhausted" });
     const oldRoundId = await createHistoricalRound(room, [eligibleA.id, eligibleB.id, eligibleC.id], 4);
     assert.ok(room.guestId);
     await database.insert(votes).values({
@@ -323,7 +335,7 @@ test("PostgreSQL game rounds preserve atomic generation, idempotency, filters, a
       movieId: eligibleA.id,
       value: "could_watch",
     });
-    const otherRoom = await createRoom({ status: "exhausted" });
+    const otherRoom = await createRoom({ status: "exhausted", exhaustionReason: "list_exhausted" });
     const otherRoundId = await createHistoricalRound(otherRoom, [oldBoundary.id, oldSecond.id, oldThird.id], 2);
     const originalParticipants = await database.select().from(participants).where(eq(participants.roomId, room.id));
     const input = { roomCode: room.code, requestId: randomUUID() };
@@ -348,12 +360,12 @@ test("PostgreSQL game rounds preserve atomic generation, idempotency, filters, a
   });
 
   await context.test("an insufficient restart keeps prior history and reaches a terminal idempotent outcome", async () => {
-    const room = await createRoom({ status: "exhausted" });
+    const room = await createRoom({ status: "exhausted", exhaustionReason: "list_exhausted" });
     const oldRoundId = await createHistoricalRound(room, [eligibleA.id, eligibleB.id, eligibleC.id]);
     await setFilters(room.id, { netflixOnly: false, underTwoHours: false, yearFilter: "any", genreIds: [twoGenre.id] });
     const input = { roomCode: room.code, requestId: randomUUID() };
     const result = await service.restart(input, room.hostToken);
-    assert.equal(result.status === "completed" ? result.outcome : null, "exhausted");
+    assert.equal(result.status === "completed" ? result.outcome : null, "catalog_insufficient");
     assert.equal((await database.select().from(rounds).where(eq(rounds.id, oldRoundId))).length, 1);
     assert.equal((await database.select().from(roundMovies).where(eq(roundMovies.roundId, oldRoundId))).length, 3);
     await service.restart(input, room.hostToken);

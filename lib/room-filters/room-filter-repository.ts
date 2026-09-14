@@ -13,7 +13,7 @@ export class DrizzleRoomFilterRepository implements RoomFilterRepository {
     const database = await this.getDatabase();
     return database.transaction(async transaction => {
       const [room] = await transaction
-        .select({ id: rooms.id, status: rooms.status, expiresAt: rooms.expiresAt })
+        .select({ id: rooms.id, status: rooms.status, exhaustionReason: rooms.exhaustionReason, expiresAt: rooms.expiresAt })
         .from(rooms)
         .where(eq(rooms.code, roomCode))
         .limit(1)
@@ -65,7 +65,10 @@ export class DrizzleRoomFilterRepository implements RoomFilterRepository {
             throw new Error("Filter writes require a room lock.");
           }
           const { netflixOnly, underTwoHours, yearFilter, genreIds } = input.filters;
-          await transaction.update(rooms).set({ netflixOnly, underTwoHours, yearFilter }).where(eq(rooms.id, room.id));
+          await transaction
+            .update(rooms)
+            .set({ netflixOnly, underTwoHours, yearFilter, status: "waiting", exhaustionReason: null })
+            .where(eq(rooms.id, room.id));
           await transaction.delete(roomGenres).where(eq(roomGenres.roomId, room.id));
           if (genreIds.length) {
             await transaction.insert(roomGenres).values(genreIds.map(genreId => ({ roomId: room.id, genreId })));
