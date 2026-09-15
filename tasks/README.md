@@ -29,6 +29,7 @@
 - [ ] 016 — Room expiration and cascading cleanup of expired room data
 - [ ] 017 — Polish and deployment
 - [ ] [018 — Automated browser, Server Action, and database integration coverage](018-automated-integration-coverage.md)
-- [ ] [019 — Refactor shared participant access and UI layouts](019-refactor-shared-participant-access-and-ui-layouts.md)
+- [ ] [019 — Audit and refactor shared application code](019-refactor-shared-participant-access-and-ui-layouts.md)
 - [ ] [020 — Movie poster sourcing and licensing](020-movie-poster-sourcing-and-licensing.md)
 - [ ] [021 — Drizzle metadata strategy](021-drizzle-metadata-strategy.md)
+- [ ] [022 — Investigate and reduce room-screen request latency](022-investigate-room-screen-request-latency.md)
