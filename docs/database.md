@@ -161,3 +161,17 @@ Create the test database and apply migrations first. The suite rejects remote ho
 For hosted verification, apply migrations and seed the curated catalog, then open one TV and two isolated phone contexts. Join both phones, save a filter change, and start from the host. Confirm all three screens show the same round number, movie IDs, metadata, and positions without a reload; the guest and TV must have no host controls. Repeat with an unsaved draft, interrupted response, duplicate click, and a dropped `room_changed` Broadcast frame. The saved request must recover one committed outcome, and the five-second waiting fallback must deliver a missed start even at `2/2`.
 
 Use temporary deterministic catalog fixtures to verify `0/1/2` eligible movies transition to the Ukrainian exhausted state, exactly three create a full round, and restart either preserves insufficient history or atomically replaces only that room's history with round 1. Reload and reconnect every screen, verify one room channel remains mounted and is cleaned up, and confirm the browser never receives receipt rows, participant credentials, or product rows in Broadcast payloads. Keep project keys, room topics, credentials, database URLs, and browser artifacts out of commits.
+
+## Verify private voting
+
+After applying migrations to local PostgreSQL, run the focused ballot integration suite with an explicit local test connection:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/movie_match_test pnpm test:ballots:db
+```
+
+Create the test database and apply migrations first. The suite rejects remote hosts and verifies the three-vote transaction, completion-marker rollback, same-participant replay and conflict handling (including cross-round request-ID reuse), concurrent host/guest ballots, the database uniqueness boundary while the same UUID remains valid for another participant, room isolation, snapshot privacy, RLS and browser-role privilege denial, and room cascade cleanup.
+
+For hosted verification, apply migrations and seed the catalog, then open one TV plus two isolated phone contexts. Join both phones and start a round. Confirm each phone sees the same three cards and can choose all four reactions, but the TV has no ballot controls. Submit every choice from the first phone, inspect the TV and second-phone network responses, and confirm they show only `1/2` aggregate progress with no vote values, receipts, credentials, or idempotency payloads. Reload the first phone and confirm its own values and submitted state return without another write.
+
+Then submit the second ballot and confirm all three screens show only the neutral Ukrainian result-ready state; task 012 owns match calculation and terminal transition. Drop a Broadcast frame or reconnect a screen to prove the bounded active-voting fallback converges progress without duplicate channels or writes. Interrupt a submit response, reload, and retry: the stored request must restore the same outcome, while a modified payload with that key must be rejected. Keep credentials, room topics, network captures, and local browser artifacts out of commits.

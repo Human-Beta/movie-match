@@ -2,27 +2,30 @@
 
 import { useCallback, useMemo } from "react";
 
-import { readParticipantSnapshotAction } from "@/app/room-participant-actions";
+import { readParticipantClientSnapshotAction } from "@/app/room-participant-actions";
 import {
   useSyncedParticipantRoomSnapshot,
   type SyncedParticipantRoomSnapshotState,
 } from "@/app/room-participants/use-synced-participant-room-snapshot";
-import type { PublicParticipantSnapshot } from "@/lib/participants/public-participant-snapshot";
+import type { ParticipantClientSnapshot } from "@/lib/participants/public-participant-snapshot";
 
-export type RoomParticipantSnapshotState = SyncedParticipantRoomSnapshotState<PublicParticipantSnapshot>;
+export type AuthenticatedParticipantRoomSnapshotState = SyncedParticipantRoomSnapshotState<ParticipantClientSnapshot>;
 
-export function useRoomParticipantSnapshot({
+export function useAuthenticatedParticipantRoomSnapshot({
   initialSnapshot,
   realtimeTopic,
+  roomCode,
 }: Readonly<{
-  initialSnapshot: PublicParticipantSnapshot;
+  initialSnapshot: ParticipantClientSnapshot;
   realtimeTopic: string;
-}>): RoomParticipantSnapshotState {
-  const readSnapshot = useCallback(() => readParticipantSnapshotAction(realtimeTopic), [realtimeTopic]);
-  const resetSnapshot = useMemo<PublicParticipantSnapshot>(
+  roomCode: string;
+}>): AuthenticatedParticipantRoomSnapshotState {
+  const readSnapshot = useCallback(() => readParticipantClientSnapshotAction(realtimeTopic, roomCode), [realtimeTopic, roomCode]);
+  const resetSnapshot = useMemo<ParticipantClientSnapshot>(
     () => ({
       ballotProgress: null,
       currentRound: null,
+      ownBallot: null,
       participantCount: initialSnapshot.participantCount,
       participants: [],
       roomState: initialSnapshot.roomState,

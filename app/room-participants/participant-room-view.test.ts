@@ -5,7 +5,7 @@ import { getParticipantRoomView } from "@/app/room-participants/participant-room
 import type { PublicParticipantSnapshot } from "@/lib/participants/public-participant-snapshot";
 
 function snapshot(roomState: PublicParticipantSnapshot["roomState"], participantCount: number): PublicParticipantSnapshot {
-  return { roomState, participantCount, participants: [], currentRound: null };
+  return { roomState, participantCount, participants: [], currentRound: null, ballotProgress: null };
 }
 
 test("maps authoritative snapshots to waiting, ready, game, advanced, and unavailable views", () => {

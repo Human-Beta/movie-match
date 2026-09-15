@@ -25,7 +25,7 @@ export default async function JoinRoomPage({
     case "full":
       return <FullRoomState />;
     case "joined": {
-      const room = await getParticipantClientRoomState(view.roomId);
+      const room = await getParticipantClientRoomState(view.roomId, storedAccessToken);
 
       if (room === null || normalizedRoomCode === null) {
         return <UnavailableRoomState />;

@@ -2,8 +2,12 @@ import { z } from "zod";
 
 import { SystemClock, type Clock } from "@/lib/clock";
 import type { ParticipantRole } from "@/lib/participants/participant-service";
+import { hashStoredParticipantAccessToken } from "@/lib/participants/participant-token";
 import {
   isPublicRoomMovies,
+  type ParticipantClientSnapshot,
+  type ParticipantOwnBallot,
+  type PublicBallotProgress,
   type PublicParticipantSnapshot,
   type PublicRoomMovie,
   type PublicRoomMovies,
@@ -25,11 +29,14 @@ export type ParticipantSnapshotRecord = {
   };
   participants: PublicRoomParticipant[];
   currentRound: PublicRoomRound | null;
+  submittedBallotCount: number;
+  ownBallot: ParticipantOwnBallot | null;
 };
 
 export type ParticipantSnapshotRepository = {
   findByRoomCode(roomCode: string): Promise<ParticipantSnapshotRecord | null>;
   findByRoomId(roomId: string): Promise<ParticipantSnapshotRecord | null>;
+  findByRoomIdForParticipant(roomId: string, accessTokenHash: string): Promise<ParticipantSnapshotRecord | null>;
 };
 
 export type TvParticipantRoomState = {
@@ -94,20 +101,24 @@ export class ParticipantSnapshotService {
     };
   }
 
-  async getClientRoomState(roomId: string): Promise<{ realtimeTopic: string; snapshot: PublicParticipantSnapshot } | null> {
+  async getClientRoomState(
+    roomId: string,
+    storedAccessToken: string | null,
+  ): Promise<{ realtimeTopic: string; snapshot: ParticipantClientSnapshot } | null> {
     const parsedRoomId = roomIdSchema.safeParse(roomId);
+    const accessTokenHash = hashStoredParticipantAccessToken(storedAccessToken);
 
-    if (!parsedRoomId.success) {
+    if (!parsedRoomId.success || accessTokenHash === null) {
       return null;
     }
 
-    const record = await this.repository.findByRoomId(parsedRoomId.data);
+    const record = await this.repository.findByRoomIdForParticipant(parsedRoomId.data, accessTokenHash);
 
     if (record === null) {
       return null;
     }
 
-    const snapshot = this.toPublicSnapshot(record);
+    const snapshot = this.toParticipantSnapshot(record);
 
     if (snapshot.roomState === "closed") {
       return null;
@@ -131,6 +142,19 @@ export class ParticipantSnapshotService {
     return record === null ? null : this.toPublicSnapshot(record);
   }
 
+  async getSnapshotForTopicForParticipant(realtimeTopic: string, storedAccessToken: string | null): Promise<ParticipantClientSnapshot | null> {
+    const roomId = getRoomIdFromParticipantRealtimeTopic(realtimeTopic);
+    const accessTokenHash = hashStoredParticipantAccessToken(storedAccessToken);
+
+    if (roomId === null || accessTokenHash === null) {
+      return null;
+    }
+
+    const record = await this.repository.findByRoomIdForParticipant(roomId, accessTokenHash);
+
+    return record === null ? null : this.toParticipantSnapshot(record);
+  }
+
   toPublicSnapshot(record: ParticipantSnapshotRecord): PublicParticipantSnapshot {
     const roomState = this.getPublicRoomState(record.room.status, record.room.expiresAt);
     const participants = record.participants
@@ -139,12 +163,47 @@ export class ParticipantSnapshotService {
         role: participant.role,
       }))
       .sort((left, right) => getParticipantRoleOrder(left.role) - getParticipantRoleOrder(right.role));
+    const ballotProgress = this.toBallotProgress(record, participants.length);
 
     return {
       roomState,
       participantCount: participants.length,
       participants,
       currentRound: this.publicRound(record.currentRound),
+      ballotProgress,
+    };
+  }
+
+  private toParticipantSnapshot(record: ParticipantSnapshotRecord): ParticipantClientSnapshot {
+    const publicSnapshot = this.toPublicSnapshot(record);
+    const ownBallot = this.copyOwnBallot(record.ownBallot);
+
+    return {
+      ...publicSnapshot,
+      ownBallot,
+    };
+  }
+
+  private toBallotProgress(record: ParticipantSnapshotRecord, totalParticipants: number): PublicBallotProgress | null {
+    if (record.currentRound?.status !== "voting") {
+      return null;
+    }
+
+    return {
+      submittedCount: record.submittedBallotCount,
+      totalParticipants,
+      readyForResults: record.submittedBallotCount === totalParticipants,
+    };
+  }
+
+  private copyOwnBallot(ballot: ParticipantOwnBallot | null): ParticipantOwnBallot | null {
+    if (ballot === null || ballot.status === "not_submitted") {
+      return ballot;
+    }
+
+    return {
+      status: "submitted",
+      votes: ballot.votes.map(vote => ({ movieId: vote.movieId, value: vote.value })),
     };
   }
 

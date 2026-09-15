@@ -101,7 +101,7 @@ export async function joinRoomAction(_previousState: JoinRoomActionState, formDa
       return toJoinRoomActionState(result, null);
     }
 
-    const room = await getParticipantClientRoomState(result.roomId);
+    const room = await getParticipantClientRoomState(result.roomId, result.newSession?.rawAccessToken ?? storedAccessToken);
 
     if (result.participantCreated) {
       try {

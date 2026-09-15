@@ -4,7 +4,11 @@ import { DrizzleParticipantRepository } from "@/lib/participants/participant-rep
 import { DrizzleParticipantSnapshotRepository } from "@/lib/participants/participant-snapshot-repository";
 import { ParticipantSnapshotService, type TvParticipantRoomState } from "@/lib/participants/participant-snapshot-service";
 import { ParticipantService, type JoinParticipantInput, type JoinParticipantResult, type JoinRoomView } from "@/lib/participants/participant-service";
-import type { ParticipantClientRoomState, PublicParticipantSnapshot } from "@/lib/participants/public-participant-snapshot";
+import type {
+  ParticipantClientRoomState,
+  ParticipantClientSnapshot,
+  PublicParticipantSnapshot,
+} from "@/lib/participants/public-participant-snapshot";
 
 const participantService = new ParticipantService(new DrizzleParticipantRepository());
 const participantSnapshotService = new ParticipantSnapshotService(new DrizzleParticipantSnapshotRepository());
@@ -25,10 +29,17 @@ export function getTvParticipantRoomState(roomCode: string): Promise<TvParticipa
   return participantSnapshotService.getTvRoomState(roomCode);
 }
 
-export function getParticipantClientRoomState(roomId: string): Promise<ParticipantClientRoomState | null> {
-  return participantSnapshotService.getClientRoomState(roomId);
+export function getParticipantClientRoomState(roomId: string, storedAccessToken: string | null): Promise<ParticipantClientRoomState | null> {
+  return participantSnapshotService.getClientRoomState(roomId, storedAccessToken);
 }
 
 export function getParticipantSnapshotForTopic(realtimeTopic: string): Promise<PublicParticipantSnapshot | null> {
   return participantSnapshotService.getSnapshotForTopic(realtimeTopic);
+}
+
+export function getParticipantSnapshotForTopicForParticipant(
+  realtimeTopic: string,
+  storedAccessToken: string | null,
+): Promise<ParticipantClientSnapshot | null> {
+  return participantSnapshotService.getSnapshotForTopicForParticipant(realtimeTopic, storedAccessToken);
 }

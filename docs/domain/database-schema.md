@@ -202,13 +202,30 @@ One participant's private reaction to one movie in one round.
 
 The composite primary key `(room_id, round_id, participant_id, movie_id)` permits one vote per participant and movie. Composite foreign keys require both a valid round-movie entry and a participant from the same room. Deleting either parent removes the vote.
 
+### `round_ballots`
+
+The committed completion marker for one participant's complete private ballot. It is deliberately separate from the individual `votes`: a receipt exists only after the three validated vote rows have been inserted in the same transaction.
+
+| Field            | Purpose                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| `room_id`        | Scopes the marker to the room and contributes to both composite ownership references.      |
+| `round_id`       | Identifies the persisted round.                                                            |
+| `participant_id` | Identifies the participant whose ballot became immutable.                                  |
+| `request_id`     | Browser-generated UUID retained only for safe replay of this participant's ballot request. |
+| `payload_hash`   | SHA-256 of the canonical room code, round ID, and movie-ID/value pairs sorted by movie ID. |
+
+The primary key `(room_id, round_id, participant_id)` permits exactly one completed ballot for a participant and round. The additional unique constraint `(room_id, participant_id, request_id)` makes a request ID single-use across every round for that participant while allowing the same UUID for another participant or room. Its composite foreign keys prove that both the round and participant belong to the same room; room or round deletion cascades to the marker. The hash format is checked by PostgreSQL. The service finds a receipt by its participant/request namespace before checking the current round, then compares its stored round ID and hash: only an exact replay returns the committed outcome, while a changed payload or cross-round reuse conflicts without changing votes.
+
+RLS is enabled, and `anon`, `authenticated`, and `service_role` receive no privileges. The marker, request ID, and hash remain server-only; snapshots expose only an aggregate completed-ballot count and, for an authenticated phone, that phone's own values.
+
 ## Relationship overview
 
 - A movie has many genres through `movie_genres`.
 - A room has selected genres through `room_genres`.
-- A room has participants, filter-save receipts, game-command receipts, and ordered rounds.
+- A room has participants, filter-save receipts, game-command receipts, ballot receipts, and ordered rounds.
 - A round has exactly three `round_movies` when round creation completes.
 - A participant votes on the round's movies through `votes`.
+- A participant can complete one immutable `round_ballots` receipt for a round.
 
 ## Browser access and RLS
 

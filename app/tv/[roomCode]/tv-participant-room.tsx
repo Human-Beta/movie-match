@@ -76,7 +76,19 @@ function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnaps
             {t("game.loading")}
           </p>
         ) : (
-          <MovieCards round={snapshot.currentRound} />
+          <>
+            <MovieCards round={snapshot.currentRound} />
+            {snapshot.currentRound.status === "voting" && snapshot.ballotProgress !== null ? (
+              <p className="mt-8 rounded-2xl bg-slate-900 p-5 text-lg text-slate-200 ring-1 ring-white/10" role="status">
+                {snapshot.ballotProgress.readyForResults
+                  ? t("game.readyForResults")
+                  : t("game.votingProgress", {
+                      submitted: snapshot.ballotProgress.submittedCount,
+                      total: snapshot.ballotProgress.totalParticipants,
+                    })}
+              </p>
+            ) : null}
+          </>
         )}
       </div>
     </main>

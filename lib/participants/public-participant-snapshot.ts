@@ -1,3 +1,4 @@
+import type { BallotVoteInput } from "@/lib/ballots/ballot-vote";
 import type { ParticipantRole } from "@/lib/participants/participant-service";
 import type { RoomStatus } from "@/lib/rooms/room-service";
 
@@ -29,17 +30,30 @@ export type PublicRoomRound = {
   movies: PublicRoomMovies;
 };
 
+export type PublicBallotProgress = {
+  submittedCount: number;
+  totalParticipants: number;
+  readyForResults: boolean;
+};
+
+export type ParticipantOwnBallot = { status: "not_submitted"; votes: [] } | { status: "submitted"; votes: BallotVoteInput[] };
+
 export type PublicParticipantSnapshot = {
   roomState: RoomStatus;
   participantCount: number;
   participants: PublicRoomParticipant[];
   currentRound: PublicRoomRound | null;
+  ballotProgress: PublicBallotProgress | null;
+};
+
+export type ParticipantClientSnapshot = PublicParticipantSnapshot & {
+  ownBallot: ParticipantOwnBallot | null;
 };
 
 export type ParticipantClientRoomState = {
   realtimeTopic: string;
-  snapshot: PublicParticipantSnapshot;
+  snapshot: ParticipantClientSnapshot;
 };
 
-export type ParticipantSnapshotActionResult =
-  { status: "ready"; snapshot: PublicParticipantSnapshot } | { status: "unavailable" } | { status: "error" };
+export type ParticipantSnapshotActionResult<TSnapshot extends PublicParticipantSnapshot = PublicParticipantSnapshot> =
+  { status: "ready"; snapshot: TSnapshot } | { status: "unavailable" } | { status: "error" };

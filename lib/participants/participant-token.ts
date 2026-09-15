@@ -1,6 +1,7 @@
-import { createHash, randomBytes } from "node:crypto";
-
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
+
+import { sha256Hex } from "@/lib/sha256";
 
 export const PARTICIPANT_ACCESS_TOKEN_BYTES = 32;
 
@@ -23,7 +24,7 @@ export function generateParticipantAccessToken(getRandomBytes: RandomByteSource 
 }
 
 export function hashParticipantAccessToken(rawToken: string): string {
-  return createHash("sha256").update(rawToken, "utf8").digest("hex");
+  return sha256Hex(rawToken);
 }
 
 export function parseParticipantAccessToken(rawToken: string | null | undefined): string | null {

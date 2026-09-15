@@ -1,10 +1,10 @@
 import "server-only";
 
-import { asc, desc, eq, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
 
 import { loadDatabase, type DatabaseProvider } from "@/lib/db/database-provider";
-import { genres, movieGenres, movies, participants, rooms, roundMovies, rounds } from "@/lib/db/schema";
-import { isPublicRoomMovies, type PublicRoomMovie } from "@/lib/participants/public-participant-snapshot";
+import { genres, movieGenres, movies, participants, roundBallots, rooms, roundMovies, rounds, votes } from "@/lib/db/schema";
+import { isPublicRoomMovies, type ParticipantOwnBallot, type PublicRoomMovie } from "@/lib/participants/public-participant-snapshot";
 import type { ParticipantSnapshotRecord, ParticipantSnapshotRepository } from "@/lib/participants/participant-snapshot-service";
 
 export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshotRepository {
@@ -18,7 +18,11 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
     return this.findSnapshot(eq(rooms.id, roomId));
   }
 
-  private async findSnapshot(condition: SQL): Promise<ParticipantSnapshotRecord | null> {
+  async findByRoomIdForParticipant(roomId: string, accessTokenHash: string): Promise<ParticipantSnapshotRecord | null> {
+    return this.findSnapshot(eq(rooms.id, roomId), accessTokenHash);
+  }
+
+  private async findSnapshot(condition: SQL, accessTokenHash: string | null = null): Promise<ParticipantSnapshotRecord | null> {
     const database = await this.getDatabase();
     return database.transaction(
       async transaction => {
@@ -38,6 +42,19 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
           return null;
         }
 
+        const ownParticipantRows =
+          accessTokenHash === null
+            ? []
+            : await transaction
+                .select({ id: participants.id })
+                .from(participants)
+                .where(and(eq(participants.roomId, room.id), eq(participants.accessTokenHash, accessTokenHash)))
+                .limit(1);
+
+        if (accessTokenHash !== null && ownParticipantRows.length === 0) {
+          return null;
+        }
+
         const participantRows = await transaction
           .select({ name: participants.name, role: participants.role })
           .from(participants)
@@ -51,7 +68,40 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
         const currentRound = roundRows.at(0) ?? null;
 
         if (currentRound === null) {
-          return { room, participants: participantRows, currentRound: null };
+          return { room, participants: participantRows, currentRound: null, submittedBallotCount: 0, ownBallot: null };
+        }
+
+        const submittedBallotCountRows = await transaction
+          .select({ count: sql<number>`count(*)::int` })
+          .from(roundBallots)
+          .where(and(eq(roundBallots.roomId, room.id), eq(roundBallots.roundId, currentRound.id)));
+        const submittedBallotCount = submittedBallotCountRows.at(0)?.count ?? 0;
+        const ownParticipant = ownParticipantRows.at(0) ?? null;
+        const ownBallotRows =
+          ownParticipant === null
+            ? []
+            : await transaction
+                .select({ requestId: roundBallots.requestId })
+                .from(roundBallots)
+                .where(
+                  and(eq(roundBallots.roomId, room.id), eq(roundBallots.roundId, currentRound.id), eq(roundBallots.participantId, ownParticipant.id)),
+                )
+                .limit(1);
+        let ownBallot: ParticipantOwnBallot | null = null;
+
+        if (ownParticipant !== null) {
+          if (ownBallotRows.length === 0) {
+            ownBallot = { status: "not_submitted", votes: [] };
+          } else {
+            ownBallot = {
+              status: "submitted",
+              votes: await transaction
+                .select({ movieId: votes.movieId, value: votes.value })
+                .from(votes)
+                .where(and(eq(votes.roomId, room.id), eq(votes.roundId, currentRound.id), eq(votes.participantId, ownParticipant.id)))
+                .orderBy(asc(votes.movieId)),
+            };
+          }
         }
 
         const movieRows = await transaction
@@ -105,6 +155,8 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
         return {
           room,
           participants: participantRows,
+          submittedBallotCount,
+          ownBallot,
           currentRound: {
             roundId: currentRound.id,
             roundNumber: currentRound.roundNumber,

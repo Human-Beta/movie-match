@@ -6,7 +6,13 @@ import { useState, type ReactNode } from "react";
 import { formatRuntime } from "@/app/room-participants/format-runtime";
 import type { PublicRoomMovie, PublicRoomRound } from "@/lib/participants/public-participant-snapshot";
 
-export function MovieCards({ round }: Readonly<{ round: PublicRoomRound }>): ReactNode {
+export function MovieCards({
+  round,
+  renderFooter,
+}: Readonly<{
+  round: PublicRoomRound;
+  renderFooter?: (movie: PublicRoomMovie) => ReactNode;
+}>): ReactNode {
   const t = useTranslations("GameRound");
 
   return (
@@ -23,6 +29,7 @@ export function MovieCards({ round }: Readonly<{ round: PublicRoomRound }>): Rea
               <h3 className="mt-2 text-xl font-bold text-white">{movie.title}</h3>
               <p className="mt-3 text-sm text-slate-300">{t("details", { year: movie.releaseYear, runtime: formatRuntime(movie.runtimeMinutes) })}</p>
               <p className="mt-2 text-sm leading-6 text-slate-400">{movie.genres.length === 0 ? t("genresFallback") : movie.genres.join(", ")}</p>
+              {renderFooter?.(movie)}
             </div>
           </article>
         ))}
