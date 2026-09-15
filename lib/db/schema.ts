@@ -257,6 +257,35 @@ export const votes = pgTable(
   ],
 ).enableRLS();
 
+export const roundBallots = pgTable(
+  "round_ballots",
+  {
+    roomId: uuid("room_id").notNull(),
+    roundId: uuid("round_id").notNull(),
+    participantId: uuid("participant_id").notNull(),
+    requestId: uuid("request_id").notNull(),
+    payloadHash: varchar("payload_hash", { length: 64 }).notNull(),
+  },
+  table => [
+    primaryKey({
+      name: "round_ballots_pkey",
+      columns: [table.roomId, table.roundId, table.participantId],
+    }),
+    foreignKey({
+      name: "round_ballots_round_fk",
+      columns: [table.roomId, table.roundId],
+      foreignColumns: [rounds.roomId, rounds.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "round_ballots_room_participant_fk",
+      columns: [table.roomId, table.participantId],
+      foreignColumns: [participants.roomId, participants.id],
+    }).onDelete("cascade"),
+    unique("round_ballots_room_participant_request_unique").on(table.roomId, table.participantId, table.requestId),
+    check("round_ballots_payload_hash_check", sql`${table.payloadHash} ~ '^[a-f0-9]{64}$'`),
+  ],
+).enableRLS();
+
 export const genresRelations = relations(genres, ({ many }) => ({
   movieGenres: many(movieGenres),
   roomGenres: many(roomGenres),
@@ -303,6 +332,7 @@ export const participantsRelations = relations(participants, ({ many, one }) => 
     references: [rooms.id],
   }),
   votes: many(votes),
+  ballots: many(roundBallots),
 }));
 
 export const roundsRelations = relations(rounds, ({ many, one }) => ({
@@ -311,6 +341,7 @@ export const roundsRelations = relations(rounds, ({ many, one }) => ({
     references: [rooms.id],
   }),
   movies: many(roundMovies),
+  ballots: many(roundBallots),
 }));
 
 export const roundMoviesRelations = relations(roundMovies, ({ many, one }) => ({
@@ -332,6 +363,17 @@ export const votesRelations = relations(votes, ({ one }) => ({
   }),
   participant: one(participants, {
     fields: [votes.roomId, votes.participantId],
+    references: [participants.roomId, participants.id],
+  }),
+}));
+
+export const roundBallotsRelations = relations(roundBallots, ({ one }) => ({
+  round: one(rounds, {
+    fields: [roundBallots.roomId, roundBallots.roundId],
+    references: [rounds.roomId, rounds.id],
+  }),
+  participant: one(participants, {
+    fields: [roundBallots.roomId, roundBallots.participantId],
     references: [participants.roomId, participants.id],
   }),
 }));

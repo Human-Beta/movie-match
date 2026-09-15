@@ -44,6 +44,12 @@
 - За двох participants у `waiting` TV показує, що очікує налаштування filters і start від host; повідомлення оновлюється після успішного переходу до `playing` без ручного reload.
 - Не фіксувати hosted credentials, room topics, browser artifacts або product rows у Broadcast payloads. Цей сценарій закриває відкладений acceptance criterion task 010.
 
+### P1 — Task 011 hosted private-voting synchronization
+
+- Проти hosted Supabase відкрити TV і два ізольовані phone contexts, створити та запустити round, а потім надіслати повний ballot з кожного телефона.
+- Підтвердити реальний `room_changed` Broadcast і reconnect: TV та другий телефон переходять `0/2 → 1/2 → 2/2` без ручного reload, а пропущена invalidation відновлюється bounded active-voting fallback polling без duplicate channel або write.
+- Перевірити Network responses на TV і другому телефоні: вони містять лише aggregate progress, а не vote values, receipts, request IDs, participant credentials чи Broadcast payload. Reload першого телефона відновлює тільки його власні submitted values.
+
 ### P1 — Tasks 010.1/010.2 insufficient-catalog recovery
 
 - У трьох ізольованих browser contexts (host, guest, TV) відтворити insufficient catalog. Перевірити, що error/instruction бачить лише host, вона має error styling, лишається поряд із filters та disable-ить повторний start для того самого contract.
@@ -66,6 +72,12 @@
 - У реальному Next.js runtime перевірити `startGameAction` і `restartMovieListAction`: room-scoped host cookie читається server-side, forged або missing session не створює writes, а terminal response викликає лише non-sensitive invalidation.
 - Перевірити React controls для start і restart: request ID persisted before submission, disabled/retry/terminal states коректні, а storage failure не надсилає mutation.
 - Підтвердити, що action response та DOM не містять participant credentials, receipt rows, client-provided movie selections або Broadcast payload data.
+
+### P2 — Task 011 ballot Server Action and UI boundary
+
+- У реальному Next.js runtime перевірити `submitBallotAction` і `useVotingBallot`: pending request ID та три вибори persist-яться до mutation, incomplete ballot не викликає write, а double click не створює другого submit.
+- Змоделювати transport failure і response loss: pending ballot лишається для safe retry, exact retry повертає committed outcome, а terminal unavailable, validation або conflict state очищає лише відповідний pending request.
+- Підтвердити, що DOM і action responses не серіалізують чужі vote values, receipts, request IDs або participant credentials.
 
 ### P2 — Movie catalog seed lifecycle
 

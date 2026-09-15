@@ -32,6 +32,7 @@ If documents allow different interpretations of the current product scope, follo
 
 - Prefer the simplest cohesive structure that satisfies the current task. Do not create files, classes, wrappers, or abstraction layers without a concrete responsibility, runtime boundary, reuse case, or meaningful reduction in complexity.
 - Keep modules focused rather than growing one large file with unrelated responsibilities. Apply the same organizational pattern consistently to code with the same role, while allowing different roles to use different patterns when that distinction is explicit.
+- Define each symbol in one module and import it from that defining module. Do not re-export sibling symbols from leaf modules. Use a feature `index.ts` only as an intentional external facade for runtime operations; import repositories, services, schemas, and types from their defining modules unless the feature explicitly needs a public barrel.
 - Use TypeScript `type` aliases for object contracts. Use `interface` only when a third-party API specifically requires declaration merging, and document that exception at the declaration.
 - Wrap React component props object types in `Readonly<...>` so components cannot mutate incoming props.
 - Use exact validated input types whenever the application has a defined contract, including typed Server Actions that still validate their runtime payload. Reserve `unknown` for rare boundaries whose input contract is genuinely unspecified and for caught or rejected values, then narrow it immediately.
@@ -45,6 +46,7 @@ If documents allow different interpretations of the current product scope, follo
 - Reuse `Database`, `DatabaseProvider`, and `loadDatabase` from `lib/db/database-provider.ts` in Drizzle repositories; do not create repository-local database loader functions or duplicate loader-derived database types.
 - Always wrap `if` statement bodies in braces, including single-statement returns and throws.
 - Keep one-off Tailwind utility composition inline. When multiple call sites share the same semantic UI element and interaction states, extract a focused React component that owns the common classes and exposes only intentional variants; keep feature-only reuse local until it crosses a module boundary. Use Tailwind theme tokens or custom CSS utilities/component classes only for cross-cutting styling behavior that a React component cannot own cleanly. Do not introduce a custom class merely to shorten one long `className`, and do not create speculative UI primitives before a concrete reuse case exists.
+- When multiple components in one module use the same `next-intl` namespace, define one module-level namespace constant. Keep a one-off namespace inline instead of introducing a constant with no reuse.
 
 ## Data access and database security
 

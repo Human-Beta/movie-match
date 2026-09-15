@@ -12,12 +12,14 @@ import {
 import type { ParticipantSnapshotActionResult, PublicParticipantSnapshot } from "@/lib/participants/public-participant-snapshot";
 
 const waitingSnapshot: PublicParticipantSnapshot = {
+  ballotProgress: null,
   currentRound: null,
   roomState: "waiting",
   participantCount: 1,
   participants: [{ name: "Олена", role: "host" }],
 };
 const readySnapshot: PublicParticipantSnapshot = {
+  ballotProgress: null,
   currentRound: null,
   roomState: "waiting",
   participantCount: 2,
@@ -39,6 +41,7 @@ const playingSnapshot: PublicParticipantSnapshot = {
       { movieId: 3, position: 3, title: "Третій", posterPath: null, releaseYear: 2012, runtimeMinutes: 110, genres: [] },
     ],
   },
+  ballotProgress: { submittedCount: 0, totalParticipants: 2, readyForResults: false },
 };
 const exhaustedSnapshot: PublicParticipantSnapshot = {
   ...readySnapshot,
@@ -304,7 +307,59 @@ test("keeps polling while waiting at 2/2 so a missed game start still converges"
   await flushPromises();
   assert.equal(reads, 3);
   assert.deepEqual(snapshots, [readySnapshot, playingSnapshot]);
-  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 0);
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 1);
+  sync.stop();
+});
+
+test("keeps polling after the first active-voting snapshot read fails", async () => {
+  const scheduler = new FakeScheduler();
+  const tracker: SubscriptionTracker = { active: 0, maxActive: 0 };
+  const snapshots: PublicParticipantSnapshot[] = [];
+  let reads = 0;
+  const sync = new RoomParticipantSync({
+    realtimeTopic: "room:55555555-5555-4555-8555-555555555555",
+    initialSnapshot: playingSnapshot,
+    scheduler,
+    createSubscription: (): RoomParticipantSubscription => new FakeSubscription(tracker),
+    readSnapshot: async (): Promise<ParticipantSnapshotActionResult> => {
+      reads += 1;
+
+      if (reads === 1) {
+        throw new Error("simulated Server Action outage");
+      }
+
+      return {
+        status: "ready",
+        snapshot: {
+          ...playingSnapshot,
+          ballotProgress: { submittedCount: 1, totalParticipants: 2, readyForResults: false },
+        },
+      };
+    },
+    onSnapshot: (nextSnapshot): void => {
+      snapshots.push(nextSnapshot);
+    },
+    onSnapshotReadRejected: (): boolean => false,
+  });
+
+  sync.start();
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 1);
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 1);
+
+  scheduler.run(PARTICIPANT_SNAPSHOT_POLL_MS);
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+
+  assert.equal(reads, 2);
+  assert.deepEqual(snapshots, [
+    {
+      ...playingSnapshot,
+      ballotProgress: { submittedCount: 1, totalParticipants: 2, readyForResults: false },
+    },
+  ]);
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 1);
   sync.stop();
 });
 
@@ -341,7 +396,7 @@ test("keeps polling while exhausted so a missed restart still converges", async 
 
   assert.equal(reads, 2);
   assert.deepEqual(snapshots, [exhaustedSnapshot, playingSnapshot]);
-  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 0);
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 1);
   sync.stop();
 });
 

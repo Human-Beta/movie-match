@@ -6,9 +6,9 @@ import type { ReactNode } from "react";
 import type { PublicParticipantIdentity } from "@/app/join/[roomCode]/join-action-state";
 import { HostFilters } from "@/app/join/[roomCode]/host-filters";
 import { RestartListControl } from "@/app/join/[roomCode]/restart-list-control";
-import { MovieCards } from "@/app/room-participants/movie-cards";
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
-import { useRoomParticipantSnapshot } from "@/app/room-participants/use-room-participant-snapshot";
+import { useAuthenticatedParticipantRoomSnapshot } from "@/app/room-participants/use-authenticated-participant-room-snapshot";
+import { VotingBallot } from "@/app/join/[roomCode]/voting-ballot";
 import { assertNever } from "@/lib/assert-never";
 import type { ParticipantClientRoomState } from "@/lib/participants/public-participant-snapshot";
 
@@ -55,9 +55,10 @@ export function JoinedRoomState({
   room: ParticipantClientRoomState;
 }>): ReactNode {
   const t = useTranslations("JoinRoom");
-  const { snapshot } = useRoomParticipantSnapshot({
+  const { snapshot } = useAuthenticatedParticipantRoomSnapshot({
     initialSnapshot: room.snapshot,
     realtimeTopic: room.realtimeTopic,
+    roomCode,
   });
   const roomView = getParticipantRoomView(snapshot);
 
@@ -78,14 +79,12 @@ export function JoinedRoomState({
         break;
       }
 
-      return (
-        <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-50">
-          <div className="mx-auto max-w-5xl">
-            <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
-            <p className="mb-8 text-slate-300">{t("status.votingSoon")}</p>
-            <MovieCards round={snapshot.currentRound} />
-          </div>
-        </main>
+      return snapshot.currentRound.status === "voting" ? (
+        <VotingBallot roomCode={roomCode} round={snapshot.currentRound} ownBallot={snapshot.ownBallot} progress={snapshot.ballotProgress} />
+      ) : (
+        <PageShell>
+          <p className="text-slate-300">{t("status.advanced")}</p>
+        </PageShell>
       );
     case "exhausted":
       return (

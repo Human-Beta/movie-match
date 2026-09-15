@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 import { SystemClock, type Clock } from "@/lib/clock";
 import type { ParticipantRole } from "@/lib/participants/participant-service";
 import { hashStoredParticipantAccessToken } from "@/lib/participants/participant-token";
@@ -7,6 +5,7 @@ import type { GameCommandInput } from "@/lib/game-rounds/game-command-input";
 import { hashRoomFilterContract } from "@/lib/room-filters/filter-contract";
 import type { RoomFilterValues } from "@/lib/room-filters/room-filter-values";
 import type { RoomStatus } from "@/lib/rooms/room-service";
+import { sha256Hex } from "@/lib/sha256";
 
 export type GameCommand = "start" | "restart";
 export type GameCommandOutcome = "started" | "catalog_insufficient" | "list_exhausted";
@@ -129,8 +128,6 @@ export class GameRoundService {
   }
 
   private hashPayload(command: GameCommand, input: GameCommandInput): string {
-    return createHash("sha256")
-      .update(JSON.stringify({ command, roomCode: input.roomCode }))
-      .digest("hex");
+    return sha256Hex(JSON.stringify({ command, roomCode: input.roomCode }));
   }
 }

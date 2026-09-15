@@ -16,12 +16,12 @@ export type RoomParticipantSubscription = {
 
 export type ParticipantSyncScheduler = TimerScheduler;
 
-export type RoomParticipantSyncOptions = {
+export type RoomParticipantSyncOptions<TSnapshot extends PublicParticipantSnapshot = PublicParticipantSnapshot> = {
   realtimeTopic: string;
-  initialSnapshot: PublicParticipantSnapshot;
+  initialSnapshot: TSnapshot;
   createSubscription: (realtimeTopic: string) => RoomParticipantSubscription;
-  readSnapshot: () => Promise<ParticipantSnapshotActionResult>;
-  onSnapshot: (snapshot: PublicParticipantSnapshot) => void;
+  readSnapshot: () => Promise<ParticipantSnapshotActionResult<TSnapshot>>;
+  onSnapshot: (snapshot: TSnapshot) => void;
   onTransportStatus?: (status: ParticipantRealtimeTransportStatus) => void;
   onSnapshotReadFulfilled?: () => void;
   onSnapshotReadRejected?: (error: unknown) => boolean;
@@ -31,7 +31,11 @@ export type RoomParticipantSyncOptions = {
 };
 
 function shouldPoll(snapshot: PublicParticipantSnapshot): boolean {
-  return snapshot.roomState === "waiting" || snapshot.roomState === "exhausted";
+  return (
+    snapshot.roomState === "waiting" ||
+    snapshot.roomState === "exhausted" ||
+    (snapshot.roomState === "playing" && snapshot.currentRound?.status === "voting" && snapshot.ballotProgress?.readyForResults === false)
+  );
 }
 
 function toTransportStatus(status: ParticipantRealtimeSubscriptionStatus): ParticipantRealtimeTransportStatus {
@@ -42,20 +46,20 @@ function toTransportStatus(status: ParticipantRealtimeSubscriptionStatus): Parti
   return "disconnected";
 }
 
-export class RoomParticipantSync {
+export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = PublicParticipantSnapshot> {
   private readonly coalesceMs: number;
-  private readonly createSubscription: RoomParticipantSyncOptions["createSubscription"];
-  private readonly onSnapshot: RoomParticipantSyncOptions["onSnapshot"];
-  private readonly onSnapshotReadFulfilled: RoomParticipantSyncOptions["onSnapshotReadFulfilled"];
-  private readonly onSnapshotReadRejected: RoomParticipantSyncOptions["onSnapshotReadRejected"];
-  private readonly onTransportStatus: RoomParticipantSyncOptions["onTransportStatus"];
+  private readonly createSubscription: RoomParticipantSyncOptions<TSnapshot>["createSubscription"];
+  private readonly onSnapshot: RoomParticipantSyncOptions<TSnapshot>["onSnapshot"];
+  private readonly onSnapshotReadFulfilled: RoomParticipantSyncOptions<TSnapshot>["onSnapshotReadFulfilled"];
+  private readonly onSnapshotReadRejected: RoomParticipantSyncOptions<TSnapshot>["onSnapshotReadRejected"];
+  private readonly onTransportStatus: RoomParticipantSyncOptions<TSnapshot>["onTransportStatus"];
   private readonly pollMs: number;
-  private readonly readSnapshot: RoomParticipantSyncOptions["readSnapshot"];
+  private readonly readSnapshot: RoomParticipantSyncOptions<TSnapshot>["readSnapshot"];
   private readonly realtimeTopic: string;
   private readonly scheduler: ParticipantSyncScheduler;
 
   private active = false;
-  private currentSnapshot: PublicParticipantSnapshot;
+  private currentSnapshot: TSnapshot;
   private currentTransportStatus: ParticipantRealtimeTransportStatus = "connecting";
   private generation = 0;
   private pollTimer: TimerId | null = null;
@@ -64,7 +68,7 @@ export class RoomParticipantSync {
   private refreshTimer: TimerId | null = null;
   private subscription: RoomParticipantSubscription | null = null;
 
-  constructor(options: RoomParticipantSyncOptions) {
+  constructor(options: RoomParticipantSyncOptions<TSnapshot>) {
     this.coalesceMs = options.coalesceMs ?? PARTICIPANT_SNAPSHOT_COALESCE_MS;
     this.createSubscription = options.createSubscription;
     this.currentSnapshot = options.initialSnapshot;
@@ -177,7 +181,7 @@ export class RoomParticipantSync {
     }
   }
 
-  private applyResult(result: ParticipantSnapshotActionResult): void {
+  private applyResult(result: ParticipantSnapshotActionResult<TSnapshot>): void {
     switch (result.status) {
       case "ready":
         this.currentSnapshot = result.snapshot;

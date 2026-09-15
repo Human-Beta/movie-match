@@ -30,6 +30,8 @@ function makeRecord(): ParticipantSnapshotRecord {
     },
     participants: [{ name: "Марко", role: "guest" }, hostWithPrivateFields],
     currentRound: null,
+    submittedBallotCount: 0,
+    ownBallot: null,
   };
 }
 
@@ -43,6 +45,11 @@ class StubParticipantSnapshotRepository implements ParticipantSnapshotRepository
   async findByRoomId(candidateRoomId: string): Promise<ParticipantSnapshotRecord | null> {
     return this.record?.room.id === candidateRoomId ? this.record : null;
   }
+
+  async findByRoomIdForParticipant(candidateRoomId: string, accessTokenHash: string): Promise<ParticipantSnapshotRecord | null> {
+    void accessTokenHash;
+    return this.record?.room.id === candidateRoomId ? this.record : null;
+  }
 }
 
 function makeService(record: ParticipantSnapshotRecord | null = makeRecord()): ParticipantSnapshotService {
@@ -54,6 +61,7 @@ test("sanitizes the authoritative snapshot to state, count, name, and role", () 
   const serializedSnapshot = JSON.stringify(snapshot);
 
   assert.deepEqual(snapshot, {
+    ballotProgress: null,
     currentRound: null,
     roomState: "waiting",
     participantCount: 2,
@@ -90,6 +98,7 @@ test("returns a snapshot by topic without reflecting forged payload state", asyn
   const snapshot = await makeService().getSnapshotForTopic(topic);
 
   assert.deepEqual(snapshot, {
+    ballotProgress: null,
     currentRound: null,
     roomState: "waiting",
     participantCount: 2,
@@ -181,6 +190,41 @@ test("rebuilds an ordered public round allowlist without internal fields", () =>
   assert.equal(JSON.stringify(snapshot).includes("availableOnNetflix"), false);
 });
 
+test("keeps a participant's own ballot separate from the TV snapshot", async () => {
+  const record = makeRecord();
+  record.room.status = "playing";
+  record.currentRound = {
+    roundId: "22222222-2222-4222-8222-222222222222",
+    roundNumber: 1,
+    status: "voting",
+    movies: [
+      { movieId: 10, position: 1, title: "Перший", posterPath: null, releaseYear: 2020, runtimeMinutes: 90, genres: [] },
+      { movieId: 20, position: 2, title: "Другий", posterPath: null, releaseYear: 2020, runtimeMinutes: 90, genres: [] },
+      { movieId: 30, position: 3, title: "Третій", posterPath: null, releaseYear: 2020, runtimeMinutes: 90, genres: [] },
+    ],
+  };
+  record.submittedBallotCount = 1;
+  record.ownBallot = {
+    status: "submitted",
+    votes: [
+      { movieId: 10, value: "want_to_watch" },
+      { movieId: 20, value: "could_watch" },
+      { movieId: 30, value: "no" },
+    ],
+  };
+  const service = makeService(record);
+  const tvSnapshot = await service.getTvRoomState("ABC123");
+  const clientSnapshot = await service.getClientRoomState(roomId, "abcdefghijklmnopqrstuvwxyzABCDEFG01234567_-");
+
+  assert.ok(tvSnapshot && clientSnapshot);
+  assert.deepEqual(tvSnapshot.snapshot.ballotProgress, { submittedCount: 1, totalParticipants: 2, readyForResults: false });
+  assert.deepEqual(clientSnapshot.snapshot.ownBallot, record.ownBallot);
+  assert.equal(JSON.stringify(tvSnapshot.snapshot).includes("want_to_watch"), false);
+  assert.equal(JSON.stringify(tvSnapshot.snapshot).includes("could_watch"), false);
+  assert.equal(JSON.stringify(tvSnapshot.snapshot).includes('"no"'), false);
+  assert.equal(JSON.stringify(clientSnapshot.snapshot).includes("requestId"), false);
+});
+
 test("treats expired rooms as closed and withholds initial channel state", async () => {
   const record = makeRecord();
   record.room.expiresAt = now;
@@ -188,5 +232,5 @@ test("treats expired rooms as closed and withholds initial channel state", async
 
   assert.equal(service.toPublicSnapshot(record).roomState, "closed");
   assert.equal(await service.getTvRoomState("ABC123"), null);
-  assert.equal(await service.getClientRoomState(roomId), null);
+  assert.equal(await service.getClientRoomState(roomId, null), null);
 });
