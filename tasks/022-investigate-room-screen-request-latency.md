@@ -4,13 +4,19 @@
 
 ## Goal
 
-Зрозуміти та усунути причину повільних і потенційно повторюваних запитів на room screens, зокрема `/tv/{roomCode}`, щоб малий payload не спричиняв приблизно секундну затримку або зайві fetch requests.
+Зрозуміти та усунути причину повільних і потенційно повторюваних запитів у TV та join flows, зокрема `/tv` і `/join/{roomCode}`, щоб малий payload не спричиняв приблизно секундну або багатосекундну затримку чи зайві fetch requests.
 
 ## Evidence
 
-Під час ручної перевірки production deployment у DevTools Network помічено багато `fetch` requests до TV room route. Більшість response має розмір близько `0.3 kB`, але займає приблизно `1.0–1.1 s`; один request тривав `2.52 s`. Це лише спостереження, а не встановлена причина: до вимірювання потрібно відокремити server processing, network latency, cold start, React/Next.js refresh, Realtime fallback і browser-side повторні запити.
+Під час ручної перевірки production deployment у DevTools Network помічено повільні та повторювані `fetch` requests в обох flows. На `/tv` більшість response має розмір близько `0.3 kB`, але займає приблизно `1.0–1.1 s`; один request тривав `2.52 s`. На `/join/{roomCode}` перший request тривав приблизно `4 s` (`3.91 s` на знімку) за response розміром `5.3 kB`; після нього видно додаткові requests тривалістю приблизно від `1.0 s` до `1.25 s`. Це лише спостереження, а не встановлена причина: до вимірювання потрібно відокремити server processing, network latency, cold start, React/Next.js refresh, Realtime fallback і browser-side повторні запити.
 
-![DevTools Network: repeated TV room requests with approximately one-second latency](assets/network-request-latency-2026-09-15.png)
+### `/tv`
+
+![DevTools Network: repeated `/tv` requests with approximately one-second latency](assets/network-request-latency-2026-09-15.png)
+
+### `/join/{roomCode}`
+
+![DevTools Network: a nearly four-second initial `/join/{roomCode}` request followed by repeated approximately one-second requests](assets/network-request-latency-join-code-2026-09-15.png)
 
 ## Scope
 
@@ -47,6 +53,6 @@
 
 ## References
 
-- Evidence captured 2026-09-15: `tasks/assets/network-request-latency-2026-09-15.png`.
+- Evidence captured 2026-09-15: `tasks/assets/network-request-latency-2026-09-15.png` for `/tv` and `tasks/assets/network-request-latency-join-code-2026-09-15.png` for `/join/{roomCode}`.
 - Related tasks: [018 — automated integration coverage](018-automated-integration-coverage.md) and [019 — shared-code audit and refactoring](019-refactor-shared-participant-access-and-ui-layouts.md).
 - Sources of truth: `docs/README.md`, active specification, `docs/stack.md`, and `AGENTS.md`.
