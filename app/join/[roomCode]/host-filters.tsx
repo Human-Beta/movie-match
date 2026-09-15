@@ -137,11 +137,14 @@ function HostFilterForm({
   const t = useTranslations("HostFilters");
   const [filters, setFilters] = useState(initialPendingFilterRequest?.filters ?? initialSnapshot.filters);
   const [savedFilters, setSavedFilters] = useState(initialSnapshot.filters);
+  const [startEligible, setStartEligible] = useState(initialSnapshot.startEligible);
   const [pendingFilterRequest, setPendingFilterRequest] = useState<PendingFilterSave | null>(initialPendingFilterRequest);
   const [pendingGameRequest, setPendingGameRequest] = useState<PendingGameCommand | null>(initialPendingGameRequest);
   const [unavailable, setUnavailable] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(initialPendingFilterRequest ? "retry" : "idle");
-  const [gameFeedback, setGameFeedback] = useState<GameFeedback>(initialPendingGameRequest ? "retry" : "idle");
+  const [gameFeedback, setGameFeedback] = useState<GameFeedback>(
+    initialPendingGameRequest ? "retry" : initialSnapshot.startEligible ? "idle" : "catalog_insufficient",
+  );
   const [saving, startSaving] = useTransition();
   const [starting, startStarting] = useTransition();
   const savingRef = useRef(false);
@@ -170,6 +173,8 @@ function HostFilterForm({
       case "saved":
         setFilters(result.filters);
         setSavedFilters(result.filters);
+        setStartEligible(result.startEligible);
+        setGameFeedback(result.startEligible ? "idle" : "catalog_insufficient");
         setFeedback("saved");
         break;
       case "unavailable":
@@ -218,7 +223,11 @@ function HostFilterForm({
   }
 
   function start(): void {
-    if (startingRef.current || savingRef.current || (pendingGameRequest === null && (hasUnsavedChanges || pendingFilterRequest !== null))) {
+    if (
+      startingRef.current ||
+      savingRef.current ||
+      (pendingGameRequest === null && (!startEligible || hasUnsavedChanges || pendingFilterRequest !== null))
+    ) {
       return;
     }
 
@@ -260,6 +269,9 @@ function HostFilterForm({
     switch (result.status) {
       case "started":
       case "catalog_insufficient":
+        setStartEligible(false);
+        setGameFeedback(result.status);
+        return;
       case "list_exhausted":
       case "unavailable":
       case "validation_error":
@@ -320,7 +332,7 @@ function HostFilterForm({
             starting ||
             saving ||
             participantCount !== 2 ||
-            (pendingGameRequest === null && (hasUnsavedChanges || pendingFilterRequest !== null)) ||
+            (pendingGameRequest === null && (!startEligible || hasUnsavedChanges || pendingFilterRequest !== null)) ||
             gameFeedback === "storage"
           }
           onClick={start}
@@ -444,7 +456,7 @@ function FilterFeedback({ feedback }: Readonly<{ feedback: VisibleFeedback }>): 
 
 function GameFeedbackMessage({ feedback }: Readonly<{ feedback: VisibleGameFeedback }>): ReactNode {
   const t = useTranslations("HostFilters");
-  const completed = feedback === "started" || feedback === "catalog_insufficient" || feedback === "list_exhausted";
+  const completed = feedback === "started";
 
   return (
     <p

@@ -27,7 +27,6 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
             id: rooms.id,
             code: rooms.code,
             status: rooms.status,
-            exhaustionReason: rooms.exhaustionReason,
             expiresAt: rooms.expiresAt,
           })
           .from(rooms)

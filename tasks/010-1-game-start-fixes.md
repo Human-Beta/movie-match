@@ -49,4 +49,4 @@
 ## Notes
 
 - Цей файл є місцем для додаткових знайдених follow-up дефектів задачі 010. Додавати їх окремими нумерованими підрозділами в `Reported issues` та уточнювати відповідні acceptance criteria перед імплементацією.
-- Імплементація зберігає причину `exhausted` у БД, повертає її через публічний snapshot, обмежує restart server-side до `list_exhausted` і дозволяє host-у зберегти нові фільтри лише для `catalog_insufficient`.
+- Імплементація зберігає `exhausted` лише коли вичерпано список, обмежує restart server-side до цього room state і дозволяє host-у зберегти нові фільтри лише для `catalog_insufficient`.

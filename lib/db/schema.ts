@@ -18,8 +18,6 @@ import {
 
 export const roomStatusEnum = pgEnum("room_status", ["waiting", "playing", "matched", "exhausted", "closed"]);
 
-export const roomExhaustionReasonEnum = pgEnum("room_exhaustion_reason", ["catalog_insufficient", "list_exhausted"]);
-
 export const participantRoleEnum = pgEnum("participant_role", ["host", "guest"]);
 
 export const yearFilterEnum = pgEnum("year_filter", ["any", "new", "old"]);
@@ -88,7 +86,6 @@ export const rooms = pgTable(
     code: varchar("code", { length: 8 }).notNull(),
     creationRequestId: uuid("creation_request_id"),
     status: roomStatusEnum("status").default("waiting").notNull(),
-    exhaustionReason: roomExhaustionReasonEnum("exhaustion_reason"),
     netflixOnly: boolean("netflix_only").default(false).notNull(),
     underTwoHours: boolean("under_two_hours").default(false).notNull(),
     yearFilter: yearFilterEnum("year_filter").default("any").notNull(),
@@ -102,7 +99,6 @@ export const rooms = pgTable(
     unique("rooms_creation_request_id_unique").on(table.creationRequestId),
     check("rooms_code_format_check", sql`${table.code} ~ '^[A-Z0-9]{4,8}$'`),
     check("rooms_lifetime_check", sql`${table.expiresAt} = ${table.createdAt} + interval '1 hour'`),
-    check("rooms_exhaustion_reason_check", sql`(${table.status} = 'exhausted') = (${table.exhaustionReason} is not null)`),
     index("rooms_active_expires_at_idx")
       .on(table.expiresAt)
       .where(sql`${table.status} <> 'closed'`),
@@ -152,11 +148,13 @@ export const roomGameCommands = pgTable(
     requestId: uuid("request_id").notNull(),
     command: roomGameCommandEnum("command").notNull(),
     payloadHash: varchar("payload_hash", { length: 64 }).notNull(),
+    filterHash: varchar("filter_hash", { length: 64 }).default("0000000000000000000000000000000000000000000000000000000000000000").notNull(),
     outcome: roomGameCommandOutcomeEnum("outcome").notNull(),
   },
   table => [
     primaryKey({ name: "room_game_commands_pkey", columns: [table.roomId, table.requestId] }),
     check("room_game_commands_payload_hash_check", sql`${table.payloadHash} ~ '^[a-f0-9]{64}$'`),
+    check("room_game_commands_filter_hash_check", sql`${table.filterHash} ~ '^[a-f0-9]{64}$'`),
   ],
 ).enableRLS();
 

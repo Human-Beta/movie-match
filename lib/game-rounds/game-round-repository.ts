@@ -15,7 +15,7 @@ export class DrizzleGameRoundRepository implements GameRoundRepository {
 
     return database.transaction(async transaction => {
       const roomRows = await transaction
-        .select({ id: rooms.id, status: rooms.status, exhaustionReason: rooms.exhaustionReason, expiresAt: rooms.expiresAt })
+        .select({ id: rooms.id, status: rooms.status, expiresAt: rooms.expiresAt })
         .from(rooms)
         .where(eq(rooms.code, roomCode))
         .limit(1)
@@ -75,7 +75,12 @@ export class DrizzleGameRoundRepository implements GameRoundRepository {
           }
 
           const rows = await transaction
-            .select({ command: roomGameCommands.command, payloadHash: roomGameCommands.payloadHash, outcome: roomGameCommands.outcome })
+            .select({
+              command: roomGameCommands.command,
+              payloadHash: roomGameCommands.payloadHash,
+              filterHash: roomGameCommands.filterHash,
+              outcome: roomGameCommands.outcome,
+            })
             .from(roomGameCommands)
             .where(and(eq(roomGameCommands.roomId, room.id), eq(roomGameCommands.requestId, requestId)))
             .limit(1);
@@ -88,6 +93,7 @@ export class DrizzleGameRoundRepository implements GameRoundRepository {
           return {
             command: receipt.command,
             payloadHash: receipt.payloadHash,
+            filterHash: receipt.filterHash,
             outcome: receipt.outcome,
           };
         },
@@ -137,9 +143,9 @@ export class DrizzleGameRoundRepository implements GameRoundRepository {
             })),
           );
         },
-        setRoomStatus: async (status, exhaustionReason) => {
+        setRoomStatus: async status => {
           const currentRoom = this.requireRoom(room);
-          await transaction.update(rooms).set({ status, exhaustionReason }).where(eq(rooms.id, currentRoom.id));
+          await transaction.update(rooms).set({ status }).where(eq(rooms.id, currentRoom.id));
         },
         saveCommand: async (requestId, receipt) => {
           const currentRoom = this.requireRoom(room);

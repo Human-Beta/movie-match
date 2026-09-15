@@ -73,21 +73,22 @@ test("PostgreSQL host filters preserve authorization, atomicity, retries and roo
     const initial = await service.read(code, host);
     assert.equal(initial.status, "ready");
     assert.deepEqual(initial.snapshot.filters, defaults);
-    assert.deepEqual(Object.keys(initial.snapshot).sort(), ["filters", "genres"]);
+    assert.deepEqual(Object.keys(initial.snapshot).sort(), ["filters", "genres", "startEligible"]);
+    assert.equal(initial.snapshot.startEligible, true);
     assert.ok(initial.snapshot.genres.every(genre => Object.keys(genre).sort().join() === "id,name"));
   });
 
   await context.test("concurrent duplicate requests commit once; an old retry cannot revert a newer save", async () => {
     const results = await Promise.all([service.save(first, host), service.save(first, host)]);
     assert.deepEqual(results, [
-      { status: "saved", filters: first.filters },
-      { status: "saved", filters: first.filters },
+      { status: "saved", filters: first.filters, startEligible: true },
+      { status: "saved", filters: first.filters, startEligible: true },
     ]);
     assert.equal((await database.select().from(roomFilterSaves).where(eq(roomFilterSaves.roomId, room.id))).length, 1);
     assert.equal((await database.select().from(roomGenres).where(eq(roomGenres.roomId, room.id))).length, 2);
     const second = { roomCode: code, requestId: randomUUID(), filters: { ...defaults, underTwoHours: true, yearFilter: "old" as const } };
     await service.save(second, host);
-    assert.deepEqual(await service.save(first, host), { status: "saved", filters: second.filters });
+    assert.deepEqual(await service.save(first, host), { status: "saved", filters: second.filters, startEligible: true });
     assert.deepEqual(await service.save({ ...first, filters: defaults }, host), { status: "conflict" });
     assert.deepEqual(await database.select().from(roomGenres).where(eq(roomGenres.roomId, room.id)), []);
     const [current] = await database.select().from(rooms).where(eq(rooms.id, room.id));
@@ -106,8 +107,8 @@ test("PostgreSQL host filters preserve authorization, atomicity, retries and roo
     const current = await service.read(code, host);
     assert.equal(current.status, "ready");
     assert.ok([a.filters, b.filters].some(filters => JSON.stringify(filters) === JSON.stringify(current.snapshot.filters)));
-    assert.deepEqual(await service.save(a, host), { status: "saved", filters: current.snapshot.filters });
-    assert.deepEqual(await service.save(b, host), { status: "saved", filters: current.snapshot.filters });
+    assert.deepEqual(await service.save(a, host), { status: "saved", filters: current.snapshot.filters, startEligible: true });
+    assert.deepEqual(await service.save(b, host), { status: "saved", filters: current.snapshot.filters, startEligible: true });
   });
 
   await context.test("unknown genres and transaction failures leave filters and command receipts intact", async () => {
@@ -117,12 +118,12 @@ test("PostgreSQL host filters preserve authorization, atomicity, retries and roo
     assert.deepEqual(await service.save(bad, host), { status: "validation_error" });
     await assert.rejects(
       repository.inLockedRoom(code, async (_room, locked) => {
-        await locked.saveFilters(bad, "a".repeat(64));
+        await locked.saveFilters(bad, "a".repeat(64), true);
       }),
     );
     await assert.rejects(
       repository.inLockedRoom(code, async (_room, locked) => {
-        await locked.saveFilters({ ...first, requestId: randomUUID() }, "b".repeat(64));
+        await locked.saveFilters({ ...first, requestId: randomUUID() }, "b".repeat(64), true);
         throw new Error("Simulated failure after saving the receipt");
       }),
     );
@@ -133,10 +134,7 @@ test("PostgreSQL host filters preserve authorization, atomicity, retries and roo
   await context.test("rejects unavailable rooms under lock, including elapsed expiration", async () => {
     const request = { ...first, requestId: randomUUID() };
     for (const status of ["playing", "matched", "exhausted", "closed"] as const) {
-      await database
-        .update(rooms)
-        .set({ status, exhaustionReason: status === "exhausted" ? "list_exhausted" : null })
-        .where(eq(rooms.id, room.id));
+      await database.update(rooms).set({ status }).where(eq(rooms.id, room.id));
       assert.deepEqual(await service.save(request, host), { status: "unavailable" });
     }
     const expiredAt = new Date(Date.now() - 3600000);

@@ -46,10 +46,12 @@ async function runGameCommand(
       return result;
     }
 
-    try {
-      await notifyRoomChanged(result.roomId);
-    } catch {
-      // Authoritative waiting/active-state refreshes recover from failed invalidation.
+    if (result.outcome !== "catalog_insufficient") {
+      try {
+        await notifyRoomChanged(result.roomId);
+      } catch {
+        // Authoritative waiting/active-state refreshes recover from failed invalidation.
+      }
     }
 
     return { status: result.outcome };
