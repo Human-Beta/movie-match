@@ -88,21 +88,11 @@ export function JoinedRoomState({
         </main>
       );
     case "exhausted":
-      if (snapshot.exhaustionReason === "catalog_insufficient") {
-        return (
-          <PageShell>
-            <h1 className="text-3xl font-bold tracking-tight">{t("status.catalogInsufficientTitle")}</h1>
-            <p className="mt-4 text-lg leading-8 text-slate-300">{t("status.catalogInsufficientDescription")}</p>
-            {participant.role === "host" ? <HostFilters participantCount={snapshot.participantCount} roomCode={roomCode} /> : null}
-          </PageShell>
-        );
-      }
-
       return (
         <PageShell>
           <h1 className="text-3xl font-bold tracking-tight">{t("status.exhaustedTitle")}</h1>
           <p className="mt-4 text-lg leading-8 text-slate-300">{t("status.exhaustedDescription")}</p>
-          {participant.role === "host" && snapshot.exhaustionReason === "list_exhausted" ? <RestartListControl roomCode={roomCode} /> : null}
+          {participant.role === "host" ? <RestartListControl roomCode={roomCode} /> : null}
         </PageShell>
       );
     case "advanced":

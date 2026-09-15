@@ -13,7 +13,7 @@ export const roomFilterValuesSchema = z.strictObject({
 
 export type RoomFilterValues = z.infer<typeof roomFilterValuesSchema>;
 export type FilterGenre = { id: number; name: string };
-export type RoomFilterSnapshot = { filters: RoomFilterValues; genres: FilterGenre[] };
+export type RoomFilterSnapshot = { filters: RoomFilterValues; genres: FilterGenre[]; startEligible: boolean };
 
 export const pendingFilterSaveSchema = z.strictObject({
   requestId: z.uuid(),
@@ -24,7 +24,7 @@ export type PendingFilterSave = z.infer<typeof pendingFilterSaveSchema>;
 
 export type ReadRoomFiltersResult = { status: "ready"; snapshot: RoomFilterSnapshot } | { status: "unavailable" } | { status: "error" };
 export type SaveRoomFiltersResult =
-  | { status: "saved"; filters: RoomFilterValues }
+  | { status: "saved"; filters: RoomFilterValues; startEligible: boolean }
   | { status: "unavailable" }
   | { status: "validation_error" }
   | { status: "conflict" }

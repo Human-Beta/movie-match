@@ -22,7 +22,6 @@ class MemoryGameRoundRepository implements GameRoundRepository {
   room: GameRoom | null = {
     id: "11111111-1111-4111-8111-111111111111",
     status: "waiting",
-    exhaustionReason: null,
     expiresAt: new Date(now.getTime() + 60_000),
   };
   participantCount = 2;
@@ -60,9 +59,9 @@ class MemoryGameRoundRepository implements GameRoundRepository {
       createRound: async (roundNumber, movieIds) => {
         this.rounds.push({ roundNumber, movieIds: [...movieIds] });
       },
-      setRoomStatus: async (status, exhaustionReason) => {
+      setRoomStatus: async status => {
         if (this.room !== null) {
-          this.room = { ...this.room, status, exhaustionReason };
+          this.room = { ...this.room, status };
         }
         this.statusWrites += 1;
       },
@@ -143,7 +142,7 @@ test("start rejects invalid authority, room state, expiration, and participant c
   assert.equal(repository.rounds.length, 0);
 });
 
-test("zero, one, or two unique candidates exhaust the room without a partial round", async () => {
+test("zero, one, or two unique candidates return a host-local outcome without a partial round", async () => {
   for (const candidates of [[], [1], [1, 2], [1, 1, 2]]) {
     const repository = new MemoryGameRoundRepository();
     repository.candidates = candidates;
@@ -151,10 +150,10 @@ test("zero, one, or two unique candidates exhaust the room without a partial rou
 
     assert.equal(result.status, "completed");
     assert.equal(result.outcome, "catalog_insufficient");
-    assert.equal(repository.room?.status, "exhausted");
-    assert.equal(repository.room.exhaustionReason, "catalog_insufficient");
+    assert.equal(repository.room?.status, "waiting");
     assert.deepEqual(repository.rounds, []);
     assert.equal(repository.receipts.size, 1);
+    assert.equal(repository.statusWrites, 0);
   }
 });
 
@@ -169,7 +168,6 @@ test("start records a list-exhausted outcome when the full catalog can form a ro
     roomId: repository.room?.id,
   });
   assert.equal(repository.room?.status, "exhausted");
-  assert.equal(repository.room.exhaustionReason, "list_exhausted");
   assert.deepEqual(repository.rounds, []);
 });
 
@@ -188,7 +186,7 @@ test("request IDs replay their committed outcome and conflict across different c
 
 test("restart checks the full filtered catalog before deleting history and replays safely", async () => {
   const repository = new MemoryGameRoundRepository();
-  repository.room = { ...repository.room!, status: "exhausted", exhaustionReason: "list_exhausted" };
+  repository.room = { ...repository.room!, status: "exhausted" };
   repository.rounds = [{ roundNumber: 4, movieIds: [7, 8, 9] }];
   repository.candidates = [1, 2];
   repository.fullCatalogCandidates = [1, 2];
@@ -206,7 +204,7 @@ test("restart checks the full filtered catalog before deleting history and repla
 
   repository.candidates = [4, 5, 6];
   repository.fullCatalogCandidates = null;
-  repository.room = { ...repository.room!, status: "exhausted", exhaustionReason: "list_exhausted" };
+  repository.room = { ...repository.room!, status: "exhausted" };
   const successfulInput = { roomCode: "ABCD", requestId: randomUUID() };
   assert.equal((await service.restart(successfulInput, hostToken)).status, "completed");
   assert.deepEqual(repository.rounds, [{ roundNumber: 1, movieIds: [4, 5, 6] }]);

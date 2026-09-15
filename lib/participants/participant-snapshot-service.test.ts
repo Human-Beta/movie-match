@@ -26,7 +26,6 @@ function makeRecord(): ParticipantSnapshotRecord {
       id: roomId,
       code: "ABC123",
       status: "waiting",
-      exhaustionReason: null,
       expiresAt: new Date("2026-08-23T13:00:00.000Z"),
     },
     participants: [{ name: "Марко", role: "guest" }, hostWithPrivateFields],
@@ -56,7 +55,6 @@ test("sanitizes the authoritative snapshot to state, count, name, and role", () 
 
   assert.deepEqual(snapshot, {
     currentRound: null,
-    exhaustionReason: null,
     roomState: "waiting",
     participantCount: 2,
     participants: [
@@ -93,7 +91,6 @@ test("returns a snapshot by topic without reflecting forged payload state", asyn
 
   assert.deepEqual(snapshot, {
     currentRound: null,
-    exhaustionReason: null,
     roomState: "waiting",
     participantCount: 2,
     participants: [

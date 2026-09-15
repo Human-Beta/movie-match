@@ -3,7 +3,7 @@ import "server-only";
 import { and, asc, eq } from "drizzle-orm";
 
 import { loadDatabase, type DatabaseProvider } from "@/lib/db/database-provider";
-import { genres, participants, roomFilterSaves, roomGenres, rooms } from "@/lib/db/schema";
+import { genres, participants, roomFilterSaves, roomGameCommands, roomGenres, rooms } from "@/lib/db/schema";
 import type { FilterRoom, LockedFilterRoom, RoomFilterRepository } from "@/lib/room-filters/room-filter-service";
 
 export class DrizzleRoomFilterRepository implements RoomFilterRepository {
@@ -13,7 +13,7 @@ export class DrizzleRoomFilterRepository implements RoomFilterRepository {
     const database = await this.getDatabase();
     return database.transaction(async transaction => {
       const [room] = await transaction
-        .select({ id: rooms.id, status: rooms.status, exhaustionReason: rooms.exhaustionReason, expiresAt: rooms.expiresAt })
+        .select({ id: rooms.id, status: rooms.status, expiresAt: rooms.expiresAt })
         .from(rooms)
         .where(eq(rooms.code, roomCode))
         .limit(1)
@@ -49,6 +49,24 @@ export class DrizzleRoomFilterRepository implements RoomFilterRepository {
           return { ...filters, genreIds: selectedGenres.map(genre => genre.id) };
         },
         listGenres: () => transaction.select({ id: genres.id, name: genres.name }).from(genres).orderBy(asc(genres.name)),
+        hasCatalogInsufficientStart: async filterHash => {
+          if (!room) {
+            return false;
+          }
+          const [command] = await transaction
+            .select({ requestId: roomGameCommands.requestId })
+            .from(roomGameCommands)
+            .where(
+              and(
+                eq(roomGameCommands.roomId, room.id),
+                eq(roomGameCommands.command, "start"),
+                eq(roomGameCommands.filterHash, filterHash),
+                eq(roomGameCommands.outcome, "catalog_insufficient"),
+              ),
+            )
+            .limit(1);
+          return command !== undefined;
+        },
         findSavePayloadHash: async requestId => {
           if (!room) {
             return null;
@@ -60,18 +78,17 @@ export class DrizzleRoomFilterRepository implements RoomFilterRepository {
             .limit(1);
           return save?.payloadHash ?? null;
         },
-        saveFilters: async (input, payloadHash) => {
+        saveFilters: async (input, payloadHash, filtersChanged) => {
           if (!room) {
             throw new Error("Filter writes require a room lock.");
           }
           const { netflixOnly, underTwoHours, yearFilter, genreIds } = input.filters;
-          await transaction
-            .update(rooms)
-            .set({ netflixOnly, underTwoHours, yearFilter, status: "waiting", exhaustionReason: null })
-            .where(eq(rooms.id, room.id));
-          await transaction.delete(roomGenres).where(eq(roomGenres.roomId, room.id));
-          if (genreIds.length) {
-            await transaction.insert(roomGenres).values(genreIds.map(genreId => ({ roomId: room.id, genreId })));
+          if (filtersChanged) {
+            await transaction.update(rooms).set({ netflixOnly, underTwoHours, yearFilter }).where(eq(rooms.id, room.id));
+            await transaction.delete(roomGenres).where(eq(roomGenres.roomId, room.id));
+            if (genreIds.length) {
+              await transaction.insert(roomGenres).values(genreIds.map(genreId => ({ roomId: room.id, genreId })));
+            }
           }
           await transaction.insert(roomFilterSaves).values({ roomId: room.id, requestId: input.requestId, payloadHash });
         },

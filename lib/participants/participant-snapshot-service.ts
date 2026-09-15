@@ -12,7 +12,7 @@ import {
 } from "@/lib/participants/public-participant-snapshot";
 import { PARTICIPANT_ROOM_TOPIC_PREFIX } from "@/lib/realtime/participant-events";
 import { normalizeRoomCode } from "@/lib/rooms/room-code";
-import type { RoomExhaustionReason, RoomStatus } from "@/lib/rooms/room-service";
+import type { RoomStatus } from "@/lib/rooms/room-service";
 
 const roomIdSchema = z.uuid();
 
@@ -21,7 +21,6 @@ export type ParticipantSnapshotRecord = {
     id: string;
     code: string;
     status: RoomStatus;
-    exhaustionReason: RoomExhaustionReason | null;
     expiresAt: Date;
   };
   participants: PublicRoomParticipant[];
@@ -143,7 +142,6 @@ export class ParticipantSnapshotService {
 
     return {
       roomState,
-      exhaustionReason: roomState === "exhausted" ? record.room.exhaustionReason : null,
       participantCount: participants.length,
       participants,
       currentRound: this.publicRound(record.currentRound),

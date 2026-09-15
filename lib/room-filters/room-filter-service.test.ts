@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import test from "node:test";
 
 import { generateParticipantAccessToken, hashParticipantAccessToken } from "@/lib/participants/participant-token";
+import { hashRoomFilterContract } from "@/lib/room-filters/filter-contract";
 import { saveRoomFiltersInputSchema } from "@/lib/room-filters/room-filter-input";
 import { RoomFilterService, type FilterRoom, type LockedFilterRoom, type RoomFilterRepository } from "@/lib/room-filters/room-filter-service";
 import type { RoomFilterValues } from "@/lib/room-filters/room-filter-values";
@@ -13,10 +14,11 @@ const hostToken = generateParticipantAccessToken();
 const guestToken = generateParticipantAccessToken();
 
 class MemoryFilterRepository implements RoomFilterRepository {
-  room: FilterRoom | null = { status: "waiting", exhaustionReason: null, expiresAt: new Date(now.getTime() + 60000) };
+  room: FilterRoom | null = { status: "waiting", expiresAt: new Date(now.getTime() + 60000) };
   filters = defaults;
   writes = 0;
   saves = new Map<string, string>();
+  catalogInsufficientFilterHashes = new Set<string>();
   async inLockedRoom<T>(_roomCode: string, operation: (room: FilterRoom | null, locked: LockedFilterRoom) => Promise<T>): Promise<T> {
     return operation(this.room, {
       findParticipantRole: async hash => {
@@ -33,14 +35,14 @@ class MemoryFilterRepository implements RoomFilterRepository {
         { id: 1, name: "Комедія" },
         { id: 2, name: "Драма" },
       ],
+      hasCatalogInsufficientStart: async hash => this.catalogInsufficientFilterHashes.has(hash),
       findSavePayloadHash: async id => this.saves.get(id) ?? null,
-      saveFilters: async (input, hash) => {
-        this.filters = input.filters;
-        this.saves.set(input.requestId, hash);
-        if (this.room !== null) {
-          this.room = { ...this.room, status: "waiting", exhaustionReason: null };
+      saveFilters: async (input, hash, filtersChanged) => {
+        if (filtersChanged) {
+          this.filters = input.filters;
+          this.writes++;
         }
-        this.writes++;
+        this.saves.set(input.requestId, hash);
       },
     });
   }
@@ -75,11 +77,11 @@ test("only a current host can read or save filters in a waiting room", async () 
     assert.deepEqual(await service.save(input, token), { status: "unavailable" });
   }
   for (const status of ["playing", "matched", "exhausted", "closed"] as const) {
-    repository.room = { status, exhaustionReason: null, expiresAt: new Date(now.getTime() + 60000) };
+    repository.room = { status, expiresAt: new Date(now.getTime() + 60000) };
     assert.deepEqual(await service.read("ABCD", hostToken), { status: "unavailable" });
     assert.deepEqual(await service.save(input, hostToken), { status: "unavailable" });
   }
-  for (const room of [null, { status: "waiting" as const, exhaustionReason: null, expiresAt: now }]) {
+  for (const room of [null, { status: "waiting" as const, expiresAt: now }]) {
     repository.room = room;
     assert.deepEqual(await service.save(input, hostToken), { status: "unavailable" });
   }
@@ -94,9 +96,9 @@ test("saves valid filters, rejects absent genres and replays old saves without r
   assert.deepEqual(initial.snapshot.filters, defaults);
   const first = { roomCode: "ABCD", requestId: randomUUID(), filters: { ...defaults, netflixOnly: true, genreIds: [1, 2] } };
   const second = { ...first, requestId: randomUUID(), filters: { ...defaults, underTwoHours: true, yearFilter: "old" as const } };
-  assert.deepEqual(await service.save(first, hostToken), { status: "saved", filters: first.filters });
-  assert.deepEqual(await service.save(second, hostToken), { status: "saved", filters: second.filters });
-  assert.deepEqual(await service.save(first, hostToken), { status: "saved", filters: second.filters });
+  assert.deepEqual(await service.save(first, hostToken), { status: "saved", filters: first.filters, startEligible: true });
+  assert.deepEqual(await service.save(second, hostToken), { status: "saved", filters: second.filters, startEligible: true });
+  assert.deepEqual(await service.save(first, hostToken), { status: "saved", filters: second.filters, startEligible: true });
   assert.deepEqual(await service.save({ ...first, filters: defaults }, hostToken), { status: "conflict" });
   assert.deepEqual(await service.save({ ...first, requestId: randomUUID(), filters: { ...defaults, genreIds: [3] } }, hostToken), {
     status: "validation_error",
@@ -105,17 +107,19 @@ test("saves valid filters, rejects absent genres and replays old saves without r
   assert.deepEqual(repository.filters, second.filters);
 });
 
-test("allows only the host to recover from an insufficient catalog by saving filters", async () => {
+test("keeps a catalog-insufficient result local while a changed filter contract enables a new start", async () => {
   const repository = new MemoryFilterRepository();
-  repository.room = { status: "exhausted", exhaustionReason: "catalog_insufficient", expiresAt: new Date(now.getTime() + 60000) };
+  repository.catalogInsufficientFilterHashes.add(hashRoomFilterContract(defaults));
   const service = new RoomFilterService(repository, { now: (): Date => now });
   const input = { roomCode: "ABCD", requestId: randomUUID(), filters: { ...defaults, netflixOnly: true } };
 
-  assert.equal((await service.read("ABCD", hostToken)).status, "ready");
-  assert.deepEqual(await service.save(input, hostToken), { status: "saved", filters: input.filters });
-  assert.deepEqual(repository.room, { status: "waiting", exhaustionReason: null, expiresAt: new Date(now.getTime() + 60000) });
+  const initial = await service.read("ABCD", hostToken);
+  assert.equal(initial.status, "ready");
+  assert.equal(initial.snapshot.startEligible, false);
+  assert.deepEqual(await service.save(input, hostToken), { status: "saved", filters: input.filters, startEligible: true });
+  assert.deepEqual(repository.room, { status: "waiting", expiresAt: new Date(now.getTime() + 60000) });
 
-  repository.room = { status: "exhausted", exhaustionReason: "list_exhausted", expiresAt: new Date(now.getTime() + 60000) };
+  repository.room = { status: "exhausted", expiresAt: new Date(now.getTime() + 60000) };
   assert.deepEqual(await service.save({ ...input, requestId: randomUUID() }, hostToken), { status: "unavailable" });
   assert.deepEqual(await service.save({ ...input, requestId: randomUUID() }, guestToken), { status: "unavailable" });
 });

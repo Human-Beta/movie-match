@@ -39,8 +39,18 @@
 - Проти hosted Supabase відкрити TV і два ізольовані phone contexts, приєднати host та guest, зберегти фільтри й запустити гру через реальний Next.js Server Action.
 - Перевірити на всіх трьох екранах один persisted round `1` з тими самими трьома movie IDs, metadata та positions без ручного reload; TV і guest не отримують host controls.
 - Відтворити незбережений draft, duplicate click, втрачений action response, пропущений `room_changed` Broadcast, reconnect і reload. Перевірити один committed outcome, recovery через пʼятисекундний fallback при `2/2`, один room channel і cleanup без render/action loop.
-- Покрити `0/1/2` eligible movies, рівно три кандидати, exhausted UI та host-only restart; перевірити, що restart або зберігає недостатню history, або атомарно створює round `1` лише для своєї room.
+- Покрити перший start із `0/1/2` eligible movies: host отримує українську insufficient-catalog instruction без створення round або partial positions; це не є `list_exhausted` і не пропонує restart.
+- Покрити рівно три eligible movies, а також `list_exhausted` після історії: останній лишається persisted room state з host-only restart; restart або зберігає history за недостатнього повного каталогу, або атомарно створює round `1` лише для своєї room.
+- За двох participants у `waiting` TV показує, що очікує налаштування filters і start від host; повідомлення оновлюється після успішного переходу до `playing` без ручного reload.
 - Не фіксувати hosted credentials, room topics, browser artifacts або product rows у Broadcast payloads. Цей сценарій закриває відкладений acceptance criterion task 010.
+
+### P1 — Tasks 010.1/010.2 insufficient-catalog recovery
+
+- У трьох ізольованих browser contexts (host, guest, TV) відтворити insufficient catalog. Перевірити, що error/instruction бачить лише host, вона має error styling, лишається поряд із filters та disable-ить повторний start для того самого contract.
+- Перевірити, що `catalog_insufficient` не змінює `rooms.status`, public snapshot, round/history або Broadcast для guest і TV; обидва екрани зберігають waiting presentation.
+- Перевірити reload host після terminal response: `room_game_commands.filter_hash` пов'язує поточний нормалізований contract із `startEligible: false`, тому помилка й disabled start відновлюються без повторної мутації.
+- Зберегти нормалізовано однакові filters і перевірити, що form не remount-иться й не показує loading, room rows/genres/public snapshot не змінюються, а guest і TV не отримують transition. Потім зберегти інший valid contract і перевірити доступність рівно однієї нової start-спроби.
+- Перевірити Server Action boundary: `catalog_insufficient` не викликає `notifyRoomChanged`, а `started` і `list_exhausted` надсилають лише мінімальну invalidation. Додати unit або інтеграційний test для цього розгалуження.
 
 ### P2 — Repository integration against PostgreSQL
 
@@ -48,6 +58,8 @@
 - Зберегти concurrency coverage для одночасних другого і третього join та перевіряти не лише result, а й остаточні rows, унікальні roles і token hashes.
 - Перевірити rollback: помилка в locked transaction не залишає частково створеного participant.
 - Додавати repository integration tests для майбутніх migrations, constraints, cascade cleanup і RLS/browser-access boundaries, коли відповідні задачі реалізують ці можливості.
+- Для tasks 010.1/010.2 на ізольованій PostgreSQL перевірити upgrade migrations: існуючі `catalog_insufficient` room rows переходять у `waiting`, застарілий тип і колонка `room_exhaustion_reason` видаляються, а попередні game-command receipts отримують сумісний `filter_hash` default.
+- На реальній Drizzle repository створити insufficient start і потім прочитати filters: assertion має покрити запис/читання одного canonical `filter_hash`, `startEligible: false`, повторний request ID, однакове збереження filters та зміну contract. Не обмежуватися memory repository.
 
 ### P2 — Task 010 game-command Server Action and UI boundary
 

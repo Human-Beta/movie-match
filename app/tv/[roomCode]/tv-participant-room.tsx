@@ -83,18 +83,15 @@ function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnaps
   );
 }
 
-function TvExhaustedRoom({ exhaustionReason }: Readonly<{ exhaustionReason: PublicParticipantSnapshot["exhaustionReason"] }>): ReactNode {
+function TvExhaustedRoom(): ReactNode {
   const t = useTranslations(TV_ROOM_NAMESPACE);
-  const catalogInsufficient = exhaustionReason === "catalog_insufficient";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-50">
       <section className="max-w-xl text-center">
         <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
-        <h1 className="text-4xl font-bold tracking-tight">{t(catalogInsufficient ? "game.catalogInsufficientTitle" : "game.exhaustedTitle")}</h1>
-        <p className="mt-5 text-lg leading-8 text-slate-300">
-          {t(catalogInsufficient ? "game.catalogInsufficientDescription" : "game.exhaustedDescription")}
-        </p>
+        <h1 className="text-4xl font-bold tracking-tight">{t("game.exhaustedTitle")}</h1>
+        <p className="mt-5 text-lg leading-8 text-slate-300">{t("game.exhaustedDescription")}</p>
       </section>
     </main>
   );
@@ -126,7 +123,7 @@ export function TvParticipantRoom({
     case "playing":
       return <TvPlayingRoom snapshot={snapshot} />;
     case "exhausted":
-      return <TvExhaustedRoom exhaustionReason={snapshot.exhaustionReason} />;
+      return <TvExhaustedRoom />;
     case "waiting":
     case "ready":
       break;

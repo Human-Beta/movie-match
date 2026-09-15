@@ -11,18 +11,13 @@ The executable sources of truth are `lib/db/schema.ts` and the committed files u
 - `waiting` — the room is open and waiting for participants or game setup.
 - `playing` — participants are voting in an active game.
 - `matched` — the room has produced a shared movie choice.
-- `exhausted` — a round cannot be formed; `room_exhaustion_reason` identifies whether the full catalog is insufficient or only the shown list is exhausted.
+- `exhausted` — fewer than three unseen movies remain while the complete filtered catalog can form a round, so the host can restart the shown list.
 - `closed` — the room is no longer available for play or restoration.
 
 ### `participant_role`
 
 - `host` — the first participant, who controls filters and game actions.
 - `guest` — the second participant.
-
-### `room_exhaustion_reason`
-
-- `catalog_insufficient` — the complete catalog contains fewer than three movies for the saved filters.
-- `list_exhausted` — the complete catalog can form a round, but fewer than three matching movies remain after excluding the room's shown history.
 
 ### `year_filter`
 
@@ -102,14 +97,13 @@ One shared movie-selection session displayed on a TV and controlled from phones.
 | `code`                | Unique human-readable room code. It must contain 4–8 uppercase letters or digits.                                                                                                                        |
 | `creation_request_id` | Optional unique browser-generated UUID that makes room creation idempotent across reloads, interrupted responses, and concurrent retries. Existing rows created before this mechanism may leave it null. |
 | `status`              | Current `room_status`; defaults to `waiting`.                                                                                                                                                            |
-| `exhaustion_reason`   | Null except in `exhausted`; distinguishes a catalog with fewer than three matches from a previously shown list with fewer than three unseen matches.                                                     |
 | `netflix_only`        | Whether filters require the manually maintained Netflix flag; defaults to `false`.                                                                                                                       |
 | `under_two_hours`     | Whether filters require a runtime below two hours; defaults to `false`.                                                                                                                                  |
 | `year_filter`         | Selected `year_filter`; defaults to `any`.                                                                                                                                                               |
 | `created_at`          | Creation timestamp; defaults to the current database time.                                                                                                                                               |
 | `expires_at`          | Expiration timestamp. A constraint requires exactly one hour after `created_at`.                                                                                                                         |
 
-An index on `expires_at` for non-closed rooms supports active-room expiration queries. A check requires `exhaustion_reason` exactly when `status` is `exhausted`.
+An index on `expires_at` for non-closed rooms supports active-room expiration queries.
 
 ### `room_genres`
 
@@ -146,9 +140,10 @@ Committed host start and list-restart receipts. The table makes game commands re
 | `request_id`   | Browser-generated UUID persisted before the start or restart request.                              |
 | `command`      | The canonical `room_game_command` kind: `start` or `restart`.                                      |
 | `payload_hash` | SHA-256 of the validated command kind and normalized room code.                                    |
+| `filter_hash`  | SHA-256 of the canonical saved filter contract used for the command.                               |
 | `outcome`      | The committed `room_game_command_outcome`: `started`, `catalog_insufficient`, or `list_exhausted`. |
 
-The primary key `(room_id, request_id)` scopes uniqueness to a room and conflicts when a key is reused for another command payload. The receipt is inserted in the same room-locking transaction as the complete three-position round or the `exhausted` transition with its reason. Matching retries return the recorded outcome before inspecting later game state, so an old request cannot create or delete a later round.
+The primary key `(room_id, request_id)` scopes uniqueness to a room and conflicts when a key is reused for another command payload. The receipt is inserted in the same room-locking transaction as the complete three-position round, the `list_exhausted` transition, or a host-local `catalog_insufficient` outcome. Matching retries return the recorded outcome before inspecting later game state, so an old request cannot create or delete a later round. A catalog-insufficient receipt also tells the host form not to offer another start for the same saved filter contract.
 
 RLS is enabled, and browser roles receive no table privileges. Access remains server-side through Drizzle, and room expiration cleanup removes receipts through the room foreign-key cascade.
 
