@@ -33,3 +33,4 @@
 - [ ] [020 — Movie poster sourcing and licensing](020-movie-poster-sourcing-and-licensing.md)
 - [ ] [021 — Drizzle metadata strategy](021-drizzle-metadata-strategy.md)
 - [ ] [022 — Investigate and reduce room-screen request latency](022-investigate-room-screen-request-latency.md)
+- [ ] [023 — Audit Tailwind styles and application palette](023-audit-tailwind-styles-and-application-palette.md)
