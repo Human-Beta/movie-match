@@ -99,11 +99,11 @@ function VoteOptions({
   const t = useTranslations(VOTING_NAMESPACE);
 
   return (
-    <fieldset className="mt-5 grid grid-cols-2 gap-2" disabled={disabled}>
+    <fieldset className="grid grid-cols-2 gap-2" disabled={disabled}>
       <legend className="sr-only">{t("selectionLabel", { title: movie.title })}</legend>
       {voteOptions.map(option => (
         <label
-          className={`cursor-pointer rounded-xl border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed ${
+          className={`flex min-h-12 cursor-pointer items-center justify-center gap-1 rounded-xl border px-3 py-2 text-center text-sm leading-tight font-semibold transition disabled:cursor-not-allowed ${
             selected === option.value
               ? "border-amber-300 bg-amber-400 text-slate-950"
               : "border-white/15 bg-slate-950 text-slate-100 hover:border-white/40"
