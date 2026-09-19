@@ -7,13 +7,14 @@ import type { PublicParticipantIdentity } from "@/app/join/[roomCode]/join-actio
 import { HostFilters } from "@/app/join/[roomCode]/host-filters";
 import { RestartListControl } from "@/app/join/[roomCode]/restart-list-control";
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
-import { MovieCards } from "@/app/room-participants/movie-cards";
 import { RoundResult } from "@/app/room-participants/round-result";
 import { useAuthenticatedParticipantRoomSnapshot } from "@/app/room-participants/use-authenticated-participant-room-snapshot";
 import { VotingBallot } from "@/app/join/[roomCode]/voting-ballot";
 import { assertNever } from "@/lib/assert-never";
 import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { ParticipantClientRoomState } from "@/lib/participants/public-participant-snapshot";
+
+const JOIN_ROOM_NAMESPACE = "JoinRoom";
 
 function PageShell({ children, wide = false }: Readonly<{ children: ReactNode; wide?: boolean }>): ReactNode {
   return (
@@ -29,7 +30,7 @@ function PageShell({ children, wide = false }: Readonly<{ children: ReactNode; w
 }
 
 export function UnavailableRoomState(): ReactNode {
-  const t = useTranslations("JoinRoom");
+  const t = useTranslations(JOIN_ROOM_NAMESPACE);
 
   return (
     <PageShell>
@@ -40,7 +41,7 @@ export function UnavailableRoomState(): ReactNode {
 }
 
 export function FullRoomState(): ReactNode {
-  const t = useTranslations("JoinRoom");
+  const t = useTranslations(JOIN_ROOM_NAMESPACE);
 
   return (
     <PageShell>
@@ -59,7 +60,7 @@ export function JoinedRoomState({
   participant: PublicParticipantIdentity;
   room: ParticipantClientRoomState;
 }>): ReactNode {
-  const t = useTranslations("JoinRoom");
+  const t = useTranslations(JOIN_ROOM_NAMESPACE);
   const tParticipantRole = useTranslations("Common.participantRole");
   const { snapshot } = useAuthenticatedParticipantRoomSnapshot({
     initialSnapshot: room.snapshot,
@@ -98,8 +99,7 @@ export function JoinedRoomState({
       }
 
       return (
-        <PageShell wide>
-          <MovieCards round={snapshot.currentRound} />
+        <PageShell>
           <RoundResult round={snapshot.currentRound} />
         </PageShell>
       );

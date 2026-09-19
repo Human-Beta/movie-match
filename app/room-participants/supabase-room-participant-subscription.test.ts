@@ -5,7 +5,7 @@ import { RoomParticipantSubscriptionManager, type SubscriptionCleanupScheduler }
 import type { ParticipantRealtimeSubscriptionStatus } from "@/app/room-participants/room-participant-sync";
 
 type FakeChannel = {
-  on(type: "broadcast", filter: { event: string }, callback: () => void): FakeChannel;
+  on(type: "broadcast", filter: { event: string }, callback: (payload: unknown) => void): FakeChannel;
   subscribe(callback: (status: ParticipantRealtimeSubscriptionStatus) => void): void;
   emitInvalidation(event?: "participants_changed" | "room_changed"): void;
   emitStatus(status: ParticipantRealtimeSubscriptionStatus): void;
@@ -33,21 +33,21 @@ class FakeCleanupScheduler implements SubscriptionCleanupScheduler {
 }
 
 function makeFakeChannel(): FakeChannel {
-  const invalidationCallbacks = new Map<string, () => void>();
+  const broadcastCallbacks = new Map<string, (payload: unknown) => void>();
   let statusCallback: ((status: ParticipantRealtimeSubscriptionStatus) => void) | null = null;
 
   return {
     on(type, filter, callback): FakeChannel {
       assert.equal(type, "broadcast");
       assert.ok(["participants_changed", "room_changed"].includes(filter.event));
-      invalidationCallbacks.set(filter.event, callback);
+      broadcastCallbacks.set(filter.event, callback);
       return this;
     },
     subscribe(callback): void {
       statusCallback = callback;
     },
     emitInvalidation(event = "participants_changed"): void {
-      invalidationCallbacks.get(event)?.();
+      broadcastCallbacks.get(event)?.({});
     },
     emitStatus(status): void {
       statusCallback?.(status);

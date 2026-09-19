@@ -3,7 +3,7 @@ import { browserTimerScheduler, type TimerId, type TimerScheduler } from "@/app/
 import { PARTICIPANTS_CHANGED_EVENT, ROOM_CHANGED_EVENT } from "@/lib/realtime/participant-events";
 
 export type BroadcastChannel = {
-  on(type: "broadcast", filter: { event: string }, callback: () => void): BroadcastChannel;
+  on(type: "broadcast", filter: { event: string }, callback: (payload: unknown) => void): BroadcastChannel;
   subscribe(callback: (status: ParticipantRealtimeSubscriptionStatus) => void): void;
 };
 

@@ -1,15 +1,15 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
 import type { ParticipantRealtimeTransportStatus } from "@/app/room-participants/room-participant-sync";
 import { MovieCards } from "@/app/room-participants/movie-cards";
-import { RoundResult } from "@/app/room-participants/round-result";
 import { useRoomParticipantSnapshot } from "@/app/room-participants/use-room-participant-snapshot";
 import { JoinQrCode } from "@/app/tv/[roomCode]/join-qr-code";
 import { NewRoomLink } from "@/app/tv/[roomCode]/new-room-link";
+import { TvRoundResultTransition } from "@/app/tv/[roomCode]/tv-round-result-transition";
 import { assertNever } from "@/lib/assert-never";
 import { isTerminalRoundStatus, ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { PublicParticipantSnapshot } from "@/lib/participants/public-participant-snapshot";
@@ -68,6 +68,7 @@ function TvAdvancedRoom(): ReactNode {
 
 function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnapshot }>): ReactNode {
   const t = useTranslations(TV_ROOM_NAMESPACE);
+  const [noMatchTransitionCompleteKey, setNoMatchTransitionCompleteKey] = useState<string | null>(null);
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-50 sm:py-16">
@@ -79,7 +80,15 @@ function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnaps
           </p>
         ) : (
           <>
-            <MovieCards round={snapshot.currentRound} />
+            {isTerminalRoundStatus(snapshot.currentRound.status) ? (
+              <TvRoundResultTransition
+                key={`${snapshot.currentRound.roundId}:${snapshot.currentRound.status}`}
+                onNoMatchTransitionComplete={setNoMatchTransitionCompleteKey}
+                round={snapshot.currentRound}
+              />
+            ) : (
+              <MovieCards round={snapshot.currentRound} />
+            )}
             {snapshot.currentRound.status === ROUND_STATUS.VOTING && snapshot.ballotProgress !== null ? (
               <p className="mt-8 rounded-2xl bg-slate-900 p-5 text-lg text-slate-200 ring-1 ring-white/10" role="status">
                 {snapshot.ballotProgress.readyForResults
@@ -90,7 +99,9 @@ function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnaps
                     })}
               </p>
             ) : null}
-            {isTerminalRoundStatus(snapshot.currentRound.status) ? <RoundResult round={snapshot.currentRound} /> : null}
+            {noMatchTransitionCompleteKey === `${snapshot.currentRound.roundId}:${ROUND_STATUS.NO_MATCH}` ? (
+              <span className="sr-only">{t("game.noMatchTransitionComplete")}</span>
+            ) : null}
           </>
         )}
       </div>
