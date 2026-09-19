@@ -7,7 +7,7 @@
 ## Dependencies
 
 - [012 — Match calculation](012-match-calculation.md): authoritative persisted `no_match`, розкриті post-resolution votes і room, що лишається `playing`.
-- [012.1 — Round result transition](012-1-round-result-animation.md): TV no-match presentation, phone result reveal та existing Realtime room topic.
+- [012.1 — Round result transition](012-1-round-result-animation.md): TV no-match presentation і immediate authoritative phone result.
 - [010 — Start game and generate round](010-start-game-and-generate-round.md) та [010.1 — Game-start fixes](010-1-game-start-fixes.md): reusable filter selection, three-position atomic round creation, seen-movie exclusion і `exhausted`/Restart list contract.
 
 ## Scope / Requirements
@@ -63,7 +63,7 @@
 ## Out of Scope
 
 - Match calculation, vote privacy або зміна terminal result — задача 012.
-- Shared-element match animation і базова no-match motion presentation — задача 012.1.
+- Базовий match emphasis і no-match presentation — задача 012.1; fullscreen shared-layout match transition — задача 029.
 - Fullscreen matched destination — задача 014; Search again і Close room після match — задача 015.
 - Автоматичний next round, auto-advance timer, додаткові confirm dialogs, Restart list без host action, повторення movies до явного restart, background jobs або окремий scheduler/queue.
 

@@ -44,3 +44,4 @@
 - [ ] [026 — Centralize database enum contracts](026-centralize-database-enum-contracts.md)
 - [ ] [027 — Audit shared translations and message namespaces](027-audit-shared-translations.md)
 - [ ] [028 — Audit participant name and role presentation](028-audit-participant-name-and-role-presentation.md)
+- [ ] [029 — Deferred shared-layout match transition](029-deferred-shared-layout-match-transition.md)

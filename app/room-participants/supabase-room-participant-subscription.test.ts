@@ -3,14 +3,11 @@ import test from "node:test";
 
 import { RoomParticipantSubscriptionManager, type SubscriptionCleanupScheduler } from "@/app/room-participants/room-participant-subscription-manager";
 import type { ParticipantRealtimeSubscriptionStatus } from "@/app/room-participants/room-participant-sync";
-import type { ResultRevealReadyHint } from "@/lib/realtime/result-reveal-hint";
 
 type FakeChannel = {
   on(type: "broadcast", filter: { event: string }, callback: (payload: unknown) => void): FakeChannel;
-  send(message: { event: string; payload: ResultRevealReadyHint; type: "broadcast" }): Promise<unknown>;
   subscribe(callback: (status: ParticipantRealtimeSubscriptionStatus) => void): void;
   emitInvalidation(event?: "participants_changed" | "room_changed"): void;
-  emitResultReveal(payload: unknown): void;
   emitStatus(status: ParticipantRealtimeSubscriptionStatus): void;
 };
 
@@ -42,21 +39,15 @@ function makeFakeChannel(): FakeChannel {
   return {
     on(type, filter, callback): FakeChannel {
       assert.equal(type, "broadcast");
-      assert.ok(["participants_changed", "room_changed", "result_reveal_ready"].includes(filter.event));
+      assert.ok(["participants_changed", "room_changed"].includes(filter.event));
       broadcastCallbacks.set(filter.event, callback);
       return this;
-    },
-    async send(): Promise<unknown> {
-      return "ok";
     },
     subscribe(callback): void {
       statusCallback = callback;
     },
     emitInvalidation(event = "participants_changed"): void {
       broadcastCallbacks.get(event)?.({});
-    },
-    emitResultReveal(payload): void {
-      broadcastCallbacks.get("result_reveal_ready")?.({ payload });
     },
     emitStatus(status): void {
       statusCallback?.(status);
@@ -145,31 +136,5 @@ test("fans reconnect status to the current lease without a second subscribe", ()
   assert.equal(channelSubscriptions, 1);
   assert.deepEqual(statuses, ["SUBSCRIBED"]);
   secondMount.dispose();
-  cleanupScheduler.flush();
-});
-
-test("delivers only a minimal valid result reveal hint through the shared room channel", async () => {
-  const cleanupScheduler = new FakeCleanupScheduler();
-  const channel = makeFakeChannel();
-  const manager = new RoomParticipantSubscriptionManager(
-    {
-      channel: (): FakeChannel => channel,
-      removeChannel: async (): Promise<void> => undefined,
-    },
-    cleanupScheduler,
-  );
-  const subscription = manager.createResultReveal("room:33333333-3333-4333-8333-333333333333");
-  const hints: ResultRevealReadyHint[] = [];
-
-  subscription.onResultRevealReady(hint => {
-    hints.push(hint);
-  });
-  channel.emitResultReveal({ roundId: "44444444-4444-4444-8444-444444444444", status: "matched" });
-  channel.emitResultReveal({ roundId: "44444444-4444-4444-8444-444444444444", status: "voting" });
-  channel.emitResultReveal({ selectedMovieId: 10, status: "matched" });
-
-  assert.deepEqual(hints, [{ roundId: "44444444-4444-4444-8444-444444444444", status: "matched" }]);
-  await subscription.publishResultRevealReady({ roundId: "44444444-4444-4444-8444-444444444444", status: "no_match" });
-  subscription.dispose();
   cleanupScheduler.flush();
 });

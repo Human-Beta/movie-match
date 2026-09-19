@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  MATCH_RESULT_EXPANSION_MS,
   MATCH_SELECTED_EMPHASIS_MS,
   NO_MATCH_REACTION_MS,
   RoundResultTransitionController,
@@ -111,7 +110,7 @@ test("maps only a persisted matched result to its selected round movie and stabl
   );
 });
 
-test("runs one match emphasis and shared-layout expansion before one completion", () => {
+test("runs one match emphasis before one completion", () => {
   const scheduler = new FakeScheduler();
   const stages: RoundResultTransitionStage[] = [];
   const completed: string[] = [];
@@ -129,9 +128,8 @@ test("runs one match emphasis and shared-layout expansion before one completion"
 
   controller.start();
   scheduler.run(MATCH_SELECTED_EMPHASIS_MS);
-  scheduler.run(MATCH_RESULT_EXPANSION_MS);
 
-  assert.deepEqual(stages, ["match_emphasis", "match_expanding", "stable"]);
+  assert.deepEqual(stages, ["match_emphasis", "stable"]);
   assert.deepEqual(completed, ["11111111-1111-4111-8111-111111111111:matched"]);
   assert.equal(scheduler.timers.size, 0);
 });

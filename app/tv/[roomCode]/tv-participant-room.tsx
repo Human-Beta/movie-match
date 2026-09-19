@@ -66,19 +66,12 @@ function TvAdvancedRoom(): ReactNode {
   );
 }
 
-function TvPlayingRoom({ realtimeTopic, snapshot }: Readonly<{ realtimeTopic: string; snapshot: PublicParticipantSnapshot }>): ReactNode {
+function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnapshot }>): ReactNode {
   const t = useTranslations(TV_ROOM_NAMESPACE);
   const [noMatchTransitionCompleteKey, setNoMatchTransitionCompleteKey] = useState<string | null>(null);
-  const hasMatchedTerminalRound = snapshot.currentRound?.status === ROUND_STATUS.MATCHED;
 
   return (
-    <main
-      className={
-        hasMatchedTerminalRound
-          ? "h-dvh overflow-hidden bg-slate-950 px-6 py-10 text-slate-50 sm:py-16"
-          : "min-h-screen bg-slate-950 px-6 py-10 text-slate-50 sm:py-16"
-      }
-    >
+    <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-50 sm:py-16">
       <div className="mx-auto max-w-6xl">
         <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
         {snapshot.currentRound === null ? (
@@ -91,7 +84,6 @@ function TvPlayingRoom({ realtimeTopic, snapshot }: Readonly<{ realtimeTopic: st
               <TvRoundResultTransition
                 key={`${snapshot.currentRound.roundId}:${snapshot.currentRound.status}`}
                 onNoMatchTransitionComplete={setNoMatchTransitionCompleteKey}
-                realtimeTopic={realtimeTopic}
                 round={snapshot.currentRound}
               />
             ) : (
@@ -157,7 +149,7 @@ export function TvParticipantRoom({
       return <TvAdvancedRoom />;
     case "playing":
     case "result":
-      return <TvPlayingRoom realtimeTopic={realtimeTopic} snapshot={snapshot} />;
+      return <TvPlayingRoom snapshot={snapshot} />;
     case "exhausted":
       return <TvExhaustedRoom />;
     case "waiting":

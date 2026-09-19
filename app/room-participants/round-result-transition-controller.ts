@@ -4,10 +4,9 @@ import { assertNever } from "@/lib/assert-never";
 import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 
 export const MATCH_SELECTED_EMPHASIS_MS = 400;
-export const MATCH_RESULT_EXPANSION_MS = 800;
 export const NO_MATCH_REACTION_MS = 700;
 
-export type RoundResultTransitionStage = "match_emphasis" | "match_expanding" | "no_match_reaction" | "stable";
+export type RoundResultTransitionStage = "match_emphasis" | "no_match_reaction" | "stable";
 
 export type RoundResultTransitionControllerOptions = {
   onComplete(presentation: TerminalRoundPresentation): void;
@@ -42,11 +41,8 @@ export class RoundResultTransitionController {
       case ROUND_STATUS.MATCHED:
         this.options.onStageChange("match_emphasis");
         this.schedule(MATCH_SELECTED_EMPHASIS_MS, (): void => {
-          this.options.onStageChange("match_expanding");
-          this.schedule(MATCH_RESULT_EXPANSION_MS, (): void => {
-            this.options.onStageChange("stable");
-            this.complete();
-          });
+          this.options.onStageChange("stable");
+          this.complete();
         });
         return;
       case ROUND_STATUS.NO_MATCH:

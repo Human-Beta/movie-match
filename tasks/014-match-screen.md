@@ -7,18 +7,18 @@
 ## Dependencies
 
 - [012 — Match calculation](012-match-calculation.md): authoritative selected movie, terminal room/round state і public votes.
-- [012.1 — Round result transition](012-1-round-result-animation.md): shared `layoutId` contract і fullscreen destination shell, у який розгортається selected card.
+- [012.1 — Round result transition](012-1-round-result-animation.md): authoritative result reveal, selected-card emphasis і stable result boundary.
 - [009 — Movie seed data](009-movie-seed-data.md) та [010 — Start game and generate round](010-start-game-and-generate-round.md): public poster/title/year/runtime/genre fields, ordered cards та resilient poster fallback.
 
 ## Scope / Requirements
 
 ### TV fullscreen destination
 
-- Після shared-element transition повністю замінити three-card grid стабільним fullscreen match screen. Не залишати інші дві cards або технічний список усіх результатів головним content після завершення animation.
+- Після result reveal повністю замінити three-card grid стабільним fullscreen match screen. Не залишати інші дві cards або технічний список усіх результатів головним content після завершення presentation.
 - Показати великий український heading «Це матч!», selected movie poster, title, release year, runtime, genres, обидва participant votes із display names/roles та одну коротку гумористичну фінальну фразу.
 - Побудувати чітку TV information hierarchy: selected poster/title читаються з відстані, metadata не конкурує із заголовком, votes можна зіставити з двома participants, а довга назва/жанри не створюють overflow.
 - Використати лише authoritative `selectedMovieId` та public result allowlist. Не переобчислювати match із votes у component, не вибирати card за position/visual state і не додавати client-side fallback winner.
-- Poster failure або відсутній poster не руйнує композицію: використати наявний accessible fallback із назвою фільму та зберегти стабільні dimensions, потрібні shared layout transition.
+- Poster failure або відсутній poster не руйнує композицію: використати наявний accessible fallback із назвою фільму та зберегти стабільні dimensions для fullscreen composition.
 
 ### Final message and stable recovery
 
@@ -29,7 +29,7 @@
 
 ### Phone result and future actions boundary
 
-- Після TV reveal boundary задачі 012.1 обидва телефони показують читабельний compact result: selected movie, власний і чужий розкриті votes та final status. До цього boundary вони лишаються в нейтральному «дивіться на екран» state, щоб phone не зіпсував TV reveal. Fullscreen TV-композиція не повинна примусово дублюватися на вузькому phone viewport.
+- Обидва телефони одразу показують читабельний compact result з authoritative terminal snapshot: selected movie, власний і чужий розкриті votes та final status. Fullscreen TV-композиція не повинна примусово дублюватися на вузькому phone viewport.
 - Підготувати явний композиційний slot/state boundary, у який задача 015 додасть host-only actions. Не показувати disabled, fake або client-only «Шукати ще»/«Закрити кімнату» до появи авторитетних commands.
 - Guest phone пояснює, що фільм обрано; не створювати для guest controls або локальний спосіб змінити room state.
 
@@ -46,7 +46,7 @@
 - Screen містить poster/fallback, title, year, runtime, genres, два правильні participant votes та одну стабільну humorous phrase; credentials або server-only receipt data відсутні.
 - Winner і final message не змінюються через rerender, duplicate invalidation, reconnect або reload. Direct load matched room відновлює стабільний screen без client-side recalculation.
 - Інші дві round cards після transition не залишаються інтерактивними або візуально конкуруючими з winner. Animation overlay не блокує stable content.
-- Host і guest phones показують узгоджений compact match result лише після TV reveal hint або його bounded fallback, але ще не виконують Search again/Close room. Guest не отримує host-only action surface.
+- Host і guest phones одразу показують узгоджений compact match result з authoritative snapshot, але ще не виконують Search again/Close room. Guest не отримує host-only action surface.
 - Missing/broken poster, довгі values, reduced motion і менший viewport не створюють overflow, unreadable text, layout collapse або залежність від motion/кольору.
 - Screen не мутує room, не запускає timer-based next action і залишається стабільним до авторитетної команди задачі 015.
 - `pnpm verify`, component/accessibility tests і browser visual smoke test для TV, двох phones, reload та poster fallback проходять.
@@ -61,7 +61,7 @@
 ## Out of Scope
 
 - Match calculation, ranking, tie-breaking або selected flag persistence — задача 012.
-- Shared-element lifecycle, no-match transition або Motion bundle setup — задача 012.1.
+- No-match transition — задача 012.1. Deferred shared-element lifecycle і можливий animation runtime — задача 029.
 - No-match next-round flow — задача 013.
 - Search again, Close room, host command idempotency або closed-room presentation — задача 015.
 - Trailers, cast/crew, external ratings, streaming deep links, sound, confetti engine, sharing або download/save actions.
