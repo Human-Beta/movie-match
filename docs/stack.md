@@ -10,6 +10,7 @@ This document records the technology decisions for the movie-matching MVP. The s
 | UI library      | **React**                  | Interactive client interfaces                                                                |
 | Language        | **TypeScript**             | Typed room, participant, movie, and vote data                                                |
 | Styling         | **Tailwind CSS**           | Fast and consistent styling                                                                  |
+| Animation       | **Motion for React**       | Feature-scoped shared-layout transition from the matched movie card to the final TV screen   |
 | UI components   | **shadcn/ui**, selectively | Only for suitable foundational components; it is not a mandatory basis for the entire design |
 | Database        | **Supabase Postgres**      | Store movies, rooms, participants, rounds, and votes                                         |
 | Realtime        | **Supabase Realtime**      | Synchronize state between the TV screen and phones                                           |
@@ -47,6 +48,7 @@ SEO may become useful later for public pages, but it is not the reason for choos
 - Send commands and product mutations through validated Next.js server boundaries and Drizzle. Use the browser Supabase integration only for explicitly approved read or Realtime capabilities.
 - Keep Supabase Data API access opt-in: browser roles receive no table writes, and any required reads must be protected by RLS and explicit least-privilege grants.
 - Use shadcn/ui only when a ready-made component genuinely saves time.
+- Keep Motion for React scoped to result presentation. Prefer its shared layout primitives for the matched-card transition, load the required features lazily when practical, and do not introduce a second animation runtime without a concrete need.
 - Keep `react-qr-code` limited to rendering join QR codes; do not add scanner or external-service scope without a concrete requirement.
 - Keep `next-intl` configured for Ukrainian only in v0.1; do not add locale routing, a locale switcher, or another message catalog without a product decision.
 - Add new technologies only for a concrete need in the current v0.1 specification.
