@@ -19,15 +19,15 @@
 - [x] [010.2 — Insufficient-catalog recovery UX](010-2-insufficient-catalog-recovery-ux.md)
 - [x] [011 — Voting](011-voting.md)
 - [x] [012 — Match calculation](012-match-calculation.md)
-- [ ] [012.1 — Round result animation](012-1-round-result-animation.md)
+- [ ] [012.1 — Round result transition](012-1-round-result-animation.md)
 - [ ] [012.2 — Compact phone ballot layout](012-2-compact-phone-ballot-layout.md)
 - [ ] [012.3 — Local ballot progress reconciliation](012-3-local-ballot-progress-reconciliation.md)
+- [ ] [013 — No-match next round](013-no-match-next-round.md)
+- [ ] [014 — Match screen](014-match-screen.md)
+- [ ] [015 — Search again or close room](015-search-again-or-close-room.md)
 
 ## Backlog
 
-- [ ] 013 — No-match next round
-- [ ] 014 — Match screen
-- [ ] 015 — Search again or close room
 - [ ] 016 — Room expiration and cascading cleanup of expired room data
 - [ ] 017 — Polish and deployment
 - [ ] [018 — Automated browser, Server Action, and database integration coverage](018-automated-integration-coverage.md)
