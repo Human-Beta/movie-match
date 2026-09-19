@@ -47,6 +47,7 @@ If documents allow different interpretations of the current product scope, follo
 - Always wrap `if` statement bodies in braces, including single-statement returns and throws.
 - Keep one-off Tailwind utility composition inline. When multiple call sites share the same semantic UI element and interaction states, extract a focused React component that owns the common classes and exposes only intentional variants; keep feature-only reuse local until it crosses a module boundary. Use Tailwind theme tokens or custom CSS utilities/component classes only for cross-cutting styling behavior that a React component cannot own cleanly. Do not introduce a custom class merely to shorten one long `className`, and do not create speculative UI primitives before a concrete reuse case exists.
 - When multiple components in one module use the same `next-intl` namespace, define one module-level namespace constant. Keep a one-off namespace inline instead of introducing a constant with no reuse.
+- Move a message to a shared localization namespace only when its product meaning and interpolation contract are identical across consumers; otherwise retain feature-local keys.
 
 ## Data access and database security
 
@@ -58,11 +59,13 @@ If documents allow different interpretations of the current product scope, follo
 - Keep Data API access opt-in. For every product table in an exposed schema, enable RLS and grant `anon` or `authenticated` only the minimum read access and policies required by the feature. Never grant those roles `INSERT`, `UPDATE`, or `DELETE` for product tables.
 - Treat the restricted TypeScript API as a developer guardrail, not a security boundary. Enforce browser access with Postgres privileges and RLS in the same migration that introduces or exposes a table.
 - Model a persisted workflow field with a closed canonical database value set as a PostgreSQL enum, and preserve that union through Drizzle rather than using asserted `varchar` values.
+- Define a persisted enum's canonical values in a pure domain module when multiple layers consume them; derive Drizzle enum values, TypeScript unions, defaults, and runtime handling from that module without importing schema into browser or domain code.
 
 ## React and Next.js effects
 
 - Treat functions returned by hooks or providers as referentially unstable unless their API explicitly guarantees stable identity. Do not use such a function as an Effect dependency when that Effect updates state or invokes a Server Action that can trigger a React tree refresh; derive the required stable primitive value before the Effect or restructure the Effect around stable inputs.
 - Remember that setting or deleting cookies in a Server Action refreshes the current Next.js React tree. For every Server Action invoked automatically from an Effect, verify in a real browser that the action settles, runs only for its intended stable inputs, and does not enter a render/action loop.
+- Render terminal workflow state from an authoritative persisted status, never from aggregate progress or a Broadcast payload; treat events only as invalidation hints.
 
 ## Code Review Rules
 
