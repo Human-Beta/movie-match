@@ -4,6 +4,7 @@ import test from "node:test";
 
 import type { BallotInput } from "@/lib/ballots/ballot-input";
 import { BallotService, type BallotReceipt, type BallotRepository, type BallotRoom, type LockedBallotRoom } from "@/lib/ballots/ballot-service";
+import type { PersistedRoundResolutionState, RoundResolution } from "@/lib/matches/round-resolver";
 import { hashParticipantAccessToken } from "@/lib/participants/participant-token";
 
 const now = new Date("2026-09-13T12:00:00.000Z");
@@ -21,6 +22,16 @@ class StubBallotRepository implements BallotRepository {
     id: "33333333-3333-4333-8333-333333333333",
     status: "playing",
     expiresAt: new Date("2026-09-13T13:00:00.000Z"),
+  };
+  readonly roundResolutionState: PersistedRoundResolutionState = {
+    status: "voting",
+    movies: [
+      { movieId: 10, isSelected: false },
+      { movieId: 20, isSelected: false },
+      { movieId: 30, isSelected: false },
+    ],
+    ballots: [],
+    votes: [],
   };
 
   async inLockedRoom<T>(roomCode: string, operation: (room: BallotRoom | null, locked: LockedBallotRoom) => Promise<T>): Promise<T> {
@@ -42,8 +53,17 @@ class StubBallotRepository implements BallotRepository {
       saveBallot: async input => {
         this.savedVotes.push(input.votes);
         this.receipts.set(`${input.participantId}:${input.requestId}`, { roundId: input.roundId, payloadHash: input.payloadHash });
+        this.roundResolutionState.ballots.push({ participantId: input.participantId });
+        this.roundResolutionState.votes.push(
+          ...input.votes.map(vote => ({ participantId: input.participantId, movieId: vote.movieId, value: vote.value })),
+        );
       },
       countSubmittedBallots: async candidateRoundId => [...this.receipts.values()].filter(receipt => receipt.roundId === candidateRoundId).length,
+      readRoundResolution: async candidateRoundId => (candidateRoundId === this.currentRoundId ? this.roundResolutionState : null),
+      persistRoundResolution: async (candidateRoundId: string, resolution: RoundResolution) => {
+        void candidateRoundId;
+        void resolution;
+      },
     });
   }
 }

@@ -2,6 +2,7 @@ import { SystemClock, type Clock } from "@/lib/clock";
 import { hashStoredParticipantAccessToken } from "@/lib/participants/participant-token";
 import type { RoomStatus } from "@/lib/rooms/room-service";
 import { sha256Hex } from "@/lib/sha256";
+import { RoundResolver, type LockedRoundResolution } from "@/lib/matches/round-resolver";
 
 import type { BallotInput } from "@/lib/ballots/ballot-input";
 import type { BallotVoteInput } from "@/lib/ballots/ballot-vote";
@@ -28,7 +29,7 @@ export type LockedVotingRound = {
 
 export type BallotReceiptLookup = { requestId: string } | { roundId: string };
 
-export type LockedBallotRoom = {
+export type LockedBallotRoom = LockedRoundResolution & {
   findParticipant(accessTokenHash: string): Promise<LockedBallotParticipant | null>;
   findBallot(participantId: string, lookup: BallotReceiptLookup): Promise<BallotReceipt | null>;
   findVotingRound(): Promise<LockedVotingRound | null>;
@@ -47,6 +48,7 @@ export class BallotService {
   constructor(
     private readonly repository: BallotRepository,
     private readonly clock: Clock = new SystemClock(),
+    private readonly roundResolver: RoundResolver = new RoundResolver(),
   ) {}
 
   async submit(input: BallotInput, storedAccessToken: string | null): Promise<BallotSubmissionResult> {
@@ -104,6 +106,8 @@ export class BallotService {
         payloadHash,
         votes: input.votes,
       });
+
+      await this.roundResolver.resolve(currentRound.id, locked);
 
       return this.completed(room.id, currentRound.id, await locked.countSubmittedBallots(currentRound.id));
     });

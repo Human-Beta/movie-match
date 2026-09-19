@@ -7,15 +7,20 @@ import type { PublicParticipantIdentity } from "@/app/join/[roomCode]/join-actio
 import { HostFilters } from "@/app/join/[roomCode]/host-filters";
 import { RestartListControl } from "@/app/join/[roomCode]/restart-list-control";
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
+import { MovieCards } from "@/app/room-participants/movie-cards";
+import { RoundResult } from "@/app/room-participants/round-result";
 import { useAuthenticatedParticipantRoomSnapshot } from "@/app/room-participants/use-authenticated-participant-room-snapshot";
 import { VotingBallot } from "@/app/join/[roomCode]/voting-ballot";
 import { assertNever } from "@/lib/assert-never";
+import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { ParticipantClientRoomState } from "@/lib/participants/public-participant-snapshot";
 
-function PageShell({ children }: Readonly<{ children: ReactNode }>): ReactNode {
+function PageShell({ children, wide = false }: Readonly<{ children: ReactNode; wide?: boolean }>): ReactNode {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-10 text-slate-50">
-      <section className="w-full max-w-lg rounded-3xl bg-slate-900 p-7 shadow-2xl ring-1 shadow-black/20 ring-white/10 sm:p-10">
+      <section
+        className={`w-full rounded-3xl bg-slate-900 p-7 shadow-2xl ring-1 shadow-black/20 ring-white/10 sm:p-10 ${wide ? "max-w-5xl" : "max-w-lg"}`}
+      >
         <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
         {children}
       </section>
@@ -55,6 +60,7 @@ export function JoinedRoomState({
   room: ParticipantClientRoomState;
 }>): ReactNode {
   const t = useTranslations("JoinRoom");
+  const tParticipantRole = useTranslations("Common.participantRole");
   const { snapshot } = useAuthenticatedParticipantRoomSnapshot({
     initialSnapshot: room.snapshot,
     realtimeTopic: room.realtimeTopic,
@@ -79,11 +85,22 @@ export function JoinedRoomState({
         break;
       }
 
-      return snapshot.currentRound.status === "voting" ? (
+      return snapshot.currentRound.status === ROUND_STATUS.VOTING ? (
         <VotingBallot roomCode={roomCode} round={snapshot.currentRound} ownBallot={snapshot.ownBallot} progress={snapshot.ballotProgress} />
       ) : (
         <PageShell>
           <p className="text-slate-300">{t("status.advanced")}</p>
+        </PageShell>
+      );
+    case "result":
+      if (snapshot.currentRound === null) {
+        return <UnavailableRoomState />;
+      }
+
+      return (
+        <PageShell wide>
+          <MovieCards round={snapshot.currentRound} />
+          <RoundResult round={snapshot.currentRound} />
         </PageShell>
       );
     case "exhausted":
@@ -101,7 +118,7 @@ export function JoinedRoomState({
       return assertNever(roomView);
   }
 
-  const roleLabel = participant.role === "host" ? t("role.host") : t("role.guest");
+  const roleLabel = participant.role === "host" ? tParticipantRole("host") : tParticipantRole("guest");
 
   return (
     <PageShell>

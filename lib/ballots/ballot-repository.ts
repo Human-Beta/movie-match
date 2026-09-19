@@ -5,6 +5,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { loadDatabase, type DatabaseProvider } from "@/lib/db/database-provider";
 import { participants, roundBallots, roundMovies, rounds, rooms, votes } from "@/lib/db/schema";
 import type { BallotRepository, BallotRoom, LockedBallotRoom } from "@/lib/ballots/ballot-service";
+import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 
 export class DrizzleBallotRepository implements BallotRepository {
   constructor(private readonly getDatabase: DatabaseProvider = loadDatabase) {}
@@ -57,7 +58,7 @@ export class DrizzleBallotRepository implements BallotRepository {
           const roundRows = await transaction
             .select({ id: rounds.id })
             .from(rounds)
-            .where(and(eq(rounds.roomId, room.id), eq(rounds.status, "voting")))
+            .where(and(eq(rounds.roomId, room.id), eq(rounds.status, ROUND_STATUS.VOTING)))
             .limit(1);
           const round = roundRows.at(0) ?? null;
 
@@ -106,9 +107,94 @@ export class DrizzleBallotRepository implements BallotRepository {
 
           return countRows.at(0)?.count ?? 0;
         },
+        readRoundResolution: async roundId => {
+          if (room === null) {
+            return null;
+          }
+
+          const roundRows = await transaction
+            .select({ status: rounds.status })
+            .from(rounds)
+            .where(and(eq(rounds.roomId, room.id), eq(rounds.id, roundId)))
+            .limit(1);
+          const round = roundRows.at(0) ?? null;
+
+          if (round === null) {
+            return null;
+          }
+
+          const [movieRows, ballotRows, voteRows] = await Promise.all([
+            transaction
+              .select({ movieId: roundMovies.movieId, isSelected: roundMovies.isSelected })
+              .from(roundMovies)
+              .where(and(eq(roundMovies.roomId, room.id), eq(roundMovies.roundId, roundId))),
+            transaction
+              .select({ participantId: roundBallots.participantId })
+              .from(roundBallots)
+              .where(and(eq(roundBallots.roomId, room.id), eq(roundBallots.roundId, roundId))),
+            transaction
+              .select({ participantId: votes.participantId, movieId: votes.movieId, value: votes.value })
+              .from(votes)
+              .where(and(eq(votes.roomId, room.id), eq(votes.roundId, roundId))),
+          ]);
+
+          return { status: round.status, movies: movieRows, ballots: ballotRows, votes: voteRows };
+        },
+        persistRoundResolution: async (roundId, resolution) => {
+          const currentRoom = this.requireRoom(room);
+
+          if (resolution.status === ROUND_STATUS.MATCHED) {
+            const selectedMovies = await transaction
+              .update(roundMovies)
+              .set({ isSelected: true })
+              .where(
+                and(
+                  eq(roundMovies.roomId, currentRoom.id),
+                  eq(roundMovies.roundId, roundId),
+                  eq(roundMovies.movieId, resolution.selectedMovieId),
+                  eq(roundMovies.isSelected, false),
+                ),
+              )
+              .returning({ movieId: roundMovies.movieId });
+
+            if (selectedMovies.length !== 1) {
+              throw new Error("The selected round movie was not persisted.");
+            }
+          }
+
+          const terminalRounds = await transaction
+            .update(rounds)
+            .set({ status: resolution.status })
+            .where(and(eq(rounds.roomId, currentRoom.id), eq(rounds.id, roundId), eq(rounds.status, ROUND_STATUS.VOTING)))
+            .returning({ id: rounds.id });
+
+          if (terminalRounds.length !== 1) {
+            throw new Error("The voting round was not transitioned to a terminal state.");
+          }
+
+          if (resolution.status === ROUND_STATUS.MATCHED) {
+            const matchedRooms = await transaction
+              .update(rooms)
+              .set({ status: "matched" })
+              .where(and(eq(rooms.id, currentRoom.id), eq(rooms.status, "playing")))
+              .returning({ id: rooms.id });
+
+            if (matchedRooms.length !== 1) {
+              throw new Error("The room was not transitioned to matched.");
+            }
+          }
+        },
       };
 
       return operation(room, locked);
     });
+  }
+
+  private requireRoom(room: BallotRoom | null): BallotRoom {
+    if (room === null) {
+      throw new Error("Round resolution requires a room lock.");
+    }
+
+    return room;
   }
 }

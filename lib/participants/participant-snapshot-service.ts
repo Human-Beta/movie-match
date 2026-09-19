@@ -1,6 +1,8 @@
 import { z } from "zod";
 
+import { assertNever } from "@/lib/assert-never";
 import { SystemClock, type Clock } from "@/lib/clock";
+import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { ParticipantRole } from "@/lib/participants/participant-service";
 import { hashStoredParticipantAccessToken } from "@/lib/participants/participant-token";
 import {
@@ -13,6 +15,9 @@ import {
   type PublicRoomMovies,
   type PublicRoomParticipant,
   type PublicRoomRound,
+  type PublicRoundMovieVoteSet,
+  type PublicRoundMovieVotes,
+  type PublicRoundResult,
 } from "@/lib/participants/public-participant-snapshot";
 import { PARTICIPANT_ROOM_TOPIC_PREFIX } from "@/lib/realtime/participant-events";
 import { normalizeRoomCode } from "@/lib/rooms/room-code";
@@ -185,7 +190,7 @@ export class ParticipantSnapshotService {
   }
 
   private toBallotProgress(record: ParticipantSnapshotRecord, totalParticipants: number): PublicBallotProgress | null {
-    if (record.currentRound?.status !== "voting") {
+    if (record.currentRound?.status !== ROUND_STATUS.VOTING) {
       return null;
     }
 
@@ -223,6 +228,34 @@ export class ParticipantSnapshotService {
       roundNumber: round.roundNumber,
       status: round.status,
       movies: this.copyMovies(orderedMovies),
+      ...(round.result === undefined ? {} : { result: this.copyResult(round.result) }),
+    };
+  }
+
+  private copyResult(result: PublicRoundResult): PublicRoundResult {
+    const movieVotes: PublicRoundMovieVoteSet = [
+      this.copyMovieVotes(result.movieVotes[0]),
+      this.copyMovieVotes(result.movieVotes[1]),
+      this.copyMovieVotes(result.movieVotes[2]),
+    ];
+
+    switch (result.status) {
+      case ROUND_STATUS.MATCHED:
+        return { status: ROUND_STATUS.MATCHED, selectedMovieId: result.selectedMovieId, movieVotes };
+      case ROUND_STATUS.NO_MATCH:
+        return { status: ROUND_STATUS.NO_MATCH, selectedMovieId: null, movieVotes };
+      default:
+        return assertNever(result);
+    }
+  }
+
+  private copyMovieVotes(movieVotes: PublicRoundMovieVotes): PublicRoundMovieVotes {
+    return {
+      movieId: movieVotes.movieId,
+      votes: [
+        { role: movieVotes.votes[0].role, value: movieVotes.votes[0].value },
+        { role: movieVotes.votes[1].role, value: movieVotes.votes[1].value },
+      ],
     };
   }
 
