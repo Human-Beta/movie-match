@@ -205,11 +205,11 @@ function TvRoundMovieGrid({
       <div className="mt-6 grid gap-5 sm:grid-cols-3">
         {presentation.round.movies.map(movie => (
           <TvRoundMovieCard
-            emphasizeSelected={emphasizeSelected === true && movie.movieId === presentation.selectedMovie?.movieId}
+            emphasize={emphasizeSelected ? movie.movieId === presentation.selectedMovie?.movieId : false}
             key={movie.movieId}
             layoutId={movie.movieId === presentation.selectedMovie?.movieId ? selectedLayoutId : undefined}
             movie={movie}
-            muted={emphasizeSelected === true && movie.movieId !== presentation.selectedMovie?.movieId}
+            muted={emphasizeSelected ? movie.movieId !== presentation.selectedMovie?.movieId : false}
             selectedLabel={tResult("selected")}
           />
         ))}
@@ -219,13 +219,13 @@ function TvRoundMovieGrid({
 }
 
 function TvRoundMovieCard({
-  emphasizeSelected,
+  emphasize,
   layoutId,
   movie,
   muted,
   selectedLabel,
 }: Readonly<{
-  emphasizeSelected: boolean;
+  emphasize: boolean;
   layoutId: string | undefined;
   movie: PublicRoomMovie;
   muted: boolean;
@@ -233,13 +233,13 @@ function TvRoundMovieCard({
 }>): ReactNode {
   return (
     <m.article
-      animate={emphasizeSelected ? { opacity: 1, scale: 1.035 } : { opacity: muted ? 0.52 : 1, scale: 1 }}
+      animate={emphasize ? { opacity: 1, scale: 1.035 } : { opacity: muted ? 0.52 : 1, scale: 1 }}
       className="relative flex h-full flex-col overflow-hidden rounded-3xl bg-slate-900 ring-1 ring-white/10"
       layoutId={layoutId}
       transition={{ duration: 0.3, ease: "easeOut" }}
     >
       <MovieCardContent movie={movie} />
-      {emphasizeSelected ? (
+      {emphasize ? (
         <p className="absolute top-4 left-4 rounded-full bg-emerald-300 px-3 py-1 text-xs font-black tracking-[0.16em] text-emerald-950 uppercase">
           {selectedLabel}
         </p>
