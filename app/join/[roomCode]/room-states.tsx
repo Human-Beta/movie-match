@@ -7,9 +7,9 @@ import type { PublicParticipantIdentity } from "@/app/join/[roomCode]/join-actio
 import { HostFilters } from "@/app/join/[roomCode]/host-filters";
 import { RestartListControl } from "@/app/join/[roomCode]/restart-list-control";
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
-import { MovieCards } from "@/app/room-participants/movie-cards";
 import { RoundResult } from "@/app/room-participants/round-result";
 import { useAuthenticatedParticipantRoomSnapshot } from "@/app/room-participants/use-authenticated-participant-room-snapshot";
+import { usePhoneResultReveal } from "@/app/room-participants/use-phone-result-reveal";
 import { VotingBallot } from "@/app/join/[roomCode]/voting-ballot";
 import { assertNever } from "@/lib/assert-never";
 import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
@@ -66,6 +66,11 @@ export function JoinedRoomState({
     realtimeTopic: room.realtimeTopic,
     roomCode,
   });
+  const resultReveal = usePhoneResultReveal({
+    initialRound: room.snapshot.currentRound,
+    realtimeTopic: room.realtimeTopic,
+    round: snapshot.currentRound,
+  });
   const roomView = getParticipantRoomView(snapshot);
 
   let statusMessage: string;
@@ -97,9 +102,12 @@ export function JoinedRoomState({
         return <UnavailableRoomState />;
       }
 
+      if (!resultReveal.revealed || resultReveal.presentation === null) {
+        return <PhoneResultPendingState />;
+      }
+
       return (
-        <PageShell wide>
-          <MovieCards round={snapshot.currentRound} />
+        <PageShell>
           <RoundResult round={snapshot.currentRound} />
         </PageShell>
       );
@@ -133,6 +141,20 @@ export function JoinedRoomState({
       {participant.role === "host" && snapshot.roomState === "waiting" ? (
         <HostFilters participantCount={snapshot.participantCount} roomCode={roomCode} />
       ) : null}
+    </PageShell>
+  );
+}
+
+function PhoneResultPendingState(): ReactNode {
+  const t = useTranslations("JoinRoom");
+
+  return (
+    <PageShell>
+      <div aria-live="polite">
+        <p className="text-sm font-semibold tracking-[0.2em] text-amber-400 uppercase">{t("status.resultPendingLabel")}</p>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight">{t("status.resultPendingTitle")}</h1>
+        <p className="mt-4 text-lg leading-8 text-slate-300">{t("status.resultPendingDescription")}</p>
+      </div>
     </PageShell>
   );
 }
