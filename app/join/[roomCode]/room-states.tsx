@@ -15,6 +15,8 @@ import { assertNever } from "@/lib/assert-never";
 import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { ParticipantClientRoomState } from "@/lib/participants/public-participant-snapshot";
 
+const JOIN_ROOM_NAMESPACE = "JoinRoom";
+
 function PageShell({ children, wide = false }: Readonly<{ children: ReactNode; wide?: boolean }>): ReactNode {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-10 text-slate-50">
@@ -29,7 +31,7 @@ function PageShell({ children, wide = false }: Readonly<{ children: ReactNode; w
 }
 
 export function UnavailableRoomState(): ReactNode {
-  const t = useTranslations("JoinRoom");
+  const t = useTranslations(JOIN_ROOM_NAMESPACE);
 
   return (
     <PageShell>
@@ -40,7 +42,7 @@ export function UnavailableRoomState(): ReactNode {
 }
 
 export function FullRoomState(): ReactNode {
-  const t = useTranslations("JoinRoom");
+  const t = useTranslations(JOIN_ROOM_NAMESPACE);
 
   return (
     <PageShell>
@@ -59,7 +61,7 @@ export function JoinedRoomState({
   participant: PublicParticipantIdentity;
   room: ParticipantClientRoomState;
 }>): ReactNode {
-  const t = useTranslations("JoinRoom");
+  const t = useTranslations(JOIN_ROOM_NAMESPACE);
   const tParticipantRole = useTranslations("Common.participantRole");
   const { snapshot } = useAuthenticatedParticipantRoomSnapshot({
     initialSnapshot: room.snapshot,
@@ -146,7 +148,7 @@ export function JoinedRoomState({
 }
 
 function PhoneResultPendingState(): ReactNode {
-  const t = useTranslations("JoinRoom");
+  const t = useTranslations(JOIN_ROOM_NAMESPACE);
 
   return (
     <PageShell>

@@ -205,7 +205,7 @@ function TvRoundMovieGrid({
       <div className="mt-6 grid gap-5 sm:grid-cols-3">
         {presentation.round.movies.map(movie => (
           <TvRoundMovieCard
-            emphasize={emphasizeSelected === true && movie.movieId === presentation.selectedMovie?.movieId}
+            emphasizeSelected={emphasizeSelected === true && movie.movieId === presentation.selectedMovie?.movieId}
             key={movie.movieId}
             layoutId={movie.movieId === presentation.selectedMovie?.movieId ? selectedLayoutId : undefined}
             movie={movie}
@@ -219,13 +219,13 @@ function TvRoundMovieGrid({
 }
 
 function TvRoundMovieCard({
-  emphasize,
+  emphasizeSelected,
   layoutId,
   movie,
   muted,
   selectedLabel,
 }: Readonly<{
-  emphasize: boolean;
+  emphasizeSelected: boolean;
   layoutId: string | undefined;
   movie: PublicRoomMovie;
   muted: boolean;
@@ -233,13 +233,13 @@ function TvRoundMovieCard({
 }>): ReactNode {
   return (
     <m.article
-      animate={emphasize ? { opacity: 1, scale: 1.035 } : { opacity: muted ? 0.52 : 1, scale: 1 }}
+      animate={emphasizeSelected ? { opacity: 1, scale: 1.035 } : { opacity: muted ? 0.52 : 1, scale: 1 }}
       className="relative flex h-full flex-col overflow-hidden rounded-3xl bg-slate-900 ring-1 ring-white/10"
       layoutId={layoutId}
       transition={{ duration: 0.3, ease: "easeOut" }}
     >
       <MovieCardContent movie={movie} />
-      {emphasize ? (
+      {emphasizeSelected ? (
         <p className="absolute top-4 left-4 rounded-full bg-emerald-300 px-3 py-1 text-xs font-black tracking-[0.16em] text-emerald-950 uppercase">
           {selectedLabel}
         </p>

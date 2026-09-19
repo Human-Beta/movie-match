@@ -6,6 +6,8 @@ import { useState, type ReactNode } from "react";
 import { formatRuntime } from "@/app/room-participants/format-runtime";
 import type { PublicRoomMovie, PublicRoomRound } from "@/lib/participants/public-participant-snapshot";
 
+const GAME_ROUND_NAMESPACE = "GameRound";
+
 export function MovieCards({
   round,
   renderFooter,
@@ -13,7 +15,7 @@ export function MovieCards({
   round: PublicRoomRound;
   renderFooter?: (movie: PublicRoomMovie) => ReactNode;
 }>): ReactNode {
-  const t = useTranslations("GameRound");
+  const t = useTranslations(GAME_ROUND_NAMESPACE);
 
   return (
     <section aria-labelledby="current-round-title">
@@ -38,7 +40,7 @@ export function MovieCardContent({
   movie: PublicRoomMovie;
   renderFooter?: (movie: PublicRoomMovie) => ReactNode;
 }>): ReactNode {
-  const t = useTranslations("GameRound");
+  const t = useTranslations(GAME_ROUND_NAMESPACE);
 
   return (
     <>
@@ -55,7 +57,7 @@ export function MovieCardContent({
 }
 
 function MoviePoster({ movie }: Readonly<{ movie: PublicRoomMovie }>): ReactNode {
-  const t = useTranslations("GameRound");
+  const t = useTranslations(GAME_ROUND_NAMESPACE);
   const [failed, setFailed] = useState(false);
 
   if (movie.posterPath === null || failed) {
