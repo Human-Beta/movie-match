@@ -10,11 +10,15 @@ import type { ParticipantSnapshotActionResult, PublicParticipantSnapshot } from 
 
 type SyncedParticipantSnapshot<TSnapshot extends PublicParticipantSnapshot> = {
   realtimeTopic: string;
+  snapshotEpoch: number;
+  snapshotReadFailed: boolean;
   snapshot: TSnapshot;
   transportStatus: ParticipantRealtimeTransportStatus;
 };
 
 export type SyncedParticipantRoomSnapshotState<TSnapshot extends PublicParticipantSnapshot> = {
+  snapshotEpoch: number;
+  snapshotReadFailed: boolean;
   snapshot: TSnapshot;
   transportStatus: ParticipantRealtimeTransportStatus;
 };
@@ -32,6 +36,8 @@ export function useSyncedParticipantRoomSnapshot<TSnapshot extends PublicPartici
 }>): SyncedParticipantRoomSnapshotState<TSnapshot> {
   const [syncedState, setSyncedState] = useState<SyncedParticipantSnapshot<TSnapshot>>({
     realtimeTopic,
+    snapshotEpoch: 0,
+    snapshotReadFailed: false,
     snapshot: initialSnapshot,
     transportStatus: "connecting",
   });
@@ -39,6 +45,8 @@ export function useSyncedParticipantRoomSnapshot<TSnapshot extends PublicPartici
     syncedState.realtimeTopic === realtimeTopic
       ? syncedState
       : {
+          snapshotEpoch: 0,
+          snapshotReadFailed: false,
           snapshot: initialSnapshot,
           transportStatus: "connecting",
         };
@@ -59,6 +67,8 @@ export function useSyncedParticipantRoomSnapshot<TSnapshot extends PublicPartici
       onSnapshot: (nextSnapshot): void => {
         setSyncedState(current => ({
           realtimeTopic,
+          snapshotEpoch: current.realtimeTopic === realtimeTopic ? current.snapshotEpoch + 1 : 0,
+          snapshotReadFailed: false,
           snapshot: nextSnapshot,
           transportStatus: current.realtimeTopic === realtimeTopic ? current.transportStatus : "connecting",
         }));
@@ -66,8 +76,24 @@ export function useSyncedParticipantRoomSnapshot<TSnapshot extends PublicPartici
       onTransportStatus: (transportStatus): void => {
         setSyncedState(current => ({
           realtimeTopic,
+          snapshotEpoch:
+            current.realtimeTopic === realtimeTopic && current.transportStatus === "connected" && transportStatus === "disconnected"
+              ? current.snapshotEpoch + 1
+              : current.realtimeTopic === realtimeTopic
+                ? current.snapshotEpoch
+                : 0,
+          snapshotReadFailed: current.realtimeTopic === realtimeTopic ? current.snapshotReadFailed : false,
           snapshot: current.realtimeTopic === realtimeTopic ? current.snapshot : resetSnapshot,
           transportStatus,
+        }));
+      },
+      onSnapshotReadFailed: (): void => {
+        setSyncedState(current => ({
+          realtimeTopic,
+          snapshotEpoch: current.realtimeTopic === realtimeTopic ? current.snapshotEpoch + 1 : 0,
+          snapshotReadFailed: true,
+          snapshot: current.realtimeTopic === realtimeTopic ? current.snapshot : resetSnapshot,
+          transportStatus: current.realtimeTopic === realtimeTopic ? current.transportStatus : "connecting",
         }));
       },
       onSnapshotReadFulfilled: (): void => {

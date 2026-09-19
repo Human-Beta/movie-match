@@ -23,6 +23,7 @@ export type RoomParticipantSyncOptions<TSnapshot extends PublicParticipantSnapsh
   createSubscription: (realtimeTopic: string) => RoomParticipantSubscription;
   readSnapshot: () => Promise<ParticipantSnapshotActionResult<TSnapshot>>;
   onSnapshot: (snapshot: TSnapshot) => void;
+  onSnapshotReadFailed?: () => void;
   onTransportStatus?: (status: ParticipantRealtimeTransportStatus) => void;
   onSnapshotReadFulfilled?: () => void;
   onSnapshotReadRejected?: (error: unknown) => boolean;
@@ -51,6 +52,7 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
   private readonly coalesceMs: number;
   private readonly createSubscription: RoomParticipantSyncOptions<TSnapshot>["createSubscription"];
   private readonly onSnapshot: RoomParticipantSyncOptions<TSnapshot>["onSnapshot"];
+  private readonly onSnapshotReadFailed: RoomParticipantSyncOptions<TSnapshot>["onSnapshotReadFailed"];
   private readonly onSnapshotReadFulfilled: RoomParticipantSyncOptions<TSnapshot>["onSnapshotReadFulfilled"];
   private readonly onSnapshotReadRejected: RoomParticipantSyncOptions<TSnapshot>["onSnapshotReadRejected"];
   private readonly onTransportStatus: RoomParticipantSyncOptions<TSnapshot>["onTransportStatus"];
@@ -74,6 +76,7 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
     this.createSubscription = options.createSubscription;
     this.currentSnapshot = options.initialSnapshot;
     this.onSnapshot = options.onSnapshot;
+    this.onSnapshotReadFailed = options.onSnapshotReadFailed;
     this.onSnapshotReadFulfilled = options.onSnapshotReadFulfilled;
     this.onSnapshotReadRejected = options.onSnapshotReadRejected;
     this.onTransportStatus = options.onTransportStatus;
@@ -161,6 +164,8 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
         return;
       }
 
+      this.onSnapshotReadFailed?.();
+
       let recoveryStarted = false;
 
       try {
@@ -190,11 +195,13 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
         this.updatePolling();
         return;
       case "unavailable":
+        this.onSnapshotReadFailed?.();
         this.currentSnapshot = { ...this.currentSnapshot, roomState: "closed" };
         this.onSnapshot(this.currentSnapshot);
         this.updatePolling();
         return;
       case "error":
+        this.onSnapshotReadFailed?.();
         return;
       default:
         return assertNever(result);

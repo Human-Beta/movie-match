@@ -363,6 +363,44 @@ test("keeps polling after the first active-voting snapshot read fails", async ()
   sync.stop();
 });
 
+test("reports unavailable and error snapshot results without accepting their stale progress", async () => {
+  const scheduler = new FakeScheduler();
+  const tracker: SubscriptionTracker = { active: 0, maxActive: 0 };
+  let reads = 0;
+  let failures = 0;
+  const snapshots: PublicParticipantSnapshot[] = [];
+  const sync = new RoomParticipantSync({
+    realtimeTopic: "room:66666666-6666-4666-8666-666666666666",
+    initialSnapshot: playingSnapshot,
+    scheduler,
+    createSubscription: (): RoomParticipantSubscription => new FakeSubscription(tracker),
+    readSnapshot: async (): Promise<ParticipantSnapshotActionResult> => {
+      reads += 1;
+
+      return reads === 1 ? { status: "error" } : { status: "unavailable" };
+    },
+    onSnapshot: (nextSnapshot): void => {
+      snapshots.push(nextSnapshot);
+    },
+    onSnapshotReadFailed: (): void => {
+      failures += 1;
+    },
+  });
+
+  sync.start();
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+  assert.equal(failures, 1);
+  assert.deepEqual(snapshots, []);
+
+  scheduler.run(PARTICIPANT_SNAPSHOT_POLL_MS);
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+  assert.equal(failures, 2);
+  assert.deepEqual(snapshots, [{ ...playingSnapshot, roomState: "closed" }]);
+  sync.stop();
+});
+
 test("keeps polling while exhausted so a missed restart still converges", async () => {
   const scheduler = new FakeScheduler();
   const tracker: SubscriptionTracker = { active: 0, maxActive: 0 };
