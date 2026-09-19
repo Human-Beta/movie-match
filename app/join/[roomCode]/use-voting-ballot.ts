@@ -122,10 +122,12 @@ function useRestoredBallotState({
 }
 
 export function useVotingBallot({
+  onSubmitted,
   ownBallot,
   roomCode,
   round,
 }: Readonly<{
+  onSubmitted(roundId: string, submittedCount: number): void;
   ownBallot: ParticipantOwnBallot | null;
   roomCode: string;
   round: PublicRoomRound;
@@ -151,6 +153,9 @@ export function useVotingBallot({
   function applyResult(result: Exclude<PublicBallotSubmissionResult, { status: "error" }>): void {
     switch (result.status) {
       case "submitted":
+        onSubmitted(round.roundId, result.submittedCount);
+        setFeedback(result.status);
+        return;
       case "unavailable":
       case "validation_error":
       case "conflict":

@@ -1,14 +1,25 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 
 import { useVotingBallot, type BallotFeedback } from "@/app/join/[roomCode]/use-voting-ballot";
+import {
+  createLocalBallotProgressProjection,
+  reconcileBallotProgress,
+  type LocalBallotProgressProjection,
+} from "@/app/join/[roomCode]/ballot-progress-reconciliation";
 import { MovieCards } from "@/app/room-participants/movie-cards";
 import { getVoteEmoji } from "@/app/room-participants/vote-emoji";
 import { PrimaryButton } from "@/app/ui/primary-button";
 import type { VoteValue } from "@/lib/ballots/ballot-vote";
-import type { ParticipantOwnBallot, PublicBallotProgress, PublicRoomMovie, PublicRoomRound } from "@/lib/participants/public-participant-snapshot";
+import type {
+  ParticipantClientSnapshot,
+  ParticipantOwnBallot,
+  PublicBallotProgress,
+  PublicRoomMovie,
+  PublicRoomRound,
+} from "@/lib/participants/public-participant-snapshot";
 
 const VOTING_NAMESPACE = "Voting";
 
@@ -23,15 +34,21 @@ export function VotingBallot({
   roomCode,
   round,
   ownBallot,
-  progress,
+  snapshot,
+  snapshotEpoch,
+  snapshotReadFailed,
 }: Readonly<{
   roomCode: string;
   round: PublicRoomRound;
   ownBallot: ParticipantOwnBallot | null;
-  progress: PublicBallotProgress | null;
+  snapshot: ParticipantClientSnapshot;
+  snapshotEpoch: number;
+  snapshotReadFailed: boolean;
 }>): ReactNode {
   const t = useTranslations(VOTING_NAMESPACE);
+  const { progress, recordSubmittedProgress } = useBallotProgressReconciliation({ snapshot, snapshotEpoch, snapshotReadFailed });
   const { feedback, hasPendingBallot, immutable, selections, select, storageReady, submit, submitting } = useVotingBallot({
+    onSubmitted: recordSubmittedProgress,
     ownBallot,
     roomCode,
     round,
@@ -85,6 +102,50 @@ export function VotingBallot({
       </div>
     </main>
   );
+}
+
+function useBallotProgressReconciliation({
+  snapshot,
+  snapshotEpoch,
+  snapshotReadFailed,
+}: Readonly<{
+  snapshot: ParticipantClientSnapshot;
+  snapshotEpoch: number;
+  snapshotReadFailed: boolean;
+}>): {
+  progress: PublicBallotProgress | null;
+  recordSubmittedProgress(roundId: string, submittedCount: number): void;
+} {
+  const [projection, setProjection] = useState<LocalBallotProgressProjection | null>(null);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return (): void => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const recordSubmittedProgress = useCallback(
+    (roundId: string, submittedCount: number): void => {
+      if (!mountedRef.current || snapshotReadFailed) {
+        return;
+      }
+
+      const nextProjection = createLocalBallotProgressProjection({ roundId, snapshot, snapshotEpoch, submittedCount });
+
+      if (nextProjection !== null) {
+        setProjection(nextProjection);
+      }
+    },
+    [snapshot, snapshotEpoch, snapshotReadFailed],
+  );
+
+  return {
+    progress: reconcileBallotProgress({ projection, snapshot, snapshotEpoch, snapshotReadFailed }),
+    recordSubmittedProgress,
+  };
 }
 
 function VoteOptions({
