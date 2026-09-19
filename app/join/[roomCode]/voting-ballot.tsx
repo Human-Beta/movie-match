@@ -5,17 +5,18 @@ import { useTranslations } from "next-intl";
 
 import { useVotingBallot, type BallotFeedback } from "@/app/join/[roomCode]/use-voting-ballot";
 import { MovieCards } from "@/app/room-participants/movie-cards";
+import { getVoteEmoji } from "@/app/room-participants/vote-emoji";
 import { PrimaryButton } from "@/app/ui/primary-button";
 import type { VoteValue } from "@/lib/ballots/ballot-vote";
 import type { ParticipantOwnBallot, PublicBallotProgress, PublicRoomMovie, PublicRoomRound } from "@/lib/participants/public-participant-snapshot";
 
 const VOTING_NAMESPACE = "Voting";
 
-const voteOptions: ReadonlyArray<{ value: VoteValue; emoji: string; label: "wantToWatch" | "couldWatch" | "notNow" | "no" }> = [
-  { value: "want_to_watch", emoji: "🔥", label: "wantToWatch" },
-  { value: "could_watch", emoji: "🙂", label: "couldWatch" },
-  { value: "not_now", emoji: "😐", label: "notNow" },
-  { value: "no", emoji: "❌", label: "no" },
+const voteOptions: ReadonlyArray<{ value: VoteValue; label: "wantToWatch" | "couldWatch" | "notNow" | "no" }> = [
+  { value: "want_to_watch", label: "wantToWatch" },
+  { value: "could_watch", label: "couldWatch" },
+  { value: "not_now", label: "notNow" },
+  { value: "no", label: "no" },
 ];
 
 export function VotingBallot({
@@ -120,7 +121,7 @@ function VoteOptions({
             type="radio"
             value={option.value}
           />
-          <span aria-hidden="true">{option.emoji} </span>
+          <span aria-hidden="true">{getVoteEmoji(option.value)} </span>
           {t(option.label)}
         </label>
       ))}

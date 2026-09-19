@@ -4,6 +4,7 @@ import { and, asc, eq, inArray, max, sql, type SQL } from "drizzle-orm";
 
 import { loadDatabase, type DatabaseProvider } from "@/lib/db/database-provider";
 import { movieGenres, movies, participants, roomGameCommands, roomGenres, rooms, roundMovies, rounds } from "@/lib/db/schema";
+import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { GameRoom, GameRoundRepository, LockedGameRoom } from "@/lib/game-rounds/game-round-service";
 import type { RoomFilterValues } from "@/lib/room-filters/room-filter-values";
 
@@ -126,7 +127,7 @@ export class DrizzleGameRoundRepository implements GameRoundRepository {
           const currentRoom = this.requireRoom(room);
           const createdRounds = await transaction
             .insert(rounds)
-            .values({ roomId: currentRoom.id, roundNumber, status: "voting" })
+            .values({ roomId: currentRoom.id, roundNumber, status: ROUND_STATUS.VOTING })
             .returning({ id: rounds.id });
           const createdRound = createdRounds.at(0);
 

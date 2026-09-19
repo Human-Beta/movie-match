@@ -1,6 +1,7 @@
 import type { ParticipantSnapshotActionResult, PublicParticipantSnapshot } from "@/lib/participants/public-participant-snapshot";
 import { assertNever } from "@/lib/assert-never";
 import { browserTimerScheduler, type TimerId, type TimerScheduler } from "@/app/room-participants/timer-scheduler";
+import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 
 export const PARTICIPANT_SNAPSHOT_COALESCE_MS = 100;
 export const PARTICIPANT_SNAPSHOT_POLL_MS = 5_000;
@@ -34,7 +35,7 @@ function shouldPoll(snapshot: PublicParticipantSnapshot): boolean {
   return (
     snapshot.roomState === "waiting" ||
     snapshot.roomState === "exhausted" ||
-    (snapshot.roomState === "playing" && snapshot.currentRound?.status === "voting" && snapshot.ballotProgress?.readyForResults === false)
+    (snapshot.roomState === "playing" && snapshot.currentRound?.status === ROUND_STATUS.VOTING && snapshot.ballotProgress?.readyForResults === false)
   );
 }
 

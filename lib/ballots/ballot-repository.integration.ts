@@ -228,7 +228,7 @@ test("PostgreSQL ballots keep private votes atomic, immutable, and room-scoped",
     assert.equal((await database.select().from(roundBallots).where(eq(roundBallots.roomId, room.id))).length, 0);
   });
 
-  await context.test("keeps concurrent participant ballots separate and exposes only progress plus a participant's own values", async () => {
+  await context.test("atomically resolves a no-match and discloses both ballots only after its terminal commit", async () => {
     const room = await createRoom(6);
     const hostBallot = ballot(room, randomUUID(), ["want_to_watch", "could_watch", "no"]);
     const guestBallot = ballot(room, randomUUID(), ["no", "not_now", "want_to_watch"]);
@@ -238,12 +238,56 @@ test("PostgreSQL ballots keep private votes atomic, immutable, and room-scoped",
     assert.equal(guestResult.status, "completed");
     assert.equal((await database.select().from(votes).where(eq(votes.roomId, room.id))).length, 6);
     assert.equal((await database.select().from(roundBallots).where(eq(roundBallots.roomId, room.id))).length, 2);
+    assert.deepEqual(await database.select({ status: rounds.status }).from(rounds).where(eq(rounds.id, room.roundId)), [{ status: "no_match" }]);
+    assert.deepEqual(await database.select({ status: rooms.status }).from(rooms).where(eq(rooms.id, room.id)), [{ status: "playing" }]);
+    assert.equal(
+      (
+        await database
+          .select()
+          .from(roundMovies)
+          .where(and(eq(roundMovies.roundId, room.roundId), eq(roundMovies.isSelected, true)))
+      ).length,
+      0,
+    );
 
     const tvSnapshot = await snapshotService.getTvRoomState(room.code);
     const hostSnapshot = await snapshotService.getClientRoomState(room.id, room.hostToken);
     const guestSnapshot = await snapshotService.getClientRoomState(room.id, room.guestToken);
     assert.ok(tvSnapshot && hostSnapshot && guestSnapshot);
-    assert.deepEqual(tvSnapshot.snapshot.ballotProgress, { submittedCount: 2, totalParticipants: 2, readyForResults: true });
+    const tvRound = tvSnapshot.snapshot.currentRound;
+    const hostRound = hostSnapshot.snapshot.currentRound;
+    const guestRound = guestSnapshot.snapshot.currentRound;
+    assert.ok(tvRound && hostRound && guestRound);
+    assert.equal(tvSnapshot.snapshot.ballotProgress, null);
+    assert.deepEqual(tvRound.result, {
+      status: "no_match",
+      selectedMovieId: null,
+      movieVotes: [
+        {
+          movieId: room.movieIds[0],
+          votes: [
+            { role: "host", value: "want_to_watch" },
+            { role: "guest", value: "no" },
+          ],
+        },
+        {
+          movieId: room.movieIds[1],
+          votes: [
+            { role: "host", value: "could_watch" },
+            { role: "guest", value: "not_now" },
+          ],
+        },
+        {
+          movieId: room.movieIds[2],
+          votes: [
+            { role: "host", value: "no" },
+            { role: "guest", value: "want_to_watch" },
+          ],
+        },
+      ],
+    });
+    assert.deepEqual(hostRound.result, tvRound.result);
+    assert.deepEqual(guestRound.result, tvRound.result);
     assert.deepEqual(hostSnapshot.snapshot.ownBallot, {
       status: "submitted",
       votes: [...hostBallot.votes].sort((left, right) => left.movieId - right.movieId),
@@ -253,12 +297,71 @@ test("PostgreSQL ballots keep private votes atomic, immutable, and room-scoped",
       votes: [...guestBallot.votes].sort((left, right) => left.movieId - right.movieId),
     });
     const tvPayload = JSON.stringify(tvSnapshot.snapshot);
-    assert.equal(tvPayload.includes("want_to_watch"), false);
-    assert.equal(tvPayload.includes("could_watch"), false);
-    assert.equal(tvPayload.includes("not_now"), false);
-    assert.equal(tvPayload.includes('"no"'), false);
+    assert.equal(tvPayload.includes("want_to_watch"), true);
+    assert.equal(tvPayload.includes("could_watch"), true);
+    assert.equal(tvPayload.includes("not_now"), true);
+    assert.equal(tvPayload.includes('"no"'), true);
     assert.equal(JSON.stringify(hostSnapshot.snapshot).includes("requestId"), false);
     assert.equal(JSON.stringify(hostSnapshot.snapshot).includes(room.guestId), false);
+  });
+
+  await context.test("chooses and persists the strongest match exactly once, then rolls back a corrupt terminal transition", async () => {
+    const room = await createRoom(0);
+    const hostBallot = ballot(room, randomUUID(), ["could_watch", "want_to_watch", "could_watch"]);
+    const guestBallot = ballot(room, randomUUID(), ["could_watch", "could_watch", "could_watch"]);
+    await service.submit(hostBallot, room.hostToken);
+
+    const privateSnapshot = await snapshotService.getTvRoomState(room.code);
+    assert.ok(privateSnapshot);
+    assert.equal(JSON.stringify(privateSnapshot.snapshot).includes("want_to_watch"), false);
+    assert.deepEqual(await database.select({ status: rounds.status }).from(rounds).where(eq(rounds.id, room.roundId)), [{ status: "voting" }]);
+
+    await service.submit(guestBallot, room.guestToken);
+    assert.deepEqual(await database.select({ status: rounds.status }).from(rounds).where(eq(rounds.id, room.roundId)), [{ status: "matched" }]);
+    assert.deepEqual(await database.select({ status: rooms.status }).from(rooms).where(eq(rooms.id, room.id)), [{ status: "matched" }]);
+    assert.deepEqual(
+      await database
+        .select({ movieId: roundMovies.movieId })
+        .from(roundMovies)
+        .where(and(eq(roundMovies.roundId, room.roundId), eq(roundMovies.isSelected, true))),
+      [{ movieId: room.movieIds[1] }],
+    );
+    const replay = await service.submit({ ...guestBallot, votes: [...guestBallot.votes].reverse() }, room.guestToken);
+    assert.equal(replay.status, "completed");
+    assert.deepEqual(
+      await database
+        .select({ movieId: roundMovies.movieId })
+        .from(roundMovies)
+        .where(and(eq(roundMovies.roundId, room.roundId), eq(roundMovies.isSelected, true))),
+      [{ movieId: room.movieIds[1] }],
+    );
+
+    const corruptRoom = await createRoom(3);
+    await service.submit(ballot(corruptRoom), corruptRoom.hostToken);
+    await database
+      .update(roundMovies)
+      .set({ isSelected: true })
+      .where(and(eq(roundMovies.roundId, corruptRoom.roundId), eq(roundMovies.movieId, corruptRoom.movieIds[0])));
+    await assert.rejects(service.submit(ballot(corruptRoom), corruptRoom.guestToken));
+    assert.equal(
+      (
+        await database
+          .select()
+          .from(votes)
+          .where(and(eq(votes.roomId, corruptRoom.id), eq(votes.roundId, corruptRoom.roundId)))
+      ).length,
+      3,
+    );
+    assert.equal(
+      (
+        await database
+          .select()
+          .from(roundBallots)
+          .where(and(eq(roundBallots.roomId, corruptRoom.id), eq(roundBallots.roundId, corruptRoom.roundId)))
+      ).length,
+      1,
+    );
+    assert.deepEqual(await database.select({ status: rounds.status }).from(rounds).where(eq(rounds.id, corruptRoom.roundId)), [{ status: "voting" }]);
   });
 
   await context.test("rejects foreign rooms and keeps ballots server-only with room cascades", async () => {

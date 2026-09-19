@@ -6,10 +6,12 @@ import type { ReactNode } from "react";
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
 import type { ParticipantRealtimeTransportStatus } from "@/app/room-participants/room-participant-sync";
 import { MovieCards } from "@/app/room-participants/movie-cards";
+import { RoundResult } from "@/app/room-participants/round-result";
 import { useRoomParticipantSnapshot } from "@/app/room-participants/use-room-participant-snapshot";
 import { JoinQrCode } from "@/app/tv/[roomCode]/join-qr-code";
 import { NewRoomLink } from "@/app/tv/[roomCode]/new-room-link";
 import { assertNever } from "@/lib/assert-never";
+import { isTerminalRoundStatus, ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { PublicParticipantSnapshot } from "@/lib/participants/public-participant-snapshot";
 
 type TransportPresentation = {
@@ -78,7 +80,7 @@ function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnaps
         ) : (
           <>
             <MovieCards round={snapshot.currentRound} />
-            {snapshot.currentRound.status === "voting" && snapshot.ballotProgress !== null ? (
+            {snapshot.currentRound.status === ROUND_STATUS.VOTING && snapshot.ballotProgress !== null ? (
               <p className="mt-8 rounded-2xl bg-slate-900 p-5 text-lg text-slate-200 ring-1 ring-white/10" role="status">
                 {snapshot.ballotProgress.readyForResults
                   ? t("game.readyForResults")
@@ -88,6 +90,7 @@ function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnaps
                     })}
               </p>
             ) : null}
+            {isTerminalRoundStatus(snapshot.currentRound.status) ? <RoundResult round={snapshot.currentRound} /> : null}
           </>
         )}
       </div>
@@ -119,6 +122,7 @@ export function TvParticipantRoom({
   roomCode: string;
 }>): ReactNode {
   const t = useTranslations(TV_ROOM_NAMESPACE);
+  const tParticipantRole = useTranslations("Common.participantRole");
   const { snapshot, transportStatus } = useRoomParticipantSnapshot({ initialSnapshot, realtimeTopic });
   const roomView = getParticipantRoomView(snapshot);
   const transportPresentation = getTransportPresentation(transportStatus, {
@@ -133,6 +137,7 @@ export function TvParticipantRoom({
     case "advanced":
       return <TvAdvancedRoom />;
     case "playing":
+    case "result":
       return <TvPlayingRoom snapshot={snapshot} />;
     case "exhausted":
       return <TvExhaustedRoom />;
@@ -172,7 +177,7 @@ export function TvParticipantRoom({
                   <li className="flex min-w-0 items-center justify-between gap-4 rounded-2xl bg-slate-950/70 px-4 py-3" key={participant.role}>
                     <span className="min-w-0 text-lg font-semibold break-words">{participant.name}</span>
                     <span className="shrink-0 text-sm text-slate-400">
-                      {participant.role === "host" ? t("participants.host") : t("participants.guest")}
+                      {participant.role === "host" ? tParticipantRole("host") : tParticipantRole("guest")}
                     </span>
                   </li>
                 ))}

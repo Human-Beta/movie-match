@@ -2,10 +2,23 @@ import "server-only";
 
 import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
 
+import { assertNever } from "@/lib/assert-never";
 import { loadDatabase, type DatabaseProvider } from "@/lib/db/database-provider";
 import { genres, movieGenres, movies, participants, roundBallots, rooms, roundMovies, rounds, votes } from "@/lib/db/schema";
-import { isPublicRoomMovies, type ParticipantOwnBallot, type PublicRoomMovie } from "@/lib/participants/public-participant-snapshot";
+import type { VoteValue } from "@/lib/ballots/ballot-vote";
+import { isTerminalRoundStatus, ROUND_STATUS, type TerminalRoundStatus } from "@/lib/game-rounds/round-status";
+import type { ParticipantRole } from "@/lib/participants/participant-service";
+import {
+  isPublicRoomMovies,
+  type ParticipantOwnBallot,
+  type PublicRoundMovieVoteSet,
+  type PublicRoundMovieVotes,
+  type PublicRoundResult,
+  type PublicRoundVote,
+  type PublicRoomMovie,
+} from "@/lib/participants/public-participant-snapshot";
 import type { ParticipantSnapshotRecord, ParticipantSnapshotRepository } from "@/lib/participants/participant-snapshot-service";
+import { isPair } from "@/lib/pair";
 
 export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshotRepository {
   constructor(private readonly getDatabase: DatabaseProvider = loadDatabase) {}
@@ -113,6 +126,7 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
             releaseYear: movies.releaseYear,
             runtimeMinutes: movies.runtimeMinutes,
             genre: genres.name,
+            isSelected: roundMovies.isSelected,
           })
           .from(roundMovies)
           .innerJoin(movies, eq(movies.id, roundMovies.movieId))
@@ -152,6 +166,19 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
           throw new Error("The current round must contain three movies in positions 1 through 3.");
         }
 
+        const result = isTerminalRoundStatus(currentRound.status)
+          ? this.toTerminalResult(
+              currentRound.status,
+              publicMovies,
+              movieRows,
+              await transaction
+                .select({ movieId: votes.movieId, role: participants.role, value: votes.value })
+                .from(votes)
+                .innerJoin(participants, and(eq(participants.roomId, votes.roomId), eq(participants.id, votes.participantId)))
+                .where(and(eq(votes.roomId, room.id), eq(votes.roundId, currentRound.id))),
+            )
+          : undefined;
+
         return {
           room,
           participants: participantRows,
@@ -162,10 +189,91 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
             roundNumber: currentRound.roundNumber,
             status: currentRound.status,
             movies: publicMovies,
+            ...(result === undefined ? {} : { result }),
           },
         };
       },
       { isolationLevel: "repeatable read", accessMode: "read only" },
     );
+  }
+
+  private toTerminalResult(
+    status: TerminalRoundStatus,
+    publicMovies: readonly PublicRoomMovie[],
+    movieRows: readonly { movieId: number; isSelected: boolean }[],
+    voteRows: readonly { movieId: number; role: ParticipantRole; value: VoteValue }[],
+  ): PublicRoundResult {
+    const movieVotes = this.toPublicMovieVoteSet(publicMovies, voteRows);
+    const selectedMovieId = this.toSelectedMovieId(movieRows);
+
+    switch (status) {
+      case ROUND_STATUS.MATCHED:
+        if (selectedMovieId === null || !publicMovies.some(movie => movie.movieId === selectedMovieId)) {
+          throw new Error("A matched round must have exactly one selected current-round movie.");
+        }
+
+        return { status, selectedMovieId, movieVotes };
+      case ROUND_STATUS.NO_MATCH:
+        if (selectedMovieId !== null) {
+          throw new Error("A no-match round cannot have a selected movie.");
+        }
+
+        return { status, selectedMovieId: null, movieVotes };
+      default:
+        return assertNever(status);
+    }
+  }
+
+  private toPublicMovieVoteSet(
+    publicMovies: readonly PublicRoomMovie[],
+    voteRows: readonly { movieId: number; role: ParticipantRole; value: VoteValue }[],
+  ): PublicRoundMovieVoteSet {
+    const votesByMovie = new Map<number, PublicRoundVote[]>();
+
+    for (const movie of publicMovies) {
+      votesByMovie.set(movie.movieId, []);
+    }
+
+    for (const vote of voteRows) {
+      const movieVotes = votesByMovie.get(vote.movieId);
+
+      if (movieVotes === undefined) {
+        throw new Error("A terminal vote is not attached to a current round movie.");
+      }
+
+      movieVotes.push({ role: vote.role, value: vote.value });
+    }
+
+    const movieVotes = publicMovies.map(movie => this.toPublicMovieVotes(movie.movieId, votesByMovie.get(movie.movieId) ?? []));
+
+    if (!this.isPublicRoundMovieVoteSet(movieVotes)) {
+      throw new Error("A terminal round must expose two votes for each of its three movies.");
+    }
+
+    return movieVotes;
+  }
+
+  private toSelectedMovieId(movieRows: readonly { movieId: number; isSelected: boolean }[]): number | null {
+    const [selectedMovieId, ...unexpectedSelectedMovieIds] = new Set(movieRows.filter(movie => movie.isSelected).map(movie => movie.movieId));
+
+    if (unexpectedSelectedMovieIds.length !== 0) {
+      throw new Error("A terminal round cannot have more than one selected movie.");
+    }
+
+    return selectedMovieId ?? null;
+  }
+
+  private toPublicMovieVotes(movieId: number, votesForMovie: readonly PublicRoundVote[]): PublicRoundMovieVotes {
+    const orderedVotes = [...votesForMovie].sort((left, right) => (left.role === "host" ? -1 : 1) - (right.role === "host" ? -1 : 1));
+
+    if (!isPair(orderedVotes) || orderedVotes[0].role !== "host" || orderedVotes[1].role !== "guest") {
+      throw new Error("A terminal movie must have one host vote and one guest vote.");
+    }
+
+    return { movieId, votes: orderedVotes };
+  }
+
+  private isPublicRoundMovieVoteSet(movieVotes: readonly PublicRoundMovieVotes[]): movieVotes is PublicRoundMovieVoteSet {
+    return movieVotes.length === 3 && new Set(movieVotes.map(movie => movie.movieId)).size === 3;
   }
 }

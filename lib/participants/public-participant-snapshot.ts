@@ -1,4 +1,6 @@
-import type { BallotVoteInput } from "@/lib/ballots/ballot-vote";
+import type { BallotVoteInput, VoteValue } from "@/lib/ballots/ballot-vote";
+import type { MatchedRoundStatus, NoMatchRoundStatus, RoundStatus } from "@/lib/game-rounds/round-status";
+import type { Pair } from "@/lib/pair";
 import type { ParticipantRole } from "@/lib/participants/participant-service";
 import type { RoomStatus } from "@/lib/rooms/room-service";
 
@@ -23,11 +25,28 @@ export function isPublicRoomMovies(movies: readonly PublicRoomMovie[]): movies i
   return movies.length === 3 && movies.every((movie, index) => movie.position === index + 1);
 }
 
+export type PublicRoundVote = {
+  role: ParticipantRole;
+  value: VoteValue;
+};
+
+export type PublicRoundMovieVotes = {
+  movieId: number;
+  votes: Pair<PublicRoundVote>;
+};
+
+export type PublicRoundMovieVoteSet = readonly [PublicRoundMovieVotes, PublicRoundMovieVotes, PublicRoundMovieVotes];
+
+export type PublicRoundResult =
+  | { status: MatchedRoundStatus; selectedMovieId: number; movieVotes: PublicRoundMovieVoteSet }
+  | { status: NoMatchRoundStatus; selectedMovieId: null; movieVotes: PublicRoundMovieVoteSet };
+
 export type PublicRoomRound = {
   roundId: string;
   roundNumber: number;
-  status: "voting" | "matched" | "no_match";
+  status: RoundStatus;
   movies: PublicRoomMovies;
+  result?: PublicRoundResult;
 };
 
 export type PublicBallotProgress = {
