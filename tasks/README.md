@@ -25,8 +25,9 @@
 - [ ] [012.4 — Restore TV room from a direct URL](012-4-restore-tv-room-from-url.md)
 - [ ] [012.5 — Simplify the join name field](012-5-simplify-join-name-field.md)
 - [ ] [012.6 — Clarify join-form readiness](012-6-clarify-join-form-readiness.md)
+- [ ] [012.7 — Matched three-card result layout](012-7-matched-three-card-result-layout.md)
 - [ ] [013 — No-match next round](013-no-match-next-round.md)
-- [ ] [014 — Match screen](014-match-screen.md)
+- [ ] [014 — Match screen (superseded by 012.7)](014-match-screen.md)
 - [ ] [015 — Search again or close room](015-search-again-or-close-room.md)
 
 ## Backlog

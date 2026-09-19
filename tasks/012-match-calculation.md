@@ -32,7 +32,7 @@
 
 - До terminal round transition зберігати privacy contract задачі 011. Після commit авторитетні snapshots TV та обох приєднаних телефонів можуть містити result завершеного current round, обидва vote values для кожного movie та selected movie за match.
 - Будувати post-resolution result через явний public allowlist: display name/role, movie display fields, positions і vote values. Не серіалізувати access token hashes, idempotency receipts або інші credentials.
-- На TV і телефонах показати мінімальний український terminal state для `matched` або `no_match`, достатній для перевірки синхронного результату. Playful result transition належить задачі 012.1, повний designed match screen — задачі 014, а автоматичний no-match message/next-round flow — задачі 013.
+- На TV і телефонах показати мінімальний український terminal state для `matched` або `no_match`, достатній для перевірки синхронного результату. Playful result transition належить задачі 012.1, stable matched three-card layout — задачі 012.7, а автоматичний no-match message/next-round flow — задачі 013.
 - Після commit надсилати non-sensitive result invalidation через той самий room Broadcast topic. Broadcast не містить winner або votes; кожен клієнт повторно читає server-side snapshot.
 - Втрачена invalidation, reconnect, reload і duplicate/forged events мають приводити до bounded authoritative refetch одного persisted result. Failed Broadcast не відкочує resolution і не повертає room до `playing`/round до `voting`.
 
@@ -59,7 +59,7 @@
 
 - Playful result animation і decorative effects — задача 012.1.
 - Генерація наступного round і випадкові no-match messages — задача 013.
-- Повна match presentation, humorous final message і final layout — задача 014.
+- Stable matched three-card presentation і vote layout — задача 012.7.
 - Search again, Close room і post-match host commands — задача 015; expiration cleanup — задача 016.
 - Нові scoring factors, персоналізація, veto rules, watched state, ratings або client-side result calculation.
 

@@ -7,13 +7,13 @@
 ## Dependencies
 
 - [012.1 — Round result transition](012-1-round-result-animation.md): простий, перевірений selected-card emphasis і reveal lifecycle.
-- [014 — Match screen](014-match-screen.md): стабільний fullscreen destination для match result.
+- [012.7 — Matched three-card result layout](012-7-matched-three-card-result-layout.md): canonical stable matched destination після short result emphasis.
 
 ## Scope / Requirements
 
 - Переходити лише з authoritative matched result і persisted `selectedMovieId`; animation ніколи не визначає winner, не змінює room state і не замінює authoritative resync.
 - До старту переходу source залишається нормальним three-card grid. Selected card має зберегти візуальну ідентичність; дві інші картки можуть лишитися на задньому плані з blur/dim, але не повинні перетворюватися на окремий scrollable page.
-- Destination — центрований fullscreen/modal layer із чітко визначеним одним scroll owner. Після завершення він без розриву переходить у stable fullscreen screen задачі 014.
+- Будь-який fullscreen/modal prototype мусить мати чітко визначений один scroll owner і після завершення без розриву повертатися у stable three-card layout задачі 012.7. Не перетворювати modal у новий stable destination без окремого product decision.
 - Не допускати зміни document height, другого scrollbar, scroll jump, relocation card вниз сторінки або тимчасового oversized grid. Перевірити всі три позиції selected card, reload/reconnect already-terminal room, TV viewport і сповільнене відтворення animation.
 - `prefers-reduced-motion` одразу показує stable destination без decorative motion. Keyboard focus і screen-reader announcement лишаються коректними; phone result timing не залежить від TV animation.
 - Обрати animation implementation лише після малого browser prototype і visual review. Motion for React може бути доречним, але не є передумовою: не додавати package або shared-layout primitives, доки prototype не підтвердить стабільну геометрію та scroll behavior.

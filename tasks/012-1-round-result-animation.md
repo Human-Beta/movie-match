@@ -14,7 +14,7 @@
 ### Match emphasis
 
 - Коли TV уперше отримує authoritative `matched` result, залишити три поточні movie cards у їхній звичайній геометрії. Коротко виділити persisted selected movie текстовою міткою, зеленою glow-тінню та невеликим scale; інші дві картки можуть приглушитися.
-- Акцент триває близько `300–500 ms`, після чого показати наявний стабільний match result із selected movie та vote details. Не додавати fullscreen overlay, окремий scroll owner, `position: fixed` presentation shell або shared-element morph у цій задачі.
+- Акцент триває близько `300–500 ms`, після чого показати stable three-card match result задачі 012.7. Не додавати fullscreen overlay, окремий scroll owner, `position: fixed` presentation shell або shared-element morph у цій задачі.
 - Використати CSS transitions лише для простого візуального акценту. Не додавати animation runtime/package лише для цього стану.
 
 ### No-match transition and completion boundary
@@ -53,10 +53,10 @@
 ## Out of Scope
 
 - Fullscreen/modal selected-card morph, blurred background cards, shared layout primitives, Motion for React і окремий animation runtime — [029 — Deferred shared-layout match transition](029-deferred-shared-layout-match-transition.md).
-- Повний stable fullscreen match design — [014 — Match screen](014-match-screen.md).
+- Stable matched three-card layout і votes under cards — [012.7 — Matched three-card result layout](012-7-matched-three-card-result-layout.md).
 - No-match next-round flow — [013 — No-match next round](013-no-match-next-round.md).
 
 ## References / Notes
 
-- Джерела істини: [When there is a match](../docs/v0.1.md#when-there-is-a-match), [When there is no match](../docs/v0.1.md#when-there-is-no-match), [stack](../docs/stack.md), [012 — Match calculation](012-match-calculation.md), [013 — No-match next round](013-no-match-next-round.md), [014 — Match screen](014-match-screen.md) і `AGENTS.md`.
+- Джерела істини: [When there is a match](../docs/v0.1.md#when-there-is-a-match), [When there is no match](../docs/v0.1.md#when-there-is-no-match), [stack](../docs/stack.md), [012 — Match calculation](012-match-calculation.md), [012.7 — Matched three-card result layout](012-7-matched-three-card-result-layout.md), [013 — No-match next round](013-no-match-next-round.md) і `AGENTS.md`.
 - Невдалий fullscreen transition і його симптоми збережені як evidence у задачі 029, щоб майбутня реалізація не відтворила scroll/geometry regression.
