@@ -47,12 +47,13 @@ export function VotingBallot({
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-50">
+    <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-50 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-5xl">
         <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
         <p className="mb-3 text-lg font-semibold text-white">{t("title")}</p>
-        <p className="mb-8 text-slate-300">{t("description")}</p>
+        <p className="mb-6 text-slate-300 sm:mb-8">{t("description")}</p>
         <MovieCards
+          compactOnNarrow
           round={round}
           renderFooter={movie => (
             <VoteOptions
@@ -104,10 +105,14 @@ function VoteOptions({
       <legend className="sr-only">{t("selectionLabel", { title: movie.title })}</legend>
       {voteOptions.map(option => (
         <label
-          className={`flex min-h-12 cursor-pointer items-center justify-center gap-1 rounded-xl border px-3 py-2 text-center text-sm leading-tight font-semibold transition disabled:cursor-not-allowed ${
+          className={`flex min-h-12 items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center text-xs leading-tight font-semibold transition sm:px-3 sm:text-sm ${
+            disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"
+          } ${
             selected === option.value
               ? "border-amber-300 bg-amber-400 text-slate-950"
-              : "border-white/15 bg-slate-950 text-slate-100 hover:border-white/40"
+              : disabled
+                ? "border-white/15 bg-slate-950 text-slate-100"
+                : "border-white/15 bg-slate-950 text-slate-100 hover:border-white/40"
           }`}
           key={option.value}
         >
