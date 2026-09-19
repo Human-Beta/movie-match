@@ -118,7 +118,9 @@ function MatchTransition({
             <p className="sr-only" role="status">
               {t("transition.selectedMovie", { title: selectedMovie.title })}
             </p>
-            <TvRoundMovieGrid presentation={presentation} selectedLayoutId={selectedLayoutId} emphasizeSelected />
+            <div className="mx-auto max-w-6xl">
+              <TvRoundMovieGrid presentation={presentation} selectedLayoutId={selectedLayoutId} emphasizeSelected />
+            </div>
           </m.section>
         ) : null}
         {stage === "match_expanding" || stage === "stable" ? (
