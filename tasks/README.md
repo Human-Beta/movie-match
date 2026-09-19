@@ -20,6 +20,8 @@
 - [x] [011 — Voting](011-voting.md)
 - [x] [012 — Match calculation](012-match-calculation.md)
 - [ ] [012.1 — Round result animation](012-1-round-result-animation.md)
+- [ ] [012.2 — Compact phone ballot layout](012-2-compact-phone-ballot-layout.md)
+- [ ] [012.3 — Local ballot progress reconciliation](012-3-local-ballot-progress-reconciliation.md)
 
 ## Backlog
 
@@ -34,3 +36,8 @@
 - [ ] [021 — Drizzle metadata strategy](021-drizzle-metadata-strategy.md)
 - [ ] [022 — Investigate and reduce room-screen request latency](022-investigate-room-screen-request-latency.md)
 - [ ] [023 — Audit Tailwind styles and application palette](023-audit-tailwind-styles-and-application-palette.md)
+- [ ] [024 — Centralize round-card cardinality](024-centralize-round-cardinality.md)
+- [ ] [025 — Audit and consolidate duplicate TypeScript contracts](025-audit-duplicate-types.md)
+- [ ] [026 — Centralize database enum contracts](026-centralize-database-enum-contracts.md)
+- [ ] [027 — Audit shared translations and message namespaces](027-audit-shared-translations.md)
+- [ ] [028 — Audit participant name and role presentation](028-audit-participant-name-and-role-presentation.md)
