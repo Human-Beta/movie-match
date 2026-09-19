@@ -69,9 +69,16 @@ function TvAdvancedRoom(): ReactNode {
 function TvPlayingRoom({ realtimeTopic, snapshot }: Readonly<{ realtimeTopic: string; snapshot: PublicParticipantSnapshot }>): ReactNode {
   const t = useTranslations(TV_ROOM_NAMESPACE);
   const [noMatchTransitionCompleteKey, setNoMatchTransitionCompleteKey] = useState<string | null>(null);
+  const hasMatchedTerminalRound = snapshot.currentRound?.status === ROUND_STATUS.MATCHED;
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-50 sm:py-16">
+    <main
+      className={
+        hasMatchedTerminalRound
+          ? "h-dvh overflow-hidden bg-slate-950 px-6 py-10 text-slate-50 sm:py-16"
+          : "min-h-screen bg-slate-950 px-6 py-10 text-slate-50 sm:py-16"
+      }
+    >
       <div className="mx-auto max-w-6xl">
         <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
         {snapshot.currentRound === null ? (

@@ -111,41 +111,66 @@ function MatchTransition({
   const selectedLayoutId = `round-result-movie-${presentation.round.roundId}-${selectedMovie.movieId}`;
 
   return (
-    <div className="overflow-x-hidden">
+    <div className="fixed inset-0 z-10 overflow-y-auto bg-slate-950 text-slate-50">
       <AnimatePresence initial={false} mode="sync">
         {stage === "match_emphasis" ? (
-          <m.section animate={{ opacity: 1 }} className="relative" exit={{ opacity: 0 }} key="grid" transition={{ duration: 0.2 }}>
+          <m.section animate={{ opacity: 1 }} className="min-h-full px-6 py-10" exit={{ opacity: 0 }} key="grid" transition={{ duration: 0.2 }}>
             <p className="sr-only" role="status">
               {t("transition.selectedMovie", { title: selectedMovie.title })}
             </p>
             <TvRoundMovieGrid presentation={presentation} selectedLayoutId={selectedLayoutId} emphasizeSelected />
           </m.section>
         ) : null}
-        {stage === "match_expanding" ? (
-          <m.section
-            animate={{ opacity: 1 }}
-            aria-label={t("matchedTitle")}
-            className="fixed inset-0 z-10 overflow-y-auto bg-slate-950 px-6 py-10 text-slate-50"
-            exit={{ opacity: 0 }}
-            initial={{ opacity: 0 }}
-            key="expanding-result"
-            transition={{ opacity: { duration: 0.2 } }}
-          >
-            <div className="mx-auto w-full max-w-3xl">
-              <m.article
-                className="mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-slate-900 ring-1 ring-emerald-300/40"
-                layoutId={selectedLayoutId}
-                transition={{ layout: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }}
-              >
-                <MovieCardContent movie={selectedMovie} />
-              </m.article>
-              <RoundResult round={presentation.round} />
-            </div>
-          </m.section>
+        {stage === "match_expanding" || stage === "stable" ? (
+          <MatchResultShell presentation={presentation} selectedLayoutId={selectedLayoutId} selectedMovie={selectedMovie} stage={stage} />
         ) : null}
       </AnimatePresence>
-      {stage === "stable" ? <StableRoundResult presentation={presentation} /> : null}
     </div>
+  );
+}
+
+function MatchResultShell({
+  presentation,
+  selectedLayoutId,
+  selectedMovie,
+  stage,
+}: Readonly<{
+  presentation: TerminalRoundPresentation;
+  selectedLayoutId: string;
+  selectedMovie: PublicRoomMovie;
+  stage: Extract<RoundResultTransitionStage, "match_expanding" | "stable">;
+}>): ReactNode {
+  const t = useTranslations(ROUND_RESULT_NAMESPACE);
+  const resultRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (stage === "stable") {
+      resultRef.current?.focus();
+    }
+  }, [stage]);
+
+  return (
+    <m.section
+      animate={{ opacity: 1 }}
+      aria-label={t("matchedTitle")}
+      className="min-h-full px-6 py-10"
+      initial={{ opacity: 0 }}
+      key="result-shell"
+      ref={resultRef}
+      tabIndex={-1}
+      transition={{ opacity: { duration: 0.2 } }}
+    >
+      <div className="mx-auto w-full max-w-3xl">
+        <m.article
+          className="mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-slate-900 ring-1 ring-emerald-300/40"
+          layoutId={selectedLayoutId}
+          transition={{ layout: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }}
+        >
+          <MovieCardContent movie={selectedMovie} />
+        </m.article>
+        <RoundResult round={presentation.round} />
+      </div>
+    </m.section>
   );
 }
 
