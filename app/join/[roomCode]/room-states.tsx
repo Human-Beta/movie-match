@@ -60,7 +60,7 @@ export function JoinedRoomState({
 }>): ReactNode {
   const t = useTranslations(JOIN_ROOM_NAMESPACE);
   const tParticipantRole = useTranslations("Common.participantRole");
-  const { snapshot } = useAuthenticatedParticipantRoomSnapshot({
+  const { snapshot, snapshotEpoch } = useAuthenticatedParticipantRoomSnapshot({
     initialSnapshot: room.snapshot,
     realtimeTopic: room.realtimeTopic,
     roomCode,
@@ -85,7 +85,13 @@ export function JoinedRoomState({
       }
 
       return snapshot.currentRound.status === ROUND_STATUS.VOTING ? (
-        <VotingBallot roomCode={roomCode} round={snapshot.currentRound} ownBallot={snapshot.ownBallot} progress={snapshot.ballotProgress} />
+        <VotingBallot
+          ownBallot={snapshot.ownBallot}
+          roomCode={roomCode}
+          round={snapshot.currentRound}
+          snapshot={snapshot}
+          snapshotEpoch={snapshotEpoch}
+        />
       ) : (
         <PageShell>
           <p className="text-slate-300">{t("status.advanced")}</p>

@@ -66,6 +66,7 @@ If documents allow different interpretations of the current product scope, follo
 - Treat functions returned by hooks or providers as referentially unstable unless their API explicitly guarantees stable identity. Do not use such a function as an Effect dependency when that Effect updates state or invokes a Server Action that can trigger a React tree refresh; derive the required stable primitive value before the Effect or restructure the Effect around stable inputs.
 - Remember that setting or deleting cookies in a Server Action refreshes the current Next.js React tree. For every Server Action invoked automatically from an Effect, verify in a real browser that the action settles, runs only for its intended stable inputs, and does not enter a render/action loop.
 - Render terminal workflow state from an authoritative persisted status, never from aggregate progress or a Broadcast payload; treat events only as invalidation hints.
+- Keep client-only lifecycle or version metadata separate from server-authoritative snapshot contracts; never add it to public snapshot DTOs.
 
 ## Code Review Rules
 
