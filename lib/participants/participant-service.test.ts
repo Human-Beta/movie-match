@@ -286,5 +286,12 @@ test("returns form, full, unavailable, and restored page states", async () => {
   assert.equal(restoredView.participant.name, "Настя");
   assert.equal(restoredView.participant.role, "host");
 
+  if (repository.room) {
+    repository.room = { ...repository.room, status: "closed" };
+  }
+
+  assert.equal((await service.getJoinRoomView("ABC123", hostToken)).status, "joined");
+  assert.deepEqual(await service.getJoinRoomView("ABC123", null), { status: "unavailable" });
+
   assert.equal(repository.participants.at(0)?.accessTokenHash, hashParticipantAccessToken(hostToken));
 });

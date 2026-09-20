@@ -15,5 +15,5 @@ test("maps authoritative snapshots to waiting, ready, game, advanced, and unavai
   assert.equal(getParticipantRoomView(snapshot("playing", 2)), "playing");
   assert.equal(getParticipantRoomView(snapshot("matched", 2)), "advanced");
   assert.equal(getParticipantRoomView(snapshot("exhausted", 2)), "exhausted");
-  assert.equal(getParticipantRoomView(snapshot("closed", 2)), "unavailable");
+  assert.equal(getParticipantRoomView(snapshot("closed", 2)), "closed");
 });

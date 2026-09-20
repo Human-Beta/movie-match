@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { MatchActionsSlot } from "@/app/room-participants/match-actions-slot";
 import { getMatchPresentation } from "@/app/room-participants/match-presentation";
+import { PostMatchControls } from "@/app/join/[roomCode]/post-match-controls";
 import { getVoteEmoji } from "@/app/room-participants/vote-emoji";
 import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { ParticipantRole } from "@/lib/participants/participant-service";
@@ -17,7 +18,11 @@ const VOTE_LABEL_KEY = {
   no: "no",
 } as const;
 
-export function RoundResult({ participantRole, round }: Readonly<{ participantRole: ParticipantRole; round: PublicRoomRound }>): ReactNode {
+export function RoundResult({
+  participantRole,
+  roomCode,
+  round,
+}: Readonly<{ participantRole: ParticipantRole; roomCode: string; round: PublicRoomRound }>): ReactNode {
   const t = useTranslations("RoundResult");
   const result = round.result;
 
@@ -46,7 +51,10 @@ export function RoundResult({ participantRole, round }: Readonly<{ participantRo
           <h2 className="mt-2 text-xl font-bold break-words text-white">{match.selectedMovie.title}</h2>
           <MovieVotes participantRole={participantRole} votes={match.selectedVotes} />
         </article>
-        <MatchActionsSlot participantRole={participantRole} />
+        {participantRole === "guest" ? <p className="mt-6 text-slate-300">{t("guestWaiting")}</p> : null}
+        <MatchActionsSlot participantRole={participantRole}>
+          <PostMatchControls roomCode={roomCode} />
+        </MatchActionsSlot>
       </section>
     );
   }

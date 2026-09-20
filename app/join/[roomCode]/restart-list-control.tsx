@@ -87,6 +87,9 @@ export function RestartListControl({ roomCode }: Readonly<{ roomCode: string }>)
           case "validation_error":
             setFeedback(result.status);
             return;
+          case "closed":
+            setFeedback("unavailable");
+            return;
           default:
             return assertNever(result);
         }

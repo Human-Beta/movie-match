@@ -278,6 +278,9 @@ function HostFilterForm({
       case "conflict":
         setGameFeedback(result.status);
         return;
+      case "closed":
+        setGameFeedback("unavailable");
+        return;
       default:
         return assertNever(result);
     }

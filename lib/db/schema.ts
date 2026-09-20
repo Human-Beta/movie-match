@@ -17,6 +17,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { ROUND_STATUS, ROUND_STATUS_VALUES } from "@/lib/game-rounds/round-status";
+import { GAME_COMMAND_OUTCOME_VALUES, GAME_COMMAND_VALUES } from "@/lib/game-rounds/game-command";
 
 export const roomStatusEnum = pgEnum("room_status", ["waiting", "playing", "matched", "exhausted", "closed"]);
 
@@ -28,9 +29,9 @@ export const roundStatusEnum = pgEnum("round_status", ROUND_STATUS_VALUES);
 
 export const voteValueEnum = pgEnum("vote_value", ["want_to_watch", "could_watch", "not_now", "no"]);
 
-export const roomGameCommandEnum = pgEnum("room_game_command", ["start", "restart"]);
+export const roomGameCommandEnum = pgEnum("room_game_command", GAME_COMMAND_VALUES);
 
-export const roomGameCommandOutcomeEnum = pgEnum("room_game_command_outcome", ["started", "catalog_insufficient", "list_exhausted"]);
+export const roomGameCommandOutcomeEnum = pgEnum("room_game_command_outcome", GAME_COMMAND_OUTCOME_VALUES);
 
 export const genres = pgTable(
   "genres",

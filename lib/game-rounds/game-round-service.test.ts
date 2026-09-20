@@ -27,6 +27,7 @@ class MemoryGameRoundRepository implements GameRoundRepository {
   participantCount = 2;
   candidates = [1, 2, 3];
   fullCatalogCandidates: number[] | null = null;
+  currentMatchedRoundHasSelectedMovie = true;
   receipts = new Map<string, GameCommandReceipt>();
   rounds: Array<{ roundNumber: number; movieIds: number[] }> = [];
   historyDeletes = 0;
@@ -47,6 +48,7 @@ class MemoryGameRoundRepository implements GameRoundRepository {
       countParticipants: async () => this.participantCount,
       readFilters: async () => filters,
       findCommand: async requestId => this.receipts.get(requestId) ?? null,
+      hasCurrentMatchedRoundSelectedMovie: async () => this.currentMatchedRoundHasSelectedMovie,
       selectEligibleMovieIds: async (selectedFilters, excludeSeen) => {
         this.lastFilterSelection = { filters: selectedFilters, excludeSeen };
         return excludeSeen ? this.candidates : (this.fullCatalogCandidates ?? this.candidates);
@@ -74,6 +76,12 @@ class MemoryGameRoundRepository implements GameRoundRepository {
 
 function makeService(repository: MemoryGameRoundRepository): GameRoundService {
   return new GameRoundService(repository, { now: () => now });
+}
+
+function markMatched(repository: MemoryGameRoundRepository): void {
+  const room = repository.room;
+  assert.ok(room);
+  repository.room = { ...room, status: "matched" };
 }
 
 test("game command boundary accepts only a normalized room code and UUID", () => {
@@ -214,4 +222,57 @@ test("restart checks the full filtered catalog before deleting history and repla
   assert.equal((await service.restart(successfulInput, hostToken)).status, "completed");
   assert.equal(repository.historyDeletes, 1);
   assert.deepEqual(repository.rounds, [{ roundNumber: 1, movieIds: [4, 5, 6] }]);
+});
+
+test("search again preserves history and creates the next unseen voting round only from a matched selection", async () => {
+  const repository = new MemoryGameRoundRepository();
+  markMatched(repository);
+  repository.rounds = [{ roundNumber: 4, movieIds: [7, 8, 9] }];
+  repository.candidates = [1, 2, 3];
+  const service = makeService(repository);
+  const input = { roomCode: "ABCD", requestId: randomUUID() };
+
+  assert.deepEqual(await service.searchAgain(input, hostToken), {
+    status: "completed",
+    outcome: "started",
+    roomId: repository.room?.id,
+  });
+  assert.deepEqual(repository.rounds, [
+    { roundNumber: 4, movieIds: [7, 8, 9] },
+    { roundNumber: 5, movieIds: [1, 2, 3] },
+  ]);
+  assert.equal(repository.historyDeletes, 0);
+  assert.equal(repository.room?.status, "playing");
+  assert.deepEqual(repository.lastFilterSelection, { filters, excludeSeen: true });
+
+  const unavailableRepository = new MemoryGameRoundRepository();
+  markMatched(unavailableRepository);
+  unavailableRepository.currentMatchedRoundHasSelectedMovie = false;
+  assert.deepEqual(await makeService(unavailableRepository).searchAgain({ roomCode: "ABCD", requestId: randomUUID() }, hostToken), {
+    status: "unavailable",
+  });
+  assert.equal(unavailableRepository.receipts.size, 0);
+});
+
+test("search again exhausts a matched room without a partial round and close preserves history", async () => {
+  const exhaustedRepository = new MemoryGameRoundRepository();
+  markMatched(exhaustedRepository);
+  exhaustedRepository.rounds = [{ roundNumber: 2, movieIds: [7, 8, 9] }];
+  exhaustedRepository.candidates = [1, 2];
+  const exhaustedResult = await makeService(exhaustedRepository).searchAgain({ roomCode: "ABCD", requestId: randomUUID() }, hostToken);
+  assert.equal(exhaustedResult.status, "completed");
+  assert.equal(exhaustedResult.outcome, "list_exhausted");
+  assert.deepEqual(exhaustedRepository.rounds, [{ roundNumber: 2, movieIds: [7, 8, 9] }]);
+  assert.equal(exhaustedRepository.room?.status, "exhausted");
+
+  const closedRepository = new MemoryGameRoundRepository();
+  markMatched(closedRepository);
+  closedRepository.rounds = [{ roundNumber: 3, movieIds: [1, 2, 3] }];
+  const closeInput = { roomCode: "ABCD", requestId: randomUUID() };
+  const closeService = makeService(closedRepository);
+  assert.equal((await closeService.close(closeInput, hostToken)).status, "completed");
+  assert.equal(closedRepository.room?.status, "closed");
+  assert.deepEqual(closedRepository.rounds, [{ roundNumber: 3, movieIds: [1, 2, 3] }]);
+  assert.equal((await closeService.close(closeInput, hostToken)).status, "completed");
+  assert.deepEqual(await closeService.searchAgain(closeInput, hostToken), { status: "conflict" });
 });

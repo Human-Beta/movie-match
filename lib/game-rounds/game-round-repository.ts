@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq, inArray, max, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, max, sql, type SQL } from "drizzle-orm";
 
 import { loadDatabase, type DatabaseProvider } from "@/lib/db/database-provider";
 import { movieGenres, movies, participants, roomGameCommands, roomGenres, rooms, roundMovies, rounds } from "@/lib/db/schema";
@@ -97,6 +97,28 @@ export class DrizzleGameRoundRepository implements GameRoundRepository {
             filterHash: receipt.filterHash,
             outcome: receipt.outcome,
           };
+        },
+        hasCurrentMatchedRoundSelectedMovie: async () => {
+          const currentRoom = this.requireRoom(room);
+          const currentRoundRows = await transaction
+            .select({ id: rounds.id, status: rounds.status })
+            .from(rounds)
+            .where(eq(rounds.roomId, currentRoom.id))
+            .orderBy(desc(rounds.roundNumber))
+            .limit(1);
+          const currentRound = currentRoundRows.at(0) ?? null;
+
+          if (currentRound === null || currentRound.status !== ROUND_STATUS.MATCHED) {
+            return false;
+          }
+
+          const selectedRows = await transaction
+            .select({ movieId: roundMovies.movieId })
+            .from(roundMovies)
+            .where(and(eq(roundMovies.roomId, currentRoom.id), eq(roundMovies.roundId, currentRound.id), eq(roundMovies.isSelected, true)))
+            .limit(1);
+
+          return selectedRows.length === 1;
         },
         selectEligibleMovieIds: async (filters, excludeSeen) => {
           const currentRoom = this.requireRoom(room);
