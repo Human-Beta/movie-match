@@ -2,13 +2,12 @@
 
 import { useEffect, useRef, useState, useTransition, type Dispatch, type SetStateAction } from "react";
 
-import { submitBallotAction, type PublicBallotSubmissionResult } from "@/app/join/[roomCode]/ballot-actions";
+import { applyTerminalBallotSubmissionResult, type BallotFeedback } from "@/app/join/[roomCode]/ballot-feedback";
+import { submitBallotAction } from "@/app/join/[roomCode]/ballot-actions";
 import { BallotRequestStorage, type PendingBallot } from "@/app/join/[roomCode]/ballot-request-storage";
-import { assertNever } from "@/lib/assert-never";
 import type { BallotVoteInput, VoteValue } from "@/lib/ballots/ballot-vote";
 import type { ParticipantOwnBallot, PublicRoomRound } from "@/lib/participants/public-participant-snapshot";
 
-export type BallotFeedback = "idle" | "incomplete" | "retry" | "storage" | "submitted" | "unavailable" | "validation_error" | "conflict";
 export type VoteSelections = Readonly<Record<number, VoteValue | undefined>>;
 
 type VotingBallotController = {
@@ -122,10 +121,12 @@ function useRestoredBallotState({
 }
 
 export function useVotingBallot({
+  onSubmitted,
   ownBallot,
   roomCode,
   round,
 }: Readonly<{
+  onSubmitted(roundId: string, submittedCount: number): void;
   ownBallot: ParticipantOwnBallot | null;
   roomCode: string;
   round: PublicRoomRound;
@@ -146,19 +147,6 @@ export function useVotingBallot({
 
     setSelections(current => ({ ...current, [movieId]: value }));
     setFeedback("idle");
-  }
-
-  function applyResult(result: Exclude<PublicBallotSubmissionResult, { status: "error" }>): void {
-    switch (result.status) {
-      case "submitted":
-      case "unavailable":
-      case "validation_error":
-      case "conflict":
-        setFeedback(result.status);
-        return;
-      default:
-        return assertNever(result);
-    }
   }
 
   function submit(): void {
@@ -196,7 +184,7 @@ export function useVotingBallot({
 
         storage.clear(request.requestId);
         setPendingBallot(null);
-        applyResult(result);
+        applyTerminalBallotSubmissionResult({ onSubmitted, result, roundId: round.roundId, setFeedback });
       } catch {
         setFeedback("retry");
       } finally {
