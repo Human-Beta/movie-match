@@ -180,6 +180,10 @@
     "couldWatch": "Можна",
     "notNow": "Пас",
     "no": "Нє",
+    "revealedVotesLabel": "Розкриті голоси",
+    "revealedVote": "{role}: {vote}",
+    "yourVote": "Ваш голос ({role})",
+    "partnerVote": "Голос напарника ({role})",
     "submit": "Проголосувати",
     "submitting": "Голосуємо…",
     "retry": "Безпечно повторити надсилання",
@@ -199,10 +203,20 @@
   "RoundResult": {
     "label": "Результат раунду",
     "matchedTitle": "Є збіг!",
+    "matchStatus": "Фінальний вибір",
+    "matchTitle": "Це матч!",
     "matchedDescription": "Схоже, сьогодні без суперечок 🍿",
     "noMatchTitle": "Цього разу без збігу",
     "noMatchDescription": "Ваші голоси збережено. Наступний раунд з’явиться згодом.",
     "selected": "Обрано",
+    "selectedMovieLabel": "Обраний фільм: {title}",
+    "finalMessages": {
+      "agreementIsMiracle": "Домовилися — майже диво.",
+      "putThePhoneDown": "Фільм обрано. Телефон можна покласти.",
+      "scrollingLost": "Нескінченний скролінг сьогодні програв.",
+      "theListCanRest": "Списки можуть відпочити. Вечір — ні.",
+      "decisionMade": "Рішення є. Не відкривайте ще один список."
+    },
     "noMatchReaction": "Цього разу смаки розійшлися. Нічого страшного — ще знайдемо, що ввімкнути."
   }
 }
