@@ -6,13 +6,15 @@ import type { ReactNode } from "react";
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
 import type { ParticipantRealtimeTransportStatus } from "@/app/room-participants/room-participant-sync";
 import { MovieCards } from "@/app/room-participants/movie-cards";
-import { RoundResult } from "@/app/room-participants/round-result";
+import styles from "@/app/room-participants/round-result-animation.module.css";
 import { useRoomParticipantSnapshot } from "@/app/room-participants/use-room-participant-snapshot";
+import { getVoteEmoji } from "@/app/room-participants/vote-emoji";
 import { JoinQrCode } from "@/app/tv/[roomCode]/join-qr-code";
 import { NewRoomLink } from "@/app/tv/[roomCode]/new-room-link";
 import { assertNever } from "@/lib/assert-never";
-import { isTerminalRoundStatus, ROUND_STATUS } from "@/lib/game-rounds/round-status";
-import type { PublicParticipantSnapshot } from "@/lib/participants/public-participant-snapshot";
+import type { VoteValue } from "@/lib/ballots/ballot-vote";
+import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
+import type { PublicParticipantSnapshot, PublicRoundMovieVotes } from "@/lib/participants/public-participant-snapshot";
 
 type TransportPresentation = {
   dotClassName: string;
@@ -20,6 +22,12 @@ type TransportPresentation = {
 };
 
 const TV_ROOM_NAMESPACE = "TvRoom";
+const VOTE_LABEL_KEY: Readonly<Record<VoteValue, "wantToWatch" | "couldWatch" | "notNow" | "no">> = {
+  want_to_watch: "wantToWatch",
+  could_watch: "couldWatch",
+  not_now: "notNow",
+  no: "no",
+};
 
 function getTransportPresentation(
   status: ParticipantRealtimeTransportStatus,
@@ -68,19 +76,52 @@ function TvAdvancedRoom(): ReactNode {
 
 function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnapshot }>): ReactNode {
   const t = useTranslations(TV_ROOM_NAMESPACE);
+  const tResult = useTranslations("RoundResult");
+  const round = snapshot.currentRound;
+  const result = round?.result;
+  const showNoMatchReaction = round?.status === ROUND_STATUS.NO_MATCH && round.result?.status === ROUND_STATUS.NO_MATCH;
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-50 sm:py-16">
       <div className="mx-auto max-w-6xl">
         <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
-        {snapshot.currentRound === null ? (
+        {round === null ? (
           <p className="text-lg text-slate-300" role="status">
             {t("game.loading")}
           </p>
         ) : (
           <>
-            <MovieCards round={snapshot.currentRound} />
-            {snapshot.currentRound.status === ROUND_STATUS.VOTING && snapshot.ballotProgress !== null ? (
+            {showNoMatchReaction ? (
+              <p className="mb-5 text-2xl font-bold" role="status">
+                {tResult("noMatchTitle")}
+              </p>
+            ) : null}
+            <div className="relative">
+              <div className={showNoMatchReaction ? styles.noMatchBackdrop : undefined}>
+                <MovieCards
+                  renderFooter={
+                    result === undefined
+                      ? undefined
+                      : (movie): ReactNode => {
+                          const movieVotes = result.movieVotes.find(candidate => candidate.movieId === movie.movieId);
+                          return movieVotes === undefined ? null : <MovieVotes votes={movieVotes} />;
+                        }
+                  }
+                  round={round}
+                />
+              </div>
+              {showNoMatchReaction ? (
+                <section
+                  aria-hidden="true"
+                  className={`${styles.noMatchReaction} pointer-events-none absolute inset-x-0 top-1/2 mx-auto w-full max-w-xl rounded-3xl bg-slate-900/95 p-8 text-center shadow-2xl ring-1 ring-white/15`}
+                >
+                  <p className="text-5xl">🫶</p>
+                  <h2 className="mt-4 text-3xl font-bold">{tResult("noMatchTitle")}</h2>
+                  <p className="mt-3 text-lg leading-8 text-slate-200">{tResult("noMatchReaction")}</p>
+                </section>
+              ) : null}
+            </div>
+            {round.status === ROUND_STATUS.VOTING && snapshot.ballotProgress !== null ? (
               <p className="mt-8 rounded-2xl bg-slate-900 p-5 text-lg text-slate-200 ring-1 ring-white/10" role="status">
                 {snapshot.ballotProgress.readyForResults
                   ? t("game.readyForResults")
@@ -90,11 +131,28 @@ function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnaps
                     })}
               </p>
             ) : null}
-            {isTerminalRoundStatus(snapshot.currentRound.status) ? <RoundResult round={snapshot.currentRound} /> : null}
           </>
         )}
       </div>
     </main>
+  );
+}
+
+function MovieVotes({ votes }: Readonly<{ votes: PublicRoundMovieVotes }>): ReactNode {
+  const tParticipantRole = useTranslations("Common.participantRole");
+  const tVoting = useTranslations("Voting");
+
+  return (
+    <div className="space-y-1 text-sm text-slate-200">
+      {votes.votes.map(vote => (
+        <p key={vote.role}>
+          <span className="font-semibold">{vote.role === "host" ? tParticipantRole("host") : tParticipantRole("guest")}:</span>{" "}
+          <span aria-label={tVoting(VOTE_LABEL_KEY[vote.value])}>
+            <span aria-hidden="true">{getVoteEmoji(vote.value)}</span> {tVoting(VOTE_LABEL_KEY[vote.value])}
+          </span>
+        </p>
+      ))}
+    </div>
   );
 }
 

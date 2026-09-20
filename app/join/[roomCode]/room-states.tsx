@@ -7,7 +7,6 @@ import type { PublicParticipantIdentity } from "@/app/join/[roomCode]/join-actio
 import { HostFilters } from "@/app/join/[roomCode]/host-filters";
 import { RestartListControl } from "@/app/join/[roomCode]/restart-list-control";
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
-import { MovieCards } from "@/app/room-participants/movie-cards";
 import { RoundResult } from "@/app/room-participants/round-result";
 import { useAuthenticatedParticipantRoomSnapshot } from "@/app/room-participants/use-authenticated-participant-room-snapshot";
 import { VotingBallot } from "@/app/join/[roomCode]/voting-ballot";
@@ -15,12 +14,12 @@ import { assertNever } from "@/lib/assert-never";
 import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { ParticipantClientRoomState } from "@/lib/participants/public-participant-snapshot";
 
-function PageShell({ children, wide = false }: Readonly<{ children: ReactNode; wide?: boolean }>): ReactNode {
+const JOIN_ROOM_NAMESPACE = "JoinRoom";
+
+function PageShell({ children }: Readonly<{ children: ReactNode }>): ReactNode {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 py-10 text-slate-50">
-      <section
-        className={`w-full rounded-3xl bg-slate-900 p-7 shadow-2xl ring-1 shadow-black/20 ring-white/10 sm:p-10 ${wide ? "max-w-5xl" : "max-w-lg"}`}
-      >
+      <section className="w-full max-w-lg rounded-3xl bg-slate-900 p-7 shadow-2xl ring-1 shadow-black/20 ring-white/10 sm:p-10">
         <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
         {children}
       </section>
@@ -29,7 +28,7 @@ function PageShell({ children, wide = false }: Readonly<{ children: ReactNode; w
 }
 
 export function UnavailableRoomState(): ReactNode {
-  const t = useTranslations("JoinRoom");
+  const t = useTranslations(JOIN_ROOM_NAMESPACE);
 
   return (
     <PageShell>
@@ -40,7 +39,7 @@ export function UnavailableRoomState(): ReactNode {
 }
 
 export function FullRoomState(): ReactNode {
-  const t = useTranslations("JoinRoom");
+  const t = useTranslations(JOIN_ROOM_NAMESPACE);
 
   return (
     <PageShell>
@@ -59,7 +58,7 @@ export function JoinedRoomState({
   participant: PublicParticipantIdentity;
   room: ParticipantClientRoomState;
 }>): ReactNode {
-  const t = useTranslations("JoinRoom");
+  const t = useTranslations(JOIN_ROOM_NAMESPACE);
   const tParticipantRole = useTranslations("Common.participantRole");
   const { snapshot } = useAuthenticatedParticipantRoomSnapshot({
     initialSnapshot: room.snapshot,
@@ -98,8 +97,7 @@ export function JoinedRoomState({
       }
 
       return (
-        <PageShell wide>
-          <MovieCards round={snapshot.currentRound} />
+        <PageShell>
           <RoundResult round={snapshot.currentRound} />
         </PageShell>
       );

@@ -4,7 +4,11 @@ import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 
 import { formatRuntime } from "@/app/room-participants/format-runtime";
+import styles from "@/app/room-participants/round-result-animation.module.css";
+import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { PublicRoomMovie, PublicRoomRound } from "@/lib/participants/public-participant-snapshot";
+
+const GAME_ROUND_NAMESPACE = "GameRound";
 
 export function MovieCards({
   round,
@@ -13,33 +17,60 @@ export function MovieCards({
   round: PublicRoomRound;
   renderFooter?: (movie: PublicRoomMovie) => ReactNode;
 }>): ReactNode {
-  const t = useTranslations("GameRound");
+  const t = useTranslations(GAME_ROUND_NAMESPACE);
+  const tResult = useTranslations("RoundResult");
+  const persistedSelectedMovieId =
+    round.status === ROUND_STATUS.MATCHED && round.result?.status === ROUND_STATUS.MATCHED ? round.result.selectedMovieId : null;
+  const selectedMovieId = round.movies.some(movie => movie.movieId === persistedSelectedMovieId) ? persistedSelectedMovieId : null;
 
   return (
-    <section aria-labelledby="current-round-title">
+    <section aria-labelledby="current-round-title" className={styles.resultAnimation}>
       <h2 className="text-2xl font-bold" id="current-round-title">
         {t("round", { number: round.roundNumber })}
       </h2>
       <div className="mt-6 grid gap-5 sm:grid-cols-3">
-        {round.movies.map(movie => (
-          <article className="flex h-full flex-col overflow-hidden rounded-3xl bg-slate-900 ring-1 ring-white/10" key={movie.movieId}>
-            <MoviePoster movie={movie} />
-            <div className="flex flex-1 flex-col p-5">
-              <p className="text-xs font-semibold tracking-[0.2em] text-amber-400 uppercase">{t("position", { position: movie.position })}</p>
-              <h3 className="mt-2 text-xl font-bold text-white">{movie.title}</h3>
-              <p className="mt-3 text-sm text-slate-300">{t("details", { year: movie.releaseYear, runtime: formatRuntime(movie.runtimeMinutes) })}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-400">{movie.genres.length === 0 ? t("genresFallback") : movie.genres.join(", ")}</p>
-              {renderFooter === undefined ? null : <div className="mt-auto pt-5">{renderFooter(movie)}</div>}
-            </div>
-          </article>
-        ))}
+        {round.movies.map(movie => {
+          const isSelected = selectedMovieId === movie.movieId;
+          let resultClassName: string | undefined;
+
+          if (isSelected) {
+            resultClassName = styles.selectedCard;
+          } else if (selectedMovieId !== null) {
+            resultClassName = styles.mutedCard;
+          }
+
+          return (
+            <article
+              className={`relative flex h-full flex-col overflow-hidden rounded-3xl bg-slate-900 ring-1 ring-white/10 ${resultClassName ?? ""}`}
+              key={movie.movieId}
+            >
+              <MoviePoster movie={movie} />
+              <div className="flex flex-1 flex-col p-5">
+                <p className="text-xs font-semibold tracking-[0.2em] text-amber-400 uppercase">{t("position", { position: movie.position })}</p>
+                <h3 className="mt-2 text-xl font-bold text-white">{movie.title}</h3>
+                <p className="mt-3 text-sm text-slate-300">
+                  {t("details", { year: movie.releaseYear, runtime: formatRuntime(movie.runtimeMinutes) })}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">{movie.genres.length === 0 ? t("genresFallback") : movie.genres.join(", ")}</p>
+                {renderFooter === undefined ? null : <div className="mt-auto pt-5">{renderFooter(movie)}</div>}
+              </div>
+              {isSelected ? (
+                <p
+                  className={`${styles.selectedLabel} absolute top-4 left-4 rounded-full bg-emerald-300 px-3 py-1 text-xs font-black tracking-[0.16em] text-emerald-950 uppercase`}
+                >
+                  {tResult("selected")}
+                </p>
+              ) : null}
+            </article>
+          );
+        })}
       </div>
     </section>
   );
 }
 
 function MoviePoster({ movie }: Readonly<{ movie: PublicRoomMovie }>): ReactNode {
-  const t = useTranslations("GameRound");
+  const t = useTranslations(GAME_ROUND_NAMESPACE);
   const [failed, setFailed] = useState(false);
 
   if (movie.posterPath === null || failed) {

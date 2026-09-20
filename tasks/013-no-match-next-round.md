@@ -7,16 +7,16 @@
 ## Dependencies
 
 - [012 — Match calculation](012-match-calculation.md): authoritative persisted `no_match`, розкриті post-resolution votes і room, що лишається `playing`.
-- [012.1 — Round result transition](012-1-round-result-animation.md): TV no-match presentation, phone result reveal та existing Realtime room topic.
+- [012.1 — Round result transition](012-1-round-result-animation.md): TV no-match presentation, immediate authoritative phone result та existing Realtime room topic.
 - [010 — Start game and generate round](010-start-game-and-generate-round.md) та [010.1 — Game-start fixes](010-1-game-start-fixes.md): reusable filter selection, three-position atomic round creation, seen-movie exclusion і `exhausted`/Restart list contract.
 
 ## Scope / Requirements
 
 ### No-match result and joint decision
 
-- Після завершення 012.1 no-match transition TV показує одну коротку informal українську фразу з каталогу `next-intl`, узгодженого з прикладами active specification. Фраза має бути легкою й жартівливою, а не звинувачувати учасників або виглядати як error.
+- Одразу з authoritative `no_match` result TV показує одну коротку informal українську фразу з каталогу `next-intl`, узгодженого з прикладами active specification. Фраза має бути легкою й жартівливою, а не звинувачувати учасників або виглядати як error; декоративна CSS reaction задачі 012.1 не є prerequisite або completion boundary.
 - Вибір фрази стабільний для terminal round під час rerenders/reconnect. Дозволено детерміновано вибрати її за stable round ID замість додаткового persisted поля, якщо після recovery показується той самий текст.
-- Після реакції TV залишається на no-match result із трьома cards і розкритими votes та показує коротке питання: «Готові рухатись далі?». TV не має інтерактивної mutation surface.
+- TV одразу лишається на no-match result із трьома cards і розкритими votes та показує коротке питання: «Готові рухатись далі?». TV не має інтерактивної mutation surface.
 - На обох phones під compact no-match result показати те саме питання й одну кнопку «Далі». Не переходити автоматично за timer, local Effect, TV event або дією лише одного participant.
 - Перший participant, що натиснув «Далі», бачить стійкий нейтральний стан «Чекаємо на іншого гравця». Інший participant бачить свою кнопку «Далі»; TV може показувати non-sensitive aggregate readiness, але не повинен вимагати від користувача дивитися на phone, щоб зрозуміти result.
 - Після підтвердження другого participant обидва screens коротко показують прогрес створення round, а потім синхронно переходять до нового ballot. Не додавати confirm modal, countdown, auto-advance або окрему host privilege для цієї спільної дії.
@@ -42,7 +42,7 @@
 
 ## Acceptance Criteria
 
-- Committed no-match на TV проходить послідовність `three-card result → no-match transition → informal message → питання «Готові рухатись далі?»`; автоматичного next round немає.
+- Committed no-match на TV одразу показує three-card result, informal message і питання «Готові рухатись далі?». CSS reaction задачі 012.1 є необов’язковим декоративним доповненням і не затримує цей стан; автоматичного next round немає.
 - Host і guest обидва бачать кнопку «Далі». Один підтверджений click не створює round, а показує цьому participant стан очікування; лише два distinct persisted confirmations створюють рівно один наступний `voting` round.
 - Після обох confirmations successor має наступний номер і три distinct eligible movies, яких ще не було в поточній room history. До commit жоден screen не показує client-invented next round.
 - Reload, reconnect, response loss, double click, duplicate request, два tabs і concurrent confirmations не скидають readiness, не вимагають повторного рішення та не створюють duplicate/parallel rounds.
@@ -63,8 +63,8 @@
 ## Out of Scope
 
 - Match calculation, vote privacy або зміна terminal result — задача 012.
-- Shared-element match animation і базова no-match motion presentation — задача 012.1.
-- Fullscreen matched destination — задача 014; Search again і Close room після match — задача 015.
+- Match emphasis і базова no-match presentation — задача 012.1.
+- Polished matched three-card screen — задача 014; Search again і Close room після match — задача 015.
 - Автоматичний next round, auto-advance timer, додаткові confirm dialogs, Restart list без host action, повторення movies до явного restart, background jobs або окремий scheduler/queue.
 
 ## References / Notes

@@ -19,7 +19,7 @@
 - [x] [010.2 — Insufficient-catalog recovery UX](010-2-insufficient-catalog-recovery-ux.md)
 - [x] [011 — Voting](011-voting.md)
 - [x] [012 — Match calculation](012-match-calculation.md)
-- [ ] [012.1 — Round result transition](012-1-round-result-animation.md)
+- [x] [012.1 — Round result transition](012-1-round-result-animation.md)
 - [ ] [012.2 — Compact phone ballot layout](012-2-compact-phone-ballot-layout.md)
 - [ ] [012.3 — Local ballot progress reconciliation](012-3-local-ballot-progress-reconciliation.md)
 - [ ] [013 — No-match next round](013-no-match-next-round.md)
