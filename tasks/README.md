@@ -21,7 +21,7 @@
 - [x] [012 — Match calculation](012-match-calculation.md)
 - [x] [012.1 — Round result transition](012-1-round-result-animation.md)
 - [x] [012.2 — Compact phone ballot layout](012-2-compact-phone-ballot-layout.md)
-- [ ] [012.3 — Local ballot progress reconciliation](012-3-local-ballot-progress-reconciliation.md)
+- [x] [012.3 — Local ballot progress reconciliation](012-3-local-ballot-progress-reconciliation.md)
 - [ ] [013 — No-match next round](013-no-match-next-round.md)
 - [ ] [014 — Match screen](014-match-screen.md)
 - [ ] [015 — Search again or close room](015-search-again-or-close-room.md)
@@ -41,3 +41,4 @@
 - [ ] [026 — Centralize database enum contracts](026-centralize-database-enum-contracts.md)
 - [ ] [027 — Audit shared translations and message namespaces](027-audit-shared-translations.md)
 - [ ] [028 — Audit participant name and role presentation](028-audit-participant-name-and-role-presentation.md)
+- [ ] [029 — Decide callback return-type linting](029-decide-callback-return-type-linting.md)
