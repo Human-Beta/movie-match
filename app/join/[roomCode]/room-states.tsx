@@ -105,7 +105,7 @@ export function JoinedRoomState({
 
       return (
         <PageShell>
-          <RoundResult round={snapshot.currentRound} />
+          <RoundResult participantRole={participant.role} round={snapshot.currentRound} />
           {snapshot.currentRound.status === ROUND_STATUS.NO_MATCH && snapshot.noMatchReadiness !== undefined ? (
             <NoMatchNextRoundControl
               isNextRoundGenerating={isNextRoundGenerating}
