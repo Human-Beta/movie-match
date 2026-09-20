@@ -59,7 +59,7 @@
 
 - Playful result animation і decorative effects — задача 012.1.
 - Генерація наступного round і випадкові no-match messages — задача 013.
-- Повна match presentation, humorous final message і final layout — задача 014.
+- Повний designed match screen і vote layout — задача 014.
 - Search again, Close room і post-match host commands — задача 015; expiration cleanup — задача 016.
 - Нові scoring factors, персоналізація, veto rules, watched state, ratings або client-side result calculation.
 
