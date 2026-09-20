@@ -24,7 +24,7 @@
 - [x] [012.3 — Local ballot progress reconciliation](012-3-local-ballot-progress-reconciliation.md)
 - [ ] [013 — No-match next round](013-no-match-next-round.md)
 - [x] [014 — Match screen](014-match-screen.md)
-- [ ] [015 — Search again or close room](015-search-again-or-close-room.md)
+- [x] [015 — Search again or close room](015-search-again-or-close-room.md)
 
 ## Backlog
 

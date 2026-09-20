@@ -13,3 +13,11 @@ export function startGame(input: GameCommandInput, storedAccessToken: string | n
 export function restartMovieList(input: GameCommandInput, storedAccessToken: string | null): Promise<GameCommandResult> {
   return service.restart(input, storedAccessToken);
 }
+
+export function searchAgain(input: GameCommandInput, storedAccessToken: string | null): Promise<GameCommandResult> {
+  return service.searchAgain(input, storedAccessToken);
+}
+
+export function closeMatchedRoom(input: GameCommandInput, storedAccessToken: string | null): Promise<GameCommandResult> {
+  return service.close(input, storedAccessToken);
+}

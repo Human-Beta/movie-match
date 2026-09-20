@@ -234,3 +234,12 @@ test("treats expired rooms as closed and withholds initial channel state", async
   assert.equal(await service.getTvRoomState("ABC123"), null);
   assert.equal(await service.getClientRoomState(roomId, null), null);
 });
+
+test("retains a closed room snapshot only for its terminal presentation", async () => {
+  const record = makeRecord();
+  record.room.status = "closed";
+  const service = makeService(record);
+
+  assert.equal((await service.getTvRoomState("ABC123"))?.snapshot.roomState, "closed");
+  assert.equal((await service.getClientRoomState(roomId, "abcdefghijklmnopqrstuvwxyzABCDEFG01234567_-"))?.snapshot.roomState, "closed");
+});

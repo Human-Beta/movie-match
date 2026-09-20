@@ -93,11 +93,11 @@ export class ParticipantSnapshotService {
       return null;
     }
 
-    const snapshot = this.toPublicSnapshot(record);
-
-    if (snapshot.roomState === "closed") {
+    if (record.room.expiresAt.getTime() <= this.clock.now().getTime()) {
       return null;
     }
+
+    const snapshot = this.toPublicSnapshot(record);
 
     return {
       roomCode: record.room.code,
@@ -123,11 +123,11 @@ export class ParticipantSnapshotService {
       return null;
     }
 
-    const snapshot = this.toParticipantSnapshot(record);
-
-    if (snapshot.roomState === "closed") {
+    if (record.room.expiresAt.getTime() <= this.clock.now().getTime()) {
       return null;
     }
+
+    const snapshot = this.toParticipantSnapshot(record);
 
     return {
       realtimeTopic: createParticipantRealtimeTopic(record.room.id),

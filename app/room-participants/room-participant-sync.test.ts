@@ -47,6 +47,10 @@ const exhaustedSnapshot: PublicParticipantSnapshot = {
   ...readySnapshot,
   roomState: "exhausted",
 };
+const matchedSnapshot: PublicParticipantSnapshot = {
+  ...readySnapshot,
+  roomState: "matched",
+};
 
 type ScheduledTimer = {
   callback: () => void;
@@ -435,6 +439,37 @@ test("keeps polling while exhausted so a missed restart still converges", async 
   assert.equal(reads, 2);
   assert.deepEqual(snapshots, [exhaustedSnapshot, playingSnapshot]);
   assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 1);
+  sync.stop();
+});
+
+test("keeps polling while matched so a missed post-match transition still converges", async () => {
+  const scheduler = new FakeScheduler();
+  const tracker: SubscriptionTracker = { active: 0, maxActive: 0 };
+  const snapshots: PublicParticipantSnapshot[] = [];
+  let reads = 0;
+  const sync = new RoomParticipantSync({
+    realtimeTopic: "room:44444444-4444-4444-8444-444444444444",
+    initialSnapshot: matchedSnapshot,
+    scheduler,
+    createSubscription: (): RoomParticipantSubscription => new FakeSubscription(tracker),
+    readSnapshot: async (): Promise<ParticipantSnapshotActionResult> => {
+      reads += 1;
+      return { status: "ready", snapshot: reads === 1 ? matchedSnapshot : playingSnapshot };
+    },
+    onSnapshot: (snapshot): void => {
+      snapshots.push(snapshot);
+    },
+  });
+
+  sync.start();
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 1);
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+  scheduler.run(PARTICIPANT_SNAPSHOT_POLL_MS);
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+
+  assert.deepEqual(snapshots, [matchedSnapshot, playingSnapshot]);
   sync.stop();
 });
 

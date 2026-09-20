@@ -79,7 +79,7 @@ export class ParticipantService {
     }
 
     const snapshot = await this.repository.inspectRoom(normalizedRoomCode, null);
-    const room = this.getOpenRoomForSession(snapshot.room);
+    const room = this.getNonExpiredRoom(snapshot.room);
 
     if (room?.status !== "waiting") {
       return null;
@@ -97,7 +97,7 @@ export class ParticipantService {
 
     const accessTokenHash = hashStoredParticipantAccessToken(storedAccessToken);
     const snapshot = await this.repository.inspectRoom(normalizedRoomCode, accessTokenHash);
-    const room = this.getOpenRoomForSession(snapshot.room);
+    const room = this.getNonExpiredRoom(snapshot.room);
 
     if (room === null) {
       return { status: "unavailable" };
@@ -202,6 +202,14 @@ export class ParticipantService {
 
   private getOpenRoomForSession(room: ParticipantRoom | null): ParticipantRoom | null {
     if (room === null || room.status === "closed" || room.expiresAt.getTime() <= this.clock.now().getTime()) {
+      return null;
+    }
+
+    return room;
+  }
+
+  private getNonExpiredRoom(room: ParticipantRoom | null): ParticipantRoom | null {
+    if (room === null || room.expiresAt.getTime() <= this.clock.now().getTime()) {
       return null;
     }
 
