@@ -104,7 +104,7 @@ export function JoinedRoomState({
 
       return (
         <PageShell>
-          <RoundResult round={snapshot.currentRound} />
+          <RoundResult participantRole={participant.role} round={snapshot.currentRound} />
         </PageShell>
       );
     case "exhausted":

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
+import { getMatchPresentation } from "@/app/room-participants/match-presentation";
 import type { ParticipantRealtimeTransportStatus } from "@/app/room-participants/room-participant-sync";
 import { MovieCards } from "@/app/room-participants/movie-cards";
 import styles from "@/app/room-participants/round-result-animation.module.css";
@@ -79,6 +80,7 @@ function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnaps
   const tResult = useTranslations("RoundResult");
   const round = snapshot.currentRound;
   const result = round?.result;
+  const match = round === null ? null : getMatchPresentation(round);
   const showNoMatchReaction = round?.status === ROUND_STATUS.NO_MATCH && round.result?.status === ROUND_STATUS.NO_MATCH;
 
   return (
@@ -91,6 +93,15 @@ function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnaps
           </p>
         ) : (
           <>
+            <header className={match === null ? "hidden" : "mb-8 max-w-3xl"}>
+              {match === null ? null : (
+                <>
+                  <p className="text-sm font-semibold tracking-[0.2em] text-emerald-300 uppercase">{tResult("matchStatus")}</p>
+                  <h1 className="mt-2 text-4xl font-black tracking-tight text-white sm:text-6xl">{tResult("matchTitle")}</h1>
+                  <p className="mt-3 text-lg leading-8 text-slate-300">{tResult(`finalMessages.${match.finalMessageKey}`)}</p>
+                </>
+              )}
+            </header>
             {showNoMatchReaction ? (
               <p className="mb-5 text-2xl font-bold" role="status">
                 {tResult("noMatchTitle")}
@@ -143,16 +154,20 @@ function MovieVotes({ votes }: Readonly<{ votes: PublicRoundMovieVotes }>): Reac
   const tVoting = useTranslations("Voting");
 
   return (
-    <div className="space-y-1 text-sm text-slate-200">
-      {votes.votes.map(vote => (
-        <p key={vote.role}>
-          <span className="font-semibold">{vote.role === "host" ? tParticipantRole("host") : tParticipantRole("guest")}:</span>{" "}
-          <span aria-label={tVoting(VOTE_LABEL_KEY[vote.value])}>
-            <span aria-hidden="true">{getVoteEmoji(vote.value)}</span> {tVoting(VOTE_LABEL_KEY[vote.value])}
-          </span>
-        </p>
-      ))}
-    </div>
+    <dl className="space-y-1 text-sm text-slate-200" aria-label={tVoting("revealedVotesLabel")}>
+      {votes.votes.map(vote => {
+        const role = vote.role === "host" ? tParticipantRole("host") : tParticipantRole("guest");
+
+        return (
+          <div className="flex gap-2" key={vote.role}>
+            <dt className="font-semibold">{role}:</dt>
+            <dd aria-label={tVoting("revealedVote", { role, vote: tVoting(VOTE_LABEL_KEY[vote.value]) })}>
+              <span aria-hidden="true">{getVoteEmoji(vote.value)}</span> {tVoting(VOTE_LABEL_KEY[vote.value])}
+            </dd>
+          </div>
+        );
+      })}
+    </dl>
   );
 }
 

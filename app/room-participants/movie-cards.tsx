@@ -62,6 +62,7 @@ export function MovieCards({
               </div>
               {isSelected ? (
                 <p
+                  aria-label={tResult("selectedMovieLabel", { title: movie.title })}
                   className={`${styles.selectedLabel} absolute top-4 left-4 rounded-full bg-emerald-300 px-3 py-1 text-xs font-black tracking-[0.16em] text-emerald-950 uppercase`}
                 >
                   {tResult("selected")}
