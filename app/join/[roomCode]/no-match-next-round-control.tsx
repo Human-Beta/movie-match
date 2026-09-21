@@ -4,6 +4,7 @@ import { useRef, useState, useTransition, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 
 import { confirmNoMatchNextRoundAction } from "@/app/join/[roomCode]/next-round-actions";
+import { getNextRoundControlPresentation, type LocalNextRoundOutcome } from "@/app/join/[roomCode]/next-round-control-presentation";
 import { NextRoundRequestStorage } from "@/app/join/[roomCode]/next-round-request-storage";
 import { PrimaryButton } from "@/app/ui/primary-button";
 import type { ParticipantNoMatchReadiness, PublicRoomRound } from "@/lib/participants/public-participant-snapshot";
@@ -15,10 +16,12 @@ export function NoMatchNextRoundControl({
 }: Readonly<{ roomCode: string; round: PublicRoomRound; readiness: ParticipantNoMatchReadiness }>): ReactNode {
   const t = useTranslations("NoMatchNextRound");
   const [feedback, setFeedback] = useState<"idle" | "retry" | "storage">("idle");
+  const [localOutcome, setLocalOutcome] = useState<Readonly<{ roundId: string; outcome: LocalNextRoundOutcome }> | null>(null);
   const [pending, startTransition] = useTransition();
   const submitting = useRef(false);
+  const presentation = getNextRoundControlPresentation({ ownReady: readiness.ownReady, roundId: round.roundId, localOutcome, pending });
 
-  if (readiness.ownReady) {
+  if (presentation === "waiting") {
     return <p className="mt-5 rounded-2xl bg-slate-950/60 p-4 text-slate-300 ring-1 ring-white/10">{t("waiting")}</p>;
   }
 
@@ -50,6 +53,7 @@ export function NoMatchNextRoundControl({
         }
         if (result.status === "ready" || result.status === "started" || result.status === "list_exhausted") {
           storage.clear(nextRequestId);
+          setLocalOutcome({ roundId: round.roundId, outcome: result.status });
           return;
         }
         setFeedback("retry");
@@ -63,8 +67,8 @@ export function NoMatchNextRoundControl({
 
   return (
     <div className="mt-5">
-      <PrimaryButton className="w-full" disabled={pending || feedback === "storage"} onClick={confirm}>
-        {pending ? t("creating") : t("next")}
+      <PrimaryButton className="w-full" disabled={presentation === "creating" || feedback === "storage"} onClick={confirm}>
+        {presentation === "creating" ? t("creating") : t("next")}
       </PrimaryButton>
       {feedback === "retry" ? <p className="mt-3 text-sm text-amber-200">{t("retry")}</p> : null}
       {feedback === "storage" ? <p className="mt-3 text-sm text-rose-200">{t("storage")}</p> : null}
