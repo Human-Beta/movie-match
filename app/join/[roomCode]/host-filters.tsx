@@ -317,17 +317,22 @@ function HostFilterForm({
         onChange={updateFilters}
       />
       {feedback === "idle" ? null : <FilterFeedback feedback={feedback} />}
-      <PrimaryButton busy={saving} className="w-full" disabled={saving || starting || pendingGameRequest !== null} submit>
+      <PrimaryButton
+        busy={saving}
+        className="w-full"
+        disabled={saving || starting || pendingGameRequest !== null || (pendingFilterRequest === null && !hasUnsavedChanges)}
+        submit
+      >
         {submitLabel}
       </PrimaryButton>
       <div className="border-t border-white/10 pt-6">
-        <p className="text-sm leading-6 text-slate-300">
-          {participantCount < 2 ? t("startWaiting") : hasUnsavedChanges ? t("startSaveFirst") : t("startReady")}
-        </p>
+        {participantCount < 2 || hasUnsavedChanges ? (
+          <p className="text-sm leading-6 text-slate-300">{participantCount < 2 ? t("startWaiting") : t("startSaveFirst")}</p>
+        ) : null}
         {gameFeedback === "idle" ? null : <GameFeedbackMessage feedback={gameFeedback} />}
         <PrimaryButton
           busy={starting}
-          className="mt-4 w-full"
+          className={participantCount < 2 || hasUnsavedChanges ? "mt-4 w-full" : "w-full"}
           disabled={
             starting ||
             saving ||
