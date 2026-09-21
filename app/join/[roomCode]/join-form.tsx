@@ -102,13 +102,13 @@ export function JoinRoomForm({ roomCode }: Readonly<{ roomCode: string }>): Reac
         <form action={formAction} className="mt-8 space-y-5" aria-busy={isPending}>
           <input name="roomCode" type="hidden" value={roomCode} />
           <div>
-            <label className="block text-sm font-semibold text-slate-200" htmlFor="name">
+            <label className="sr-only" htmlFor="name">
               {t("form.nameLabel")}
             </label>
             <input
               autoComplete="name"
               autoFocus
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-lg text-white transition outline-none placeholder:text-slate-600 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 disabled:opacity-60"
+              className="w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-lg text-white transition outline-none placeholder:text-slate-600 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 disabled:opacity-60"
               disabled={isPending || !isPrepared}
               id="name"
               name="name"
