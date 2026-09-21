@@ -1,4 +1,5 @@
-import type { JoinParticipantResult, ParticipantRole } from "@/lib/participants/participant-service";
+import type { JoinParticipantResult } from "@/lib/participants/participant-service";
+import type { ParticipantRole } from "@/lib/participants/participant-role";
 import type { ParticipantClientRoomState } from "@/lib/participants/public-participant-snapshot";
 
 export type PublicParticipantIdentity = {

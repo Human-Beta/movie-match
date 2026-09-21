@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import type { PublicParticipantIdentity } from "@/app/join/[roomCode]/join-action-state";
 import { HostFilters } from "@/app/join/[roomCode]/host-filters";
+import { NoMatchNextRoundControl } from "@/app/join/[roomCode]/no-match-next-round-control";
 import { RestartListControl } from "@/app/join/[roomCode]/restart-list-control";
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
 import { RoundResult } from "@/app/room-participants/round-result";
@@ -105,6 +106,9 @@ export function JoinedRoomState({
       return (
         <PageShell>
           <RoundResult round={snapshot.currentRound} />
+          {snapshot.currentRound.status === ROUND_STATUS.NO_MATCH && snapshot.noMatchReadiness !== undefined ? (
+            <NoMatchNextRoundControl readiness={snapshot.noMatchReadiness} roomCode={roomCode} round={snapshot.currentRound} />
+          ) : null}
         </PageShell>
       );
     case "exhausted":

@@ -1,7 +1,7 @@
 import type { BallotVoteInput, VoteValue } from "@/lib/ballots/ballot-vote";
 import type { MatchedRoundStatus, NoMatchRoundStatus, RoundStatus } from "@/lib/game-rounds/round-status";
 import type { Pair } from "@/lib/pair";
-import type { ParticipantRole } from "@/lib/participants/participant-service";
+import type { ParticipantRole } from "@/lib/participants/participant-role";
 import type { RoomStatus } from "@/lib/rooms/room-service";
 
 export type PublicRoomParticipant = {
@@ -55,6 +55,13 @@ export type PublicBallotProgress = {
   readyForResults: boolean;
 };
 
+export type PublicNoMatchReadiness = {
+  readyCount: number;
+  totalParticipants: number;
+};
+
+export type ParticipantNoMatchReadiness = PublicNoMatchReadiness & { ownReady: boolean };
+
 export type ParticipantOwnBallot = { status: "not_submitted"; votes: [] } | { status: "submitted"; votes: BallotVoteInput[] };
 
 export type PublicParticipantSnapshot = {
@@ -63,10 +70,12 @@ export type PublicParticipantSnapshot = {
   participants: PublicRoomParticipant[];
   currentRound: PublicRoomRound | null;
   ballotProgress: PublicBallotProgress | null;
+  noMatchReadiness?: PublicNoMatchReadiness;
 };
 
-export type ParticipantClientSnapshot = PublicParticipantSnapshot & {
+export type ParticipantClientSnapshot = Omit<PublicParticipantSnapshot, "noMatchReadiness"> & {
   ownBallot: ParticipantOwnBallot | null;
+  noMatchReadiness?: ParticipantNoMatchReadiness;
 };
 
 export type ParticipantClientRoomState = {

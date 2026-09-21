@@ -50,6 +50,12 @@
 - Підтвердити реальний `room_changed` Broadcast і reconnect: TV та другий телефон переходять `0/2 → 1/2 → 2/2` без ручного reload, а пропущена invalidation відновлюється bounded active-voting fallback polling без duplicate channel або write.
 - Перевірити Network responses на TV і другому телефоні: вони містять лише aggregate progress, а не vote values, receipts, request IDs, participant credentials чи Broadcast payload. Reload першого телефона відновлює тільки його власні submitted values.
 
+### P1 — Task 013 no-match next-round readiness
+
+- На ізольованій PostgreSQL перевірити `DrizzleNoMatchNextRoundRepository`: room lock, дві distinct readiness rows, concurrent confirmations, рівно один successor round із трьома unseen positions, request replay/conflict, rollback другого confirmation та `exhausted` без partial round.
+- Додати component/Server Action coverage для `NoMatchNextRoundControl`: request ID persist-иться до mutation, reload і response loss безпечно відновлюють той самий request, corrupt/unavailable storage не надсилає mutation, а first/second confirmation показують waiting/transition states без auto-advance.
+- У трьох ізольованих hosted browser contexts (TV, host, guest) перевірити no-match message, розкриті votes, question, readiness progress, missed Broadcast fallback, reconnect/reload, two tabs, exhausted catalog і `prefers-reduced-motion`. Це закриває відкладені integration/browser acceptance criteria task 013.
+
 ### P1 — Tasks 010.1/010.2 insufficient-catalog recovery
 
 - У трьох ізольованих browser contexts (host, guest, TV) відтворити insufficient catalog. Перевірити, що error/instruction бачить лише host, вона має error styling, лишається поряд із filters та disable-ить повторний start для того самого contract.

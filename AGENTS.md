@@ -42,6 +42,7 @@ If documents allow different interpretations of the current product scope, follo
 - For an obvious mapping from a two-value scalar union, prefer a direct conditional or ternary; reserve exhaustive `switch`/`assertNever` handling for discriminated unions or cases where additional branches materially improve clarity.
 - Normalize missing query or collection results to the absence sentinel declared by the contract; do not leak `undefined` from `.at()` or `.find()` when the contract declares `null`.
 - When helper logic belongs only to one class responsibility, implement it as a private method. Keep module-level helpers for shared logic, construction factories, or concerns independent of a class instance.
+- When a pure reusable query-condition helper controls eligibility or authorization, add focused unit tests for the empty baseline, every enabled constraint, and exclusion boundaries.
 - Implement repositories and services as classes. Supply replaceable collaborators through constructor injection instead of passing dependency bags to individual service methods, and keep the production constructor call simple through sensible defaults.
 - Reuse `Database`, `DatabaseProvider`, and `loadDatabase` from `lib/db/database-provider.ts` in Drizzle repositories; do not create repository-local database loader functions or duplicate loader-derived database types.
 - Always wrap `if` statement bodies in braces, including single-statement returns and throws.
