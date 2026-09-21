@@ -7,7 +7,7 @@ import type { ParticipantRealtimeSubscriptionStatus } from "@/app/room-participa
 type FakeChannel = {
   on(type: "broadcast", filter: { event: string }, callback: () => void): FakeChannel;
   subscribe(callback: (status: ParticipantRealtimeSubscriptionStatus) => void): void;
-  emitInvalidation(event?: "participants_changed" | "room_changed"): void;
+  emitInvalidation(event?: "participants_changed" | "room_changed" | "next_round_generating"): void;
   emitStatus(status: ParticipantRealtimeSubscriptionStatus): void;
 };
 
@@ -39,7 +39,7 @@ function makeFakeChannel(): FakeChannel {
   return {
     on(type, filter, callback): FakeChannel {
       assert.equal(type, "broadcast");
-      assert.ok(["participants_changed", "room_changed"].includes(filter.event));
+      assert.ok(["participants_changed", "room_changed", "next_round_generating"].includes(filter.event));
       invalidationCallbacks.set(filter.event, callback);
       return this;
     },
