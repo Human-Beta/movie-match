@@ -17,10 +17,12 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { ROUND_STATUS, ROUND_STATUS_VALUES } from "@/lib/game-rounds/round-status";
+import { NO_MATCH_NEXT_ROUND_OUTCOME_VALUES } from "@/lib/no-match-next-round/next-round-outcome";
+import { PARTICIPANT_ROLE_VALUES } from "@/lib/participants/participant-role";
 
 export const roomStatusEnum = pgEnum("room_status", ["waiting", "playing", "matched", "exhausted", "closed"]);
 
-export const participantRoleEnum = pgEnum("participant_role", ["host", "guest"]);
+export const participantRoleEnum = pgEnum("participant_role", PARTICIPANT_ROLE_VALUES);
 
 export const yearFilterEnum = pgEnum("year_filter", ["any", "new", "old"]);
 
@@ -31,6 +33,8 @@ export const voteValueEnum = pgEnum("vote_value", ["want_to_watch", "could_watch
 export const roomGameCommandEnum = pgEnum("room_game_command", ["start", "restart"]);
 
 export const roomGameCommandOutcomeEnum = pgEnum("room_game_command_outcome", ["started", "catalog_insufficient", "list_exhausted"]);
+
+export const noMatchNextRoundOutcomeEnum = pgEnum("no_match_next_round_outcome", NO_MATCH_NEXT_ROUND_OUTCOME_VALUES);
 
 export const genres = pgTable(
   "genres",
@@ -288,6 +292,33 @@ export const roundBallots = pgTable(
   ],
 ).enableRLS();
 
+export const noMatchRoundReadiness = pgTable(
+  "no_match_round_readiness",
+  {
+    roomId: uuid("room_id").notNull(),
+    roundId: uuid("round_id").notNull(),
+    participantId: uuid("participant_id").notNull(),
+    requestId: uuid("request_id").notNull(),
+    payloadHash: varchar("payload_hash", { length: 64 }).notNull(),
+    outcome: noMatchNextRoundOutcomeEnum("outcome").notNull(),
+  },
+  table => [
+    primaryKey({ name: "no_match_round_readiness_pkey", columns: [table.roomId, table.roundId, table.participantId] }),
+    foreignKey({
+      name: "no_match_round_readiness_round_fk",
+      columns: [table.roomId, table.roundId],
+      foreignColumns: [rounds.roomId, rounds.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "no_match_round_readiness_room_participant_fk",
+      columns: [table.roomId, table.participantId],
+      foreignColumns: [participants.roomId, participants.id],
+    }).onDelete("cascade"),
+    unique("no_match_round_readiness_room_participant_request_unique").on(table.roomId, table.participantId, table.requestId),
+    check("no_match_round_readiness_payload_hash_check", sql`${table.payloadHash} ~ '^[a-f0-9]{64}$'`),
+  ],
+).enableRLS();
+
 export const genresRelations = relations(genres, ({ many }) => ({
   movieGenres: many(movieGenres),
   roomGenres: many(roomGenres),
@@ -314,6 +345,7 @@ export const roomsRelations = relations(rooms, ({ many }) => ({
   participants: many(participants),
   filterSaves: many(roomFilterSaves),
   gameCommands: many(roomGameCommands),
+  noMatchReadiness: many(noMatchRoundReadiness),
   rounds: many(rounds),
 }));
 
@@ -335,6 +367,7 @@ export const participantsRelations = relations(participants, ({ many, one }) => 
   }),
   votes: many(votes),
   ballots: many(roundBallots),
+  noMatchReadiness: many(noMatchRoundReadiness),
 }));
 
 export const roundsRelations = relations(rounds, ({ many, one }) => ({
@@ -344,6 +377,18 @@ export const roundsRelations = relations(rounds, ({ many, one }) => ({
   }),
   movies: many(roundMovies),
   ballots: many(roundBallots),
+  noMatchReadiness: many(noMatchRoundReadiness),
+}));
+
+export const noMatchRoundReadinessRelations = relations(noMatchRoundReadiness, ({ one }) => ({
+  round: one(rounds, {
+    fields: [noMatchRoundReadiness.roomId, noMatchRoundReadiness.roundId],
+    references: [rounds.roomId, rounds.id],
+  }),
+  participant: one(participants, {
+    fields: [noMatchRoundReadiness.roomId, noMatchRoundReadiness.participantId],
+    references: [participants.roomId, participants.id],
+  }),
 }));
 
 export const roundMoviesRelations = relations(roundMovies, ({ many, one }) => ({

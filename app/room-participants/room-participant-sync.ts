@@ -36,7 +36,9 @@ function shouldPoll(snapshot: PublicParticipantSnapshot): boolean {
   return (
     snapshot.roomState === "waiting" ||
     snapshot.roomState === "exhausted" ||
-    (snapshot.roomState === "playing" && snapshot.currentRound?.status === ROUND_STATUS.VOTING && snapshot.ballotProgress?.readyForResults === false)
+    (snapshot.roomState === "playing" &&
+      ((snapshot.currentRound?.status === ROUND_STATUS.VOTING && snapshot.ballotProgress?.readyForResults === false) ||
+        snapshot.currentRound?.status === ROUND_STATUS.NO_MATCH))
   );
 }
 

@@ -8,10 +8,10 @@ import {
   type LockedParticipantRoom,
   type ParticipantIdentity,
   type ParticipantRepository,
-  type ParticipantRole,
   type ParticipantRoom,
   type ParticipantRoomSnapshot,
 } from "@/lib/participants/participant-service";
+import type { ParticipantRole } from "@/lib/participants/participant-role";
 import { generateParticipantAccessToken, hashParticipantAccessToken, PARTICIPANT_ACCESS_TOKEN_BYTES } from "@/lib/participants/participant-token";
 import type { RoomStatus } from "@/lib/rooms/room-service";
 

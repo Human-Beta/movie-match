@@ -1,5 +1,5 @@
 import { SystemClock, type Clock } from "@/lib/clock";
-import type { ParticipantRole } from "@/lib/participants/participant-service";
+import { PARTICIPANT_ROLE, type ParticipantRole } from "@/lib/participants/participant-role";
 import { hashStoredParticipantAccessToken } from "@/lib/participants/participant-token";
 import type { SaveRoomFiltersInput } from "@/lib/room-filters/room-filter-input";
 import { hashRoomFilterContract } from "@/lib/room-filters/filter-contract";
@@ -32,7 +32,7 @@ export class RoomFilterService {
     }
 
     return this.repository.inLockedRoom(roomCode, async (room, locked): Promise<ReadRoomFiltersResult> => {
-      if (!this.isFilterEditable(room) || (await locked.findParticipantRole(tokenHash)) !== "host") {
+      if (!this.isFilterEditable(room) || (await locked.findParticipantRole(tokenHash)) !== PARTICIPANT_ROLE.HOST) {
         return { status: "unavailable" };
       }
       const filters = await locked.readFilters();
@@ -58,7 +58,7 @@ export class RoomFilterService {
     const payloadHash = hashRoomFilterContract(publicInputFilters);
 
     return this.repository.inLockedRoom(input.roomCode, async (room, locked): Promise<SaveRoomFiltersResult> => {
-      if (!this.isFilterEditable(room) || (await locked.findParticipantRole(tokenHash)) !== "host") {
+      if (!this.isFilterEditable(room) || (await locked.findParticipantRole(tokenHash)) !== PARTICIPANT_ROLE.HOST) {
         return { status: "unavailable" };
       }
       const savedPayloadHash = await locked.findSavePayloadHash(input.requestId);

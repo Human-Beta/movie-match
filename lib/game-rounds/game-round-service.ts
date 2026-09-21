@@ -1,5 +1,5 @@
 import { SystemClock, type Clock } from "@/lib/clock";
-import type { ParticipantRole } from "@/lib/participants/participant-service";
+import { PARTICIPANT_ROLE, type ParticipantRole } from "@/lib/participants/participant-role";
 import { hashStoredParticipantAccessToken } from "@/lib/participants/participant-token";
 import type { GameCommandInput } from "@/lib/game-rounds/game-command-input";
 import { hashRoomFilterContract } from "@/lib/room-filters/filter-contract";
@@ -77,7 +77,7 @@ export class GameRoundService {
         return { status: "unavailable" };
       }
 
-      if ((await locked.findParticipantRole(accessTokenHash)) !== "host") {
+      if ((await locked.findParticipantRole(accessTokenHash)) !== PARTICIPANT_ROLE.HOST) {
         return { status: "unavailable" };
       }
 

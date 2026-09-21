@@ -1,10 +1,9 @@
 import { SystemClock, type Clock } from "@/lib/clock";
 import type { JoinRoomInput } from "@/lib/participants/join-input";
+import { PARTICIPANT_ROLE, type ParticipantRole } from "@/lib/participants/participant-role";
 import { hashParticipantAccessToken, hashStoredParticipantAccessToken } from "@/lib/participants/participant-token";
 import { normalizeRoomCode } from "@/lib/rooms/room-code";
 import type { RoomStatus } from "@/lib/rooms/room-service";
-
-export type ParticipantRole = "host" | "guest";
 
 export type ParticipantIdentity = {
   id: string;
@@ -189,12 +188,12 @@ export class ParticipantService {
   }
 
   private getAvailableParticipantRole(occupiedRoles: ReadonlyArray<ParticipantRole>): ParticipantRole | null {
-    if (!occupiedRoles.includes("host")) {
-      return "host";
+    if (!occupiedRoles.includes(PARTICIPANT_ROLE.HOST)) {
+      return PARTICIPANT_ROLE.HOST;
     }
 
-    if (!occupiedRoles.includes("guest")) {
-      return "guest";
+    if (!occupiedRoles.includes(PARTICIPANT_ROLE.GUEST)) {
+      return PARTICIPANT_ROLE.GUEST;
     }
 
     return null;

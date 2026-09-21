@@ -4,10 +4,10 @@ import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
 
 import { assertNever } from "@/lib/assert-never";
 import { loadDatabase, type DatabaseProvider } from "@/lib/db/database-provider";
-import { genres, movieGenres, movies, participants, roundBallots, rooms, roundMovies, rounds, votes } from "@/lib/db/schema";
+import { genres, movieGenres, movies, noMatchRoundReadiness, participants, roundBallots, rooms, roundMovies, rounds, votes } from "@/lib/db/schema";
 import type { VoteValue } from "@/lib/ballots/ballot-vote";
 import { isTerminalRoundStatus, ROUND_STATUS, type TerminalRoundStatus } from "@/lib/game-rounds/round-status";
-import type { ParticipantRole } from "@/lib/participants/participant-service";
+import { PARTICIPANT_ROLE, type ParticipantRole } from "@/lib/participants/participant-role";
 import {
   isPublicRoomMovies,
   type ParticipantOwnBallot,
@@ -81,7 +81,15 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
         const currentRound = roundRows.at(0) ?? null;
 
         if (currentRound === null) {
-          return { room, participants: participantRows, currentRound: null, submittedBallotCount: 0, ownBallot: null };
+          return {
+            room,
+            participants: participantRows,
+            currentRound: null,
+            submittedBallotCount: 0,
+            ownBallot: null,
+            noMatchReadyCount: 0,
+            ownNoMatchReady: false,
+          };
         }
 
         const submittedBallotCountRows = await transaction
@@ -101,6 +109,13 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
                 )
                 .limit(1);
         let ownBallot: ParticipantOwnBallot | null = null;
+        const noMatchReadinessRows =
+          currentRound.status === ROUND_STATUS.NO_MATCH
+            ? await transaction
+                .select({ participantId: noMatchRoundReadiness.participantId })
+                .from(noMatchRoundReadiness)
+                .where(and(eq(noMatchRoundReadiness.roomId, room.id), eq(noMatchRoundReadiness.roundId, currentRound.id)))
+            : [];
 
         if (ownParticipant !== null) {
           if (ownBallotRows.length === 0) {
@@ -184,6 +199,8 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
           participants: participantRows,
           submittedBallotCount,
           ownBallot,
+          noMatchReadyCount: noMatchReadinessRows.length,
+          ownNoMatchReady: ownParticipant !== null && noMatchReadinessRows.some(readiness => readiness.participantId === ownParticipant.id),
           currentRound: {
             roundId: currentRound.id,
             roundNumber: currentRound.roundNumber,
@@ -264,9 +281,11 @@ export class DrizzleParticipantSnapshotRepository implements ParticipantSnapshot
   }
 
   private toPublicMovieVotes(movieId: number, votesForMovie: readonly PublicRoundVote[]): PublicRoundMovieVotes {
-    const orderedVotes = [...votesForMovie].sort((left, right) => (left.role === "host" ? -1 : 1) - (right.role === "host" ? -1 : 1));
+    const orderedVotes = [...votesForMovie].sort(
+      (left, right) => (left.role === PARTICIPANT_ROLE.HOST ? -1 : 1) - (right.role === PARTICIPANT_ROLE.HOST ? -1 : 1),
+    );
 
-    if (!isPair(orderedVotes) || orderedVotes[0].role !== "host" || orderedVotes[1].role !== "guest") {
+    if (!isPair(orderedVotes) || orderedVotes[0].role !== PARTICIPANT_ROLE.HOST || orderedVotes[1].role !== PARTICIPANT_ROLE.GUEST) {
       throw new Error("A terminal movie must have one host vote and one guest vote.");
     }
 

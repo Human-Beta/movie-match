@@ -1,12 +1,12 @@
 import "server-only";
 
-import { and, asc, eq, inArray, max, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, max, sql } from "drizzle-orm";
 
 import { loadDatabase, type DatabaseProvider } from "@/lib/db/database-provider";
-import { movieGenres, movies, participants, roomGameCommands, roomGenres, rooms, roundMovies, rounds } from "@/lib/db/schema";
+import { movies, participants, roomGameCommands, roomGenres, rooms, roundMovies, rounds } from "@/lib/db/schema";
 import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
+import { getEligibleMovieConditions } from "@/lib/game-rounds/eligible-movies";
 import type { GameRoom, GameRoundRepository, LockedGameRoom } from "@/lib/game-rounds/game-round-service";
-import type { RoomFilterValues } from "@/lib/room-filters/room-filter-values";
 
 export class DrizzleGameRoundRepository implements GameRoundRepository {
   constructor(private readonly getDatabase: DatabaseProvider = loadDatabase) {}
@@ -100,7 +100,7 @@ export class DrizzleGameRoundRepository implements GameRoundRepository {
         },
         selectEligibleMovieIds: async (filters, excludeSeen) => {
           const currentRoom = this.requireRoom(room);
-          const conditions = this.getMovieConditions(currentRoom.id, filters, excludeSeen);
+          const conditions = getEligibleMovieConditions(currentRoom.id, filters, excludeSeen);
           const rows = await transaction
             .select({ id: movies.id })
             .from(movies)
@@ -156,42 +156,6 @@ export class DrizzleGameRoundRepository implements GameRoundRepository {
 
       return operation(room, locked);
     });
-  }
-
-  private getMovieConditions(roomId: string, filters: RoomFilterValues, excludeSeen: boolean): SQL[] {
-    const conditions: SQL[] = [];
-
-    if (filters.netflixOnly) {
-      conditions.push(eq(movies.availableOnNetflix, true));
-    }
-
-    if (filters.underTwoHours) {
-      conditions.push(sql`${movies.runtimeMinutes} < 120`);
-    }
-
-    if (filters.yearFilter === "new") {
-      conditions.push(sql`${movies.releaseYear} > 2010`);
-    } else if (filters.yearFilter === "old") {
-      conditions.push(sql`${movies.releaseYear} <= 2010`);
-    }
-
-    if (filters.genreIds.length > 0) {
-      conditions.push(sql`exists (
-        select 1 from ${movieGenres}
-        where ${movieGenres.movieId} = ${movies.id}
-          and ${inArray(movieGenres.genreId, filters.genreIds)}
-      )`);
-    }
-
-    if (excludeSeen) {
-      conditions.push(sql`not exists (
-        select 1 from ${roundMovies}
-        where ${roundMovies.roomId} = ${roomId}
-          and ${roundMovies.movieId} = ${movies.id}
-      )`);
-    }
-
-    return conditions;
   }
 
   private requireRoom(room: GameRoom | null): GameRoom {

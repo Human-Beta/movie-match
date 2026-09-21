@@ -6,13 +6,13 @@ import type { ReactNode } from "react";
 import { getParticipantRoomView } from "@/app/room-participants/participant-room-view";
 import type { ParticipantRealtimeTransportStatus } from "@/app/room-participants/room-participant-sync";
 import { MovieCards } from "@/app/room-participants/movie-cards";
-import styles from "@/app/room-participants/round-result-animation.module.css";
 import { useRoomParticipantSnapshot } from "@/app/room-participants/use-room-participant-snapshot";
 import { getVoteEmoji } from "@/app/room-participants/vote-emoji";
 import { JoinQrCode } from "@/app/tv/[roomCode]/join-qr-code";
 import { NewRoomLink } from "@/app/tv/[roomCode]/new-room-link";
 import { assertNever } from "@/lib/assert-never";
 import type { VoteValue } from "@/lib/ballots/ballot-vote";
+import { getNoMatchMessageKey } from "@/lib/game-rounds/no-match-message";
 import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { PublicParticipantSnapshot, PublicRoundMovieVotes } from "@/lib/participants/public-participant-snapshot";
 
@@ -92,35 +92,23 @@ function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnaps
         ) : (
           <>
             {showNoMatchReaction ? (
-              <p className="mb-5 text-2xl font-bold" role="status">
-                {tResult("noMatchTitle")}
-              </p>
+              <section className="mb-6 rounded-3xl bg-slate-900 p-6 ring-1 ring-white/10" role="status">
+                <h2 className="text-3xl font-bold">{tResult("noMatchTitle")}</h2>
+                <p className="mt-3 text-lg leading-8 text-slate-200">{tResult(getNoMatchMessageKey(round.roundId))}</p>
+                <p className="mt-4 text-xl font-semibold">{tResult("nextQuestion")}</p>
+              </section>
             ) : null}
-            <div className="relative">
-              <div className={showNoMatchReaction ? styles.noMatchBackdrop : undefined}>
-                <MovieCards
-                  renderFooter={
-                    result === undefined
-                      ? undefined
-                      : (movie): ReactNode => {
-                          const movieVotes = result.movieVotes.find(candidate => candidate.movieId === movie.movieId);
-                          return movieVotes === undefined ? null : <MovieVotes votes={movieVotes} />;
-                        }
-                  }
-                  round={round}
-                />
-              </div>
-              {showNoMatchReaction ? (
-                <section
-                  aria-hidden="true"
-                  className={`${styles.noMatchReaction} pointer-events-none absolute inset-x-0 top-1/2 mx-auto w-full max-w-xl rounded-3xl bg-slate-900/95 p-8 text-center shadow-2xl ring-1 ring-white/15`}
-                >
-                  <p className="text-5xl">🫶</p>
-                  <h2 className="mt-4 text-3xl font-bold">{tResult("noMatchTitle")}</h2>
-                  <p className="mt-3 text-lg leading-8 text-slate-200">{tResult("noMatchReaction")}</p>
-                </section>
-              ) : null}
-            </div>
+            <MovieCards
+              renderFooter={
+                result === undefined
+                  ? undefined
+                  : (movie): ReactNode => {
+                      const movieVotes = result.movieVotes.find(candidate => candidate.movieId === movie.movieId);
+                      return movieVotes === undefined ? null : <MovieVotes votes={movieVotes} />;
+                    }
+              }
+              round={round}
+            />
             {round.status === ROUND_STATUS.VOTING && snapshot.ballotProgress !== null ? (
               <p className="mt-8 rounded-2xl bg-slate-900 p-5 text-lg text-slate-200 ring-1 ring-white/10" role="status">
                 {snapshot.ballotProgress.readyForResults

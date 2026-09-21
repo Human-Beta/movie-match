@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { getVoteEmoji } from "@/app/room-participants/vote-emoji";
+import { getNoMatchMessageKey } from "@/lib/game-rounds/no-match-message";
 import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
 import type { PublicRoomRound } from "@/lib/participants/public-participant-snapshot";
 
@@ -22,7 +23,9 @@ export function RoundResult({ round }: Readonly<{ round: PublicRoomRound }>): Re
       <h2 className="mt-2 text-3xl font-bold" id="round-result-title">
         {result.status === ROUND_STATUS.MATCHED ? t("matchedTitle") : t("noMatchTitle")}
       </h2>
-      <p className="mt-3 text-slate-300">{result.status === ROUND_STATUS.MATCHED ? t("matchedDescription") : t("noMatchDescription")}</p>
+      <p className="mt-3 text-slate-300">
+        {result.status === ROUND_STATUS.MATCHED ? t("matchedDescription") : t(getNoMatchMessageKey(round.roundId))}
+      </p>
       <ul className="mt-6 space-y-3">
         {round.movies.map(movie => {
           const movieVotes = result.movieVotes.find(candidate => candidate.movieId === movie.movieId);
@@ -56,6 +59,7 @@ export function RoundResult({ round }: Readonly<{ round: PublicRoomRound }>): Re
           );
         })}
       </ul>
+      {result.status === ROUND_STATUS.NO_MATCH ? <p className="mt-6 text-lg font-semibold text-white">{t("nextQuestion")}</p> : null}
     </section>
   );
 }

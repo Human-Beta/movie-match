@@ -218,14 +218,28 @@ The primary key `(room_id, round_id, participant_id)` permits exactly one comple
 
 RLS is enabled, and `anon`, `authenticated`, and `service_role` receive no privileges. The marker, request ID, and hash remain server-only; snapshots expose only an aggregate completed-ballot count and, for an authenticated phone, that phone's own values.
 
+### `no_match_round_readiness`
+
+One participant's persisted confirmation to continue after a terminal `no_match` round. It is separate from votes and game-command receipts because both participants must independently confirm the same committed round before another round can be created.
+
+| Field                                   | Purpose                                                                                                            |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `room_id`, `round_id`, `participant_id` | Composite primary key that permits one readiness per participant for one terminal round and proves room ownership. |
+| `request_id`                            | Browser-generated UUID retained for safe replay after a lost response or reload.                                   |
+| `payload_hash`                          | SHA-256 of the canonical room code and terminal round ID.                                                          |
+| `outcome`                               | Canonical outcome recorded for that participant command: `ready`, `started`, or `list_exhausted`.                  |
+
+The unique `(room_id, participant_id, request_id)` constraint prevents cross-round request reuse for a participant. Both composite foreign keys cascade on room or round cleanup. Under a room lock the service checks an unexpired `playing` room, the authenticated participant, and that the supplied round is the current committed `no_match` round. The first confirmation persists only that participant's readiness. The second persists its own readiness and atomically creates exactly one successor voting round with three unseen movies, or sets the room to `exhausted` when fewer than three remain. RLS is enabled and all browser roles, including `service_role`, have no table privileges; the receipt stays server-only while snapshots expose only aggregate readiness and the authenticated participant's own readiness.
+
 ## Relationship overview
 
 - A movie has many genres through `movie_genres`.
 - A room has selected genres through `room_genres`.
-- A room has participants, filter-save receipts, game-command receipts, ballot receipts, and ordered rounds.
+- A room has participants, filter-save receipts, game-command receipts, no-match readiness receipts, ballot receipts, and ordered rounds.
 - A round has exactly three `round_movies` when round creation completes.
 - A participant votes on the round's movies through `votes`.
 - A participant can complete one immutable `round_ballots` receipt for a round.
+- A participant can persist one `no_match_round_readiness` receipt for a no-match round.
 
 ## Browser access and RLS
 

@@ -3,13 +3,15 @@ import { z } from "zod";
 import { assertNever } from "@/lib/assert-never";
 import { SystemClock, type Clock } from "@/lib/clock";
 import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
-import type { ParticipantRole } from "@/lib/participants/participant-service";
+import { PARTICIPANT_ROLE, type ParticipantRole } from "@/lib/participants/participant-role";
 import { hashStoredParticipantAccessToken } from "@/lib/participants/participant-token";
 import {
   isPublicRoomMovies,
   type ParticipantClientSnapshot,
   type ParticipantOwnBallot,
   type PublicBallotProgress,
+  type PublicNoMatchReadiness,
+  type ParticipantNoMatchReadiness,
   type PublicParticipantSnapshot,
   type PublicRoomMovie,
   type PublicRoomMovies,
@@ -36,6 +38,8 @@ export type ParticipantSnapshotRecord = {
   currentRound: PublicRoomRound | null;
   submittedBallotCount: number;
   ownBallot: ParticipantOwnBallot | null;
+  noMatchReadyCount?: number;
+  ownNoMatchReady?: boolean;
 };
 
 export type ParticipantSnapshotRepository = {
@@ -51,7 +55,7 @@ export type TvParticipantRoomState = {
 };
 
 function getParticipantRoleOrder(role: ParticipantRole): number {
-  return role === "host" ? 0 : 1;
+  return role === PARTICIPANT_ROLE.HOST ? 0 : 1;
 }
 
 export function createParticipantRealtimeTopic(roomId: string): string {
@@ -176,16 +180,19 @@ export class ParticipantSnapshotService {
       participants,
       currentRound: this.publicRound(record.currentRound),
       ballotProgress,
+      ...(record.currentRound?.status === ROUND_STATUS.NO_MATCH ? { noMatchReadiness: this.toNoMatchReadiness(record, participants.length) } : {}),
     };
   }
 
   private toParticipantSnapshot(record: ParticipantSnapshotRecord): ParticipantClientSnapshot {
     const publicSnapshot = this.toPublicSnapshot(record);
     const ownBallot = this.copyOwnBallot(record.ownBallot);
+    const { noMatchReadiness, ...snapshot } = publicSnapshot;
 
     return {
-      ...publicSnapshot,
+      ...snapshot,
       ownBallot,
+      ...(noMatchReadiness === undefined ? {} : { noMatchReadiness: this.toParticipantNoMatchReadiness(record, noMatchReadiness) }),
     };
   }
 
@@ -199,6 +206,14 @@ export class ParticipantSnapshotService {
       totalParticipants,
       readyForResults: record.submittedBallotCount === totalParticipants,
     };
+  }
+
+  private toNoMatchReadiness(record: ParticipantSnapshotRecord, totalParticipants: number): PublicNoMatchReadiness {
+    return { readyCount: record.noMatchReadyCount ?? 0, totalParticipants };
+  }
+
+  private toParticipantNoMatchReadiness(record: ParticipantSnapshotRecord, readiness: PublicNoMatchReadiness): ParticipantNoMatchReadiness {
+    return { ...readiness, ownReady: record.ownNoMatchReady ?? false };
   }
 
   private copyOwnBallot(ballot: ParticipantOwnBallot | null): ParticipantOwnBallot | null {
