@@ -13,13 +13,19 @@ export function NoMatchNextRoundControl({
   roomCode,
   round,
   readiness,
-}: Readonly<{ roomCode: string; round: PublicRoomRound; readiness: ParticipantNoMatchReadiness }>): ReactNode {
+  isNextRoundGenerating,
+}: Readonly<{ roomCode: string; round: PublicRoomRound; readiness: ParticipantNoMatchReadiness; isNextRoundGenerating: boolean }>): ReactNode {
   const t = useTranslations("NoMatchNextRound");
   const [feedback, setFeedback] = useState<"idle" | "retry" | "storage">("idle");
   const [localOutcome, setLocalOutcome] = useState<Readonly<{ roundId: string; outcome: LocalNextRoundOutcome }> | null>(null);
   const [pending, startTransition] = useTransition();
   const submitting = useRef(false);
-  const presentation = getNextRoundControlPresentation({ ownReady: readiness.ownReady, roundId: round.roundId, localOutcome, pending });
+  const presentation = getNextRoundControlPresentation({
+    ownReady: readiness.ownReady,
+    roundId: round.roundId,
+    localOutcome,
+    pending: pending || isNextRoundGenerating,
+  });
 
   if (presentation === "waiting") {
     return <p className="mt-5 rounded-2xl bg-slate-950/60 p-4 text-slate-300 ring-1 ring-white/10">{t("waiting")}</p>;

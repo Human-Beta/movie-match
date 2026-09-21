@@ -61,7 +61,7 @@ export function JoinedRoomState({
 }>): ReactNode {
   const t = useTranslations(JOIN_ROOM_NAMESPACE);
   const tParticipantRole = useTranslations("Common.participantRole");
-  const { snapshot, snapshotEpoch } = useAuthenticatedParticipantRoomSnapshot({
+  const { isNextRoundGenerating, snapshot, snapshotEpoch } = useAuthenticatedParticipantRoomSnapshot({
     initialSnapshot: room.snapshot,
     realtimeTopic: room.realtimeTopic,
     roomCode,
@@ -107,7 +107,12 @@ export function JoinedRoomState({
         <PageShell>
           <RoundResult round={snapshot.currentRound} />
           {snapshot.currentRound.status === ROUND_STATUS.NO_MATCH && snapshot.noMatchReadiness !== undefined ? (
-            <NoMatchNextRoundControl readiness={snapshot.noMatchReadiness} roomCode={roomCode} round={snapshot.currentRound} />
+            <NoMatchNextRoundControl
+              isNextRoundGenerating={isNextRoundGenerating}
+              readiness={snapshot.noMatchReadiness}
+              roomCode={roomCode}
+              round={snapshot.currentRound}
+            />
           ) : null}
         </PageShell>
       );
