@@ -11,6 +11,7 @@ export type ParticipantRealtimeSubscriptionStatus = "SUBSCRIBED" | "TIMED_OUT" |
 
 export type RoomParticipantSubscription = {
   onInvalidation(callback: () => void): void;
+  onNextRoundGenerating?(callback: () => void): void;
   subscribe(callback: (status: ParticipantRealtimeSubscriptionStatus) => void): void;
   dispose(): void;
 };
@@ -23,6 +24,7 @@ export type RoomParticipantSyncOptions<TSnapshot extends PublicParticipantSnapsh
   createSubscription: (realtimeTopic: string) => RoomParticipantSubscription;
   readSnapshot: () => Promise<ParticipantSnapshotActionResult<TSnapshot>>;
   onSnapshot: (snapshot: TSnapshot) => void;
+  onNextRoundGenerating?: () => void;
   onSnapshotReadFailed?: () => void;
   onTransportStatus?: (status: ParticipantRealtimeTransportStatus) => void;
   onSnapshotReadFulfilled?: () => void;
@@ -54,6 +56,7 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
   private readonly coalesceMs: number;
   private readonly createSubscription: RoomParticipantSyncOptions<TSnapshot>["createSubscription"];
   private readonly onSnapshot: RoomParticipantSyncOptions<TSnapshot>["onSnapshot"];
+  private readonly onNextRoundGenerating: RoomParticipantSyncOptions<TSnapshot>["onNextRoundGenerating"];
   private readonly onSnapshotReadFailed: RoomParticipantSyncOptions<TSnapshot>["onSnapshotReadFailed"];
   private readonly onSnapshotReadFulfilled: RoomParticipantSyncOptions<TSnapshot>["onSnapshotReadFulfilled"];
   private readonly onSnapshotReadRejected: RoomParticipantSyncOptions<TSnapshot>["onSnapshotReadRejected"];
@@ -78,6 +81,7 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
     this.createSubscription = options.createSubscription;
     this.currentSnapshot = options.initialSnapshot;
     this.onSnapshot = options.onSnapshot;
+    this.onNextRoundGenerating = options.onNextRoundGenerating;
     this.onSnapshotReadFailed = options.onSnapshotReadFailed;
     this.onSnapshotReadFulfilled = options.onSnapshotReadFulfilled;
     this.onSnapshotReadRejected = options.onSnapshotReadRejected;
@@ -97,6 +101,10 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
     this.generation += 1;
     this.subscription = this.createSubscription(this.realtimeTopic);
     this.subscription.onInvalidation(() => {
+      this.requestRefresh();
+    });
+    this.subscription.onNextRoundGenerating?.(() => {
+      this.onNextRoundGenerating?.();
       this.requestRefresh();
     });
     this.subscription.subscribe(status => {
