@@ -9,6 +9,7 @@ import { createSupabaseRoomParticipantSubscription } from "@/app/room-participan
 import type { ParticipantSnapshotActionResult, PublicParticipantSnapshot } from "@/lib/participants/public-participant-snapshot";
 
 type SyncedParticipantSnapshot<TSnapshot extends PublicParticipantSnapshot> = {
+  isNextRoundGenerating: boolean;
   realtimeTopic: string;
   snapshotEpoch: number;
   snapshot: TSnapshot;
@@ -16,6 +17,7 @@ type SyncedParticipantSnapshot<TSnapshot extends PublicParticipantSnapshot> = {
 };
 
 export type SyncedParticipantRoomSnapshotState<TSnapshot extends PublicParticipantSnapshot> = {
+  isNextRoundGenerating: boolean;
   snapshotEpoch: number;
   snapshot: TSnapshot;
   transportStatus: ParticipantRealtimeTransportStatus;
@@ -33,6 +35,7 @@ export function useSyncedParticipantRoomSnapshot<TSnapshot extends PublicPartici
   resetSnapshot: TSnapshot;
 }>): SyncedParticipantRoomSnapshotState<TSnapshot> {
   const [syncedState, setSyncedState] = useState<SyncedParticipantSnapshot<TSnapshot>>({
+    isNextRoundGenerating: false,
     realtimeTopic,
     snapshotEpoch: 0,
     snapshot: initialSnapshot,
@@ -42,6 +45,7 @@ export function useSyncedParticipantRoomSnapshot<TSnapshot extends PublicPartici
     syncedState.realtimeTopic === realtimeTopic
       ? syncedState
       : {
+          isNextRoundGenerating: false,
           snapshotEpoch: 0,
           snapshot: initialSnapshot,
           transportStatus: "connecting",
@@ -62,11 +66,15 @@ export function useSyncedParticipantRoomSnapshot<TSnapshot extends PublicPartici
       readSnapshot,
       onSnapshot: (nextSnapshot): void => {
         setSyncedState(current => ({
+          isNextRoundGenerating: false,
           realtimeTopic,
           snapshotEpoch: current.realtimeTopic === realtimeTopic ? current.snapshotEpoch + 1 : 0,
           snapshot: nextSnapshot,
           transportStatus: current.realtimeTopic === realtimeTopic ? current.transportStatus : "connecting",
         }));
+      },
+      onNextRoundGenerating: (): void => {
+        setSyncedState(current => ({ ...current, isNextRoundGenerating: true, realtimeTopic }));
       },
       onTransportStatus: (transportStatus): void => {
         setSyncedState(current => {
@@ -78,6 +86,7 @@ export function useSyncedParticipantRoomSnapshot<TSnapshot extends PublicPartici
           }
 
           return {
+            isNextRoundGenerating: false,
             realtimeTopic,
             snapshotEpoch,
             snapshot: sameTopic ? current.snapshot : resetSnapshot,
@@ -87,6 +96,7 @@ export function useSyncedParticipantRoomSnapshot<TSnapshot extends PublicPartici
       },
       onSnapshotReadFailed: (): void => {
         setSyncedState(current => ({
+          isNextRoundGenerating: false,
           realtimeTopic,
           snapshotEpoch: current.realtimeTopic === realtimeTopic ? current.snapshotEpoch + 1 : 0,
           snapshot: current.realtimeTopic === realtimeTopic ? current.snapshot : resetSnapshot,

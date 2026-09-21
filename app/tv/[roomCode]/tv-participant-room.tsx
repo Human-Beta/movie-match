@@ -74,7 +74,10 @@ function TvAdvancedRoom(): ReactNode {
   );
 }
 
-function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnapshot }>): ReactNode {
+function TvPlayingRoom({
+  snapshot,
+  isNextRoundGenerating,
+}: Readonly<{ snapshot: PublicParticipantSnapshot; isNextRoundGenerating: boolean }>): ReactNode {
   const t = useTranslations(TV_ROOM_NAMESPACE);
   const tResult = useTranslations("RoundResult");
   const round = snapshot.currentRound;
@@ -97,6 +100,11 @@ function TvPlayingRoom({ snapshot }: Readonly<{ snapshot: PublicParticipantSnaps
                 <p className="mt-3 text-lg leading-8 text-slate-200">{tResult(getNoMatchMessageKey(round.roundId))}</p>
                 <p className="mt-4 text-xl font-semibold">{tResult("nextQuestion")}</p>
               </section>
+            ) : null}
+            {isNextRoundGenerating ? (
+              <p className="mb-6 text-lg text-slate-300" role="status">
+                {t("game.nextRoundGenerating")}
+              </p>
             ) : null}
             <MovieCards
               renderFooter={
@@ -169,7 +177,7 @@ export function TvParticipantRoom({
 }>): ReactNode {
   const t = useTranslations(TV_ROOM_NAMESPACE);
   const tParticipantRole = useTranslations("Common.participantRole");
-  const { snapshot, transportStatus } = useRoomParticipantSnapshot({ initialSnapshot, realtimeTopic });
+  const { isNextRoundGenerating, snapshot, transportStatus } = useRoomParticipantSnapshot({ initialSnapshot, realtimeTopic });
   const roomView = getParticipantRoomView(snapshot);
   const transportPresentation = getTransportPresentation(transportStatus, {
     connecting: t("connection.connecting"),
@@ -184,7 +192,7 @@ export function TvParticipantRoom({
       return <TvAdvancedRoom />;
     case "playing":
     case "result":
-      return <TvPlayingRoom snapshot={snapshot} />;
+      return <TvPlayingRoom isNextRoundGenerating={isNextRoundGenerating} snapshot={snapshot} />;
     case "exhausted":
       return <TvExhaustedRoom />;
     case "waiting":

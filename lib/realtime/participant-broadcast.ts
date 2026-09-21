@@ -1,4 +1,4 @@
-import { PARTICIPANTS_CHANGED_EVENT, ROOM_CHANGED_EVENT } from "@/lib/realtime/participant-events";
+import { NEXT_ROUND_GENERATING_EVENT, PARTICIPANTS_CHANGED_EVENT, ROOM_CHANGED_EVENT } from "@/lib/realtime/participant-events";
 
 export const PARTICIPANT_BROADCAST_MAX_ATTEMPTS = 3;
 export const PARTICIPANT_BROADCAST_REQUEST_TIMEOUT_MS = 2_000;
@@ -50,6 +50,10 @@ export class ParticipantBroadcastPublisher {
 
   async publishRoomChanged(realtimeTopic: string): Promise<boolean> {
     return this.publish(realtimeTopic, ROOM_CHANGED_EVENT);
+  }
+
+  async publishNextRoundGenerating(realtimeTopic: string): Promise<boolean> {
+    return this.publish(realtimeTopic, NEXT_ROUND_GENERATING_EVENT);
   }
 
   private async publish(realtimeTopic: string, event: string): Promise<boolean> {

@@ -1,6 +1,6 @@
 import type { ParticipantRealtimeSubscriptionStatus, RoomParticipantSubscription } from "@/app/room-participants/room-participant-sync";
 import { browserTimerScheduler, type TimerId, type TimerScheduler } from "@/app/room-participants/timer-scheduler";
-import { PARTICIPANTS_CHANGED_EVENT, ROOM_CHANGED_EVENT } from "@/lib/realtime/participant-events";
+import { NEXT_ROUND_GENERATING_EVENT, PARTICIPANTS_CHANGED_EVENT, ROOM_CHANGED_EVENT } from "@/lib/realtime/participant-events";
 
 export type BroadcastChannel = {
   on(type: "broadcast", filter: { event: string }, callback: () => void): BroadcastChannel;
@@ -18,6 +18,7 @@ type SharedRoomChannel<TChannel extends BroadcastChannel> = {
   channel: TChannel;
   cleanupTimer: TimerId | null;
   invalidationListeners: Set<() => void>;
+  nextRoundGeneratingListeners: Set<() => void>;
   ownerCount: number;
   statusListeners: Set<(status: ParticipantRealtimeSubscriptionStatus) => void>;
   subscribed: boolean;
@@ -35,6 +36,7 @@ export class RoomParticipantSubscriptionManager<TChannel extends BroadcastChanne
     const sharedChannel = this.getOrCreateSharedChannel(realtimeTopic);
     let disposed = false;
     let invalidationListener: (() => void) | null = null;
+    let nextRoundGeneratingListener: (() => void) | null = null;
     let statusListener: ((status: ParticipantRealtimeSubscriptionStatus) => void) | null = null;
 
     sharedChannel.ownerCount += 1;
@@ -51,6 +53,10 @@ export class RoomParticipantSubscriptionManager<TChannel extends BroadcastChanne
 
         invalidationListener = callback;
         sharedChannel.invalidationListeners.add(callback);
+      },
+      onNextRoundGenerating: (callback): void => {
+        nextRoundGeneratingListener = callback;
+        sharedChannel.nextRoundGeneratingListeners.add(callback);
       },
       subscribe: (callback): void => {
         if (disposed) {
@@ -74,6 +80,9 @@ export class RoomParticipantSubscriptionManager<TChannel extends BroadcastChanne
 
         if (invalidationListener !== null) {
           sharedChannel.invalidationListeners.delete(invalidationListener);
+        }
+        if (nextRoundGeneratingListener !== null) {
+          sharedChannel.nextRoundGeneratingListeners.delete(nextRoundGeneratingListener);
         }
 
         if (statusListener !== null) {
@@ -106,6 +115,7 @@ export class RoomParticipantSubscriptionManager<TChannel extends BroadcastChanne
       channel,
       cleanupTimer: null,
       invalidationListeners: new Set(),
+      nextRoundGeneratingListeners: new Set(),
       ownerCount: 0,
       statusListeners: new Set(),
       subscribed: false,
@@ -116,7 +126,15 @@ export class RoomParticipantSubscriptionManager<TChannel extends BroadcastChanne
         listener();
       }
     };
-    channel.on("broadcast", { event: PARTICIPANTS_CHANGED_EVENT }, invalidate).on("broadcast", { event: ROOM_CHANGED_EVENT }, invalidate);
+    const announceNextRoundGeneration = (): void => {
+      for (const listener of sharedChannel.nextRoundGeneratingListeners) {
+        listener();
+      }
+    };
+    channel
+      .on("broadcast", { event: PARTICIPANTS_CHANGED_EVENT }, invalidate)
+      .on("broadcast", { event: ROOM_CHANGED_EVENT }, invalidate)
+      .on("broadcast", { event: NEXT_ROUND_GENERATING_EVENT }, announceNextRoundGeneration);
     this.channels.set(realtimeTopic, sharedChannel);
 
     return sharedChannel;

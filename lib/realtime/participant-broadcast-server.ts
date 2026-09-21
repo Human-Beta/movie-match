@@ -16,3 +16,7 @@ export async function notifyParticipantRoomChanged(roomId: string): Promise<void
 export async function notifyRoomChanged(roomId: string): Promise<void> {
   await publisher.publishRoomChanged(createParticipantRealtimeTopic(roomId));
 }
+
+export async function notifyNextRoundGenerating(roomId: string): Promise<void> {
+  await publisher.publishNextRoundGenerating(createParticipantRealtimeTopic(roomId));
+}

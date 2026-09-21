@@ -7,7 +7,7 @@ import { cookies } from "next/headers";
 import { confirmNoMatchNextRound } from "@/lib/no-match-next-round";
 import { nextRoundInputSchema, type NextRoundInput } from "@/lib/no-match-next-round/next-round-input";
 import { getParticipantCookieName } from "@/lib/participants/participant-cookie";
-import { notifyRoomChanged } from "@/lib/realtime/participant-broadcast-server";
+import { notifyNextRoundGenerating, notifyRoomChanged } from "@/lib/realtime/participant-broadcast-server";
 
 export type PublicNextRoundResult =
   | { status: "ready" }
@@ -35,7 +35,11 @@ export async function confirmNoMatchNextRoundAction(input: NextRoundInput): Prom
     }
 
     try {
-      await notifyRoomChanged(result.roomId);
+      if (result.outcome === "started" || result.outcome === "list_exhausted") {
+        await notifyNextRoundGenerating(result.roomId);
+      } else {
+        await notifyRoomChanged(result.roomId);
+      }
     } catch {
       // Snapshot polling recovers authoritative state after a transport failure.
     }
