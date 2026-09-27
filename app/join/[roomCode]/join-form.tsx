@@ -112,7 +112,7 @@ export function JoinRoomForm({ roomCode }: Readonly<{ roomCode: string }>): Reac
               disabled={isPending || !isPrepared}
               id="name"
               name="name"
-              placeholder={t("form.namePlaceholder")}
+              placeholder={t("form.nameLabel")}
               required
               type="text"
             />
