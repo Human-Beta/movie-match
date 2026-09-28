@@ -5,15 +5,14 @@ import { useEffect, useRef, useState, useTransition, type ReactNode } from "reac
 
 import { restartMovieListAction } from "@/app/join/[roomCode]/game-actions";
 import { GameCommandRequestStorage, type PendingGameCommand } from "@/app/join/[roomCode]/game-command-request-storage";
+import type { GameCommandFeedback } from "@/app/join/[roomCode]/game-command-feedback";
 import { PrimaryButton } from "@/app/ui/primary-button";
 import { assertNever } from "@/lib/assert-never";
-
-type RestartFeedback = "idle" | "retry" | "storage" | "unavailable" | "conflict" | "validation_error";
 
 export function RestartListControl({ roomCode }: Readonly<{ roomCode: string }>): ReactNode {
   const t = useTranslations("GameRound");
   const [pendingRequest, setPendingRequest] = useState<PendingGameCommand | null>(null);
-  const [feedback, setFeedback] = useState<RestartFeedback>("idle");
+  const [feedback, setFeedback] = useState<GameCommandFeedback>("idle");
   const [storageReady, setStorageReady] = useState(false);
   const [restarting, startRestarting] = useTransition();
   const submitting = useRef(false);
@@ -86,6 +85,9 @@ export function RestartListControl({ roomCode }: Readonly<{ roomCode: string }>)
           case "conflict":
           case "validation_error":
             setFeedback(result.status);
+            return;
+          case "closed":
+            setFeedback("unavailable");
             return;
           default:
             return assertNever(result);

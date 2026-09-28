@@ -17,6 +17,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { ROUND_STATUS, ROUND_STATUS_VALUES } from "@/lib/game-rounds/round-status";
+import { GAME_COMMAND_OUTCOME_VALUES, GAME_COMMAND_VALUES } from "@/lib/game-rounds/game-command";
 import { NO_MATCH_NEXT_ROUND_OUTCOME_VALUES } from "@/lib/no-match-next-round/next-round-outcome";
 import { PARTICIPANT_ROLE_VALUES } from "@/lib/participants/participant-role";
 
@@ -30,9 +31,9 @@ export const roundStatusEnum = pgEnum("round_status", ROUND_STATUS_VALUES);
 
 export const voteValueEnum = pgEnum("vote_value", ["want_to_watch", "could_watch", "not_now", "no"]);
 
-export const roomGameCommandEnum = pgEnum("room_game_command", ["start", "restart"]);
+export const roomGameCommandEnum = pgEnum("room_game_command", GAME_COMMAND_VALUES);
 
-export const roomGameCommandOutcomeEnum = pgEnum("room_game_command_outcome", ["started", "catalog_insufficient", "list_exhausted"]);
+export const roomGameCommandOutcomeEnum = pgEnum("room_game_command_outcome", GAME_COMMAND_OUTCOME_VALUES);
 
 export const noMatchNextRoundOutcomeEnum = pgEnum("no_match_next_round_outcome", NO_MATCH_NEXT_ROUND_OUTCOME_VALUES);
 

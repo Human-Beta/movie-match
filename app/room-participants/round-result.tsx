@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { MatchActionsSlot } from "@/app/room-participants/match-actions-slot";
 import { getMatchPresentation } from "@/app/room-participants/match-presentation";
+import { PostMatchControls } from "@/app/join/[roomCode]/post-match-controls";
 import { getVoteEmoji } from "@/app/room-participants/vote-emoji";
 import { getNoMatchMessageKey } from "@/lib/game-rounds/no-match-message";
 import { ROUND_STATUS } from "@/lib/game-rounds/round-status";
@@ -18,7 +19,11 @@ const VOTE_LABEL_KEY = {
   no: "no",
 } as const;
 
-export function RoundResult({ participantRole, round }: Readonly<{ participantRole: ParticipantRole; round: PublicRoomRound }>): ReactNode {
+export function RoundResult({
+  participantRole,
+  roomCode,
+  round,
+}: Readonly<{ participantRole: ParticipantRole; roomCode: string; round: PublicRoomRound }>): ReactNode {
   const t = useTranslations("RoundResult");
   const result = round.result;
 
@@ -35,19 +40,24 @@ export function RoundResult({ participantRole, round }: Readonly<{ participantRo
 
     return (
       <section aria-labelledby="match-result-title">
-        <p className="text-sm font-semibold tracking-[0.2em] text-emerald-300 uppercase">{t("matchStatus")}</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight" id="match-result-title">
-          {t("matchTitle")}
-        </h1>
-        <p className="mt-3 text-slate-300">{t(`finalMessages.${match.finalMessageKey}`)}</p>
-        <article className="mt-6 rounded-2xl border border-emerald-300/40 bg-emerald-950/40 p-5 shadow-[0_0_28px_rgba(52,211,153,0.24)] ring-1 ring-emerald-300/25">
-          <p className="text-sm font-semibold text-emerald-200" aria-label={t("selectedMovieLabel", { title: match.selectedMovie.title })}>
-            {t("selected")}
-          </p>
-          <h2 className="mt-2 text-xl font-bold break-words text-white">{match.selectedMovie.title}</h2>
-          <MovieVotes participantRole={participantRole} votes={match.selectedVotes} />
-        </article>
-        <MatchActionsSlot participantRole={participantRole} />
+        <div role="status" aria-atomic="true">
+          <p className="text-sm font-semibold tracking-[0.2em] text-emerald-300 uppercase">{t("matchStatus")}</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight" id="match-result-title">
+            {t("matchTitle")}
+          </h1>
+          <p className="mt-3 text-slate-300">{t(`finalMessages.${match.finalMessageKey}`)}</p>
+          <article className="mt-6 rounded-2xl border border-emerald-300/40 bg-emerald-950/40 p-5 shadow-[0_0_28px_rgba(52,211,153,0.24)] ring-1 ring-emerald-300/25">
+            <p className="text-sm font-semibold text-emerald-200" aria-label={t("selectedMovieLabel", { title: match.selectedMovie.title })}>
+              {t("selected")}
+            </p>
+            <h2 className="mt-2 text-xl font-bold break-words text-white">{match.selectedMovie.title}</h2>
+            <MovieVotes participantRole={participantRole} votes={match.selectedVotes} />
+          </article>
+        </div>
+        {participantRole === "guest" ? <p className="mt-6 text-slate-300">{t("guestWaiting")}</p> : null}
+        <MatchActionsSlot participantRole={participantRole}>
+          <PostMatchControls roomCode={roomCode} />
+        </MatchActionsSlot>
       </section>
     );
   }

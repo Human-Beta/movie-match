@@ -75,6 +75,21 @@ function TvAdvancedRoom(): ReactNode {
   );
 }
 
+function TvClosedRoom(): ReactNode {
+  const t = useTranslations(TV_ROOM_NAMESPACE);
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-50">
+      <section className="max-w-xl text-center">
+        <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
+        <h1 className="text-4xl font-bold tracking-tight">{t("closed.title")}</h1>
+        <p className="mt-5 text-lg leading-8 text-slate-300">{t("closed.description")}</p>
+        <NewRoomLink />
+      </section>
+    </main>
+  );
+}
+
 function TvPlayingRoom({
   snapshot,
   isNextRoundGenerating,
@@ -136,6 +151,11 @@ function TvPlayingRoom({
                       submitted: snapshot.ballotProgress.submittedCount,
                       total: snapshot.ballotProgress.totalParticipants,
                     })}
+              </p>
+            ) : null}
+            {match !== null ? (
+              <p className="mt-8 rounded-2xl bg-slate-900 p-5 text-lg text-slate-200 ring-1 ring-white/10" role="status">
+                {t("game.hostPostMatch")}
               </p>
             ) : null}
           </>
@@ -205,6 +225,8 @@ export function TvParticipantRoom({
       return <TvUnavailableRoom />;
     case "advanced":
       return <TvAdvancedRoom />;
+    case "closed":
+      return <TvClosedRoom />;
     case "playing":
     case "result":
       return <TvPlayingRoom isNextRoundGenerating={isNextRoundGenerating} snapshot={snapshot} />;

@@ -5,6 +5,7 @@ import type { SaveRoomFiltersInput } from "@/lib/room-filters/room-filter-input"
 import { hashRoomFilterContract } from "@/lib/room-filters/filter-contract";
 import type { FilterGenre, ReadRoomFiltersResult, RoomFilterValues, SaveRoomFiltersResult } from "@/lib/room-filters/room-filter-values";
 import type { RoomStatus } from "@/lib/rooms/room-service";
+import { isRoomExpired } from "@/lib/rooms/room-expiration";
 
 export type FilterRoom = { status: RoomStatus; expiresAt: Date };
 export type LockedFilterRoom = {
@@ -93,7 +94,7 @@ export class RoomFilterService {
   }
 
   private isFilterEditable(room: FilterRoom | null): boolean {
-    return room !== null && room.status === "waiting" && room.expiresAt.getTime() > this.clock.now().getTime();
+    return room !== null && room.status === "waiting" && !isRoomExpired(room.expiresAt, this.clock.now());
   }
 
   private publicFilters(filters: RoomFilterValues): RoomFilterValues {

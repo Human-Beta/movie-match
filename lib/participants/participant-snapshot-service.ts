@@ -24,6 +24,7 @@ import {
 import { PARTICIPANT_ROOM_TOPIC_PREFIX } from "@/lib/realtime/participant-events";
 import { normalizeRoomCode } from "@/lib/rooms/room-code";
 import type { RoomStatus } from "@/lib/rooms/room-service";
+import { isRoomExpired } from "@/lib/rooms/room-expiration";
 
 const roomIdSchema = z.uuid();
 
@@ -97,11 +98,11 @@ export class ParticipantSnapshotService {
       return null;
     }
 
-    const snapshot = this.toPublicSnapshot(record);
-
-    if (snapshot.roomState === "closed") {
+    if (isRoomExpired(record.room.expiresAt, this.clock.now())) {
       return null;
     }
+
+    const snapshot = this.toPublicSnapshot(record);
 
     return {
       roomCode: record.room.code,
@@ -127,11 +128,11 @@ export class ParticipantSnapshotService {
       return null;
     }
 
-    const snapshot = this.toParticipantSnapshot(record);
-
-    if (snapshot.roomState === "closed") {
+    if (isRoomExpired(record.room.expiresAt, this.clock.now())) {
       return null;
     }
+
+    const snapshot = this.toParticipantSnapshot(record);
 
     return {
       realtimeTopic: createParticipantRealtimeTopic(record.room.id),
@@ -291,7 +292,7 @@ export class ParticipantSnapshotService {
   }
 
   private getPublicRoomState(status: RoomStatus, expiresAt: Date): RoomStatus {
-    if (status === "closed" || expiresAt.getTime() <= this.clock.now().getTime()) {
+    if (status === "closed" || isRoomExpired(expiresAt, this.clock.now())) {
       return "closed";
     }
 

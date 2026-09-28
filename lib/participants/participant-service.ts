@@ -4,6 +4,7 @@ import { PARTICIPANT_ROLE, type ParticipantRole } from "@/lib/participants/parti
 import { hashParticipantAccessToken, hashStoredParticipantAccessToken } from "@/lib/participants/participant-token";
 import { normalizeRoomCode } from "@/lib/rooms/room-code";
 import type { RoomStatus } from "@/lib/rooms/room-service";
+import { isRoomExpired } from "@/lib/rooms/room-expiration";
 
 export type ParticipantIdentity = {
   id: string;
@@ -78,7 +79,7 @@ export class ParticipantService {
     }
 
     const snapshot = await this.repository.inspectRoom(normalizedRoomCode, null);
-    const room = this.getOpenRoomForSession(snapshot.room);
+    const room = this.getNonExpiredRoom(snapshot.room);
 
     if (room?.status !== "waiting") {
       return null;
@@ -96,7 +97,7 @@ export class ParticipantService {
 
     const accessTokenHash = hashStoredParticipantAccessToken(storedAccessToken);
     const snapshot = await this.repository.inspectRoom(normalizedRoomCode, accessTokenHash);
-    const room = this.getOpenRoomForSession(snapshot.room);
+    const room = this.getNonExpiredRoom(snapshot.room);
 
     if (room === null) {
       return { status: "unavailable" };
@@ -200,7 +201,15 @@ export class ParticipantService {
   }
 
   private getOpenRoomForSession(room: ParticipantRoom | null): ParticipantRoom | null {
-    if (room === null || room.status === "closed" || room.expiresAt.getTime() <= this.clock.now().getTime()) {
+    if (room === null || room.status === "closed" || isRoomExpired(room.expiresAt, this.clock.now())) {
+      return null;
+    }
+
+    return room;
+  }
+
+  private getNonExpiredRoom(room: ParticipantRoom | null): ParticipantRoom | null {
+    if (room === null || isRoomExpired(room.expiresAt, this.clock.now())) {
       return null;
     }
 

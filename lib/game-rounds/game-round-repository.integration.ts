@@ -168,6 +168,16 @@ test("PostgreSQL game rounds preserve atomic generation, idempotency, filters, a
     return round.id;
   }
 
+  async function createMatchedRound(room: TestRoom, movieIds: number[], roundNumber = 1): Promise<string> {
+    const roundRows = await database.insert(rounds).values({ roomId: room.id, roundNumber, status: "matched" }).returning({ id: rounds.id });
+    const round = roundRows.at(0);
+    assert.ok(round);
+    await database
+      .insert(roundMovies)
+      .values(movieIds.map((movieId, index) => ({ roomId: room.id, roundId: round.id, movieId, position: index + 1, isSelected: index === 0 })));
+    return round.id;
+  }
+
   await context.test("enforces host, participant-count, state, and expiration guards without writes", async () => {
     const room = await createRoom();
     assert.deepEqual(await service.start({ roomCode: room.code, requestId: randomUUID() }, room.guestToken), { status: "unavailable" });
@@ -364,6 +374,66 @@ test("PostgreSQL game rounds preserve atomic generation, idempotency, filters, a
     assert.equal((await database.select().from(roundMovies).where(eq(roundMovies.roundId, oldRoundId))).length, 3);
     await service.restart(input, room.hostToken);
     assert.equal((await database.select().from(rounds).where(eq(rounds.id, oldRoundId))).length, 1);
+  });
+
+  await context.test("search again atomically preserves matched history and creates one unseen next round", async () => {
+    const room = await createRoom({ status: "matched" });
+    const matchedRoundId = await createMatchedRound(room, [eligibleA.id, eligibleB.id, eligibleC.id], 4);
+    const input = { roomCode: room.code, requestId: randomUUID() };
+    const originalExpiresAt = room.expiresAt;
+
+    assert.deepEqual(await service.searchAgain(input, room.hostToken), { status: "completed", outcome: "started", roomId: room.id });
+    const roomState = (await database.select({ status: rooms.status, expiresAt: rooms.expiresAt }).from(rooms).where(eq(rooms.id, room.id))).at(0);
+    assert.ok(roomState);
+    assert.equal(roomState.status, "playing");
+    assert.equal(roomState.expiresAt.getTime(), originalExpiresAt.getTime());
+    assert.equal((await database.select().from(rounds).where(eq(rounds.id, matchedRoundId))).length, 1);
+    const roomRounds = await database
+      .select({ id: rounds.id, roundNumber: rounds.roundNumber, status: rounds.status })
+      .from(rounds)
+      .where(eq(rounds.roomId, room.id));
+    assert.equal(roomRounds.length, 2);
+    const nextRound = roomRounds.find(round => round.roundNumber === 5) ?? null;
+    assert.ok(nextRound);
+    assert.equal(nextRound.status, "voting");
+    const nextMovies = await database
+      .select({ movieId: roundMovies.movieId, position: roundMovies.position })
+      .from(roundMovies)
+      .where(eq(roundMovies.roundId, nextRound.id));
+    assert.deepEqual(nextMovies.map(movie => movie.position).sort(), [1, 2, 3]);
+    assert.ok(nextMovies.every(movie => ![eligibleA.id, eligibleB.id, eligibleC.id].includes(movie.movieId)));
+    assert.equal((await database.select().from(roomGameCommands).where(eq(roomGameCommands.roomId, room.id))).length, 1);
+    assert.equal((await service.searchAgain(input, room.hostToken)).status, "completed");
+    assert.equal((await database.select().from(rounds).where(eq(rounds.roomId, room.id))).length, 2);
+    assert.deepEqual(await service.searchAgain(input, room.guestToken), { status: "unavailable" });
+  });
+
+  await context.test("search again exhausts without a partial round, while close is terminal and serialized", async () => {
+    const exhaustedRoom = await createRoom({ status: "matched" });
+    await createMatchedRound(exhaustedRoom, [eligibleA.id, eligibleB.id, eligibleC.id]);
+    await setFilters(exhaustedRoom.id, { netflixOnly: false, underTwoHours: false, yearFilter: "any", genreIds: [twoGenre.id] });
+    const exhaustedResult = await service.searchAgain({ roomCode: exhaustedRoom.code, requestId: randomUUID() }, exhaustedRoom.hostToken);
+    assert.equal(exhaustedResult.status === "completed" ? exhaustedResult.outcome : null, "list_exhausted");
+    assert.equal((await database.select({ status: rooms.status }).from(rooms).where(eq(rooms.id, exhaustedRoom.id))).at(0)?.status, "exhausted");
+    assert.equal((await database.select().from(rounds).where(eq(rounds.roomId, exhaustedRoom.id))).length, 1);
+
+    const concurrentRoom = await createRoom({ status: "matched" });
+    await createMatchedRound(concurrentRoom, [eligibleA.id, eligibleB.id, eligibleC.id]);
+    const [searchResult, closeResult] = await Promise.all([
+      service.searchAgain({ roomCode: concurrentRoom.code, requestId: randomUUID() }, concurrentRoom.hostToken),
+      service.close({ roomCode: concurrentRoom.code, requestId: randomUUID() }, concurrentRoom.hostToken),
+    ]);
+    assert.equal([searchResult, closeResult].filter(result => result.status === "completed").length, 1);
+    assert.equal([searchResult, closeResult].filter(result => result.status === "unavailable").length, 1);
+
+    const closeRoom = await createRoom({ status: "matched" });
+    const closeRoundId = await createMatchedRound(closeRoom, [eligibleA.id, eligibleB.id, eligibleC.id]);
+    const closeInput = { roomCode: closeRoom.code, requestId: randomUUID() };
+    assert.deepEqual(await service.close(closeInput, closeRoom.hostToken), { status: "completed", outcome: "closed", roomId: closeRoom.id });
+    assert.equal((await database.select({ status: rooms.status }).from(rooms).where(eq(rooms.id, closeRoom.id))).at(0)?.status, "closed");
+    assert.equal((await database.select().from(rounds).where(eq(rounds.id, closeRoundId))).length, 1);
+    assert.equal((await service.close(closeInput, closeRoom.hostToken)).status, "completed");
+    assert.deepEqual(await service.searchAgain(closeInput, closeRoom.hostToken), { status: "conflict" });
   });
 
   await context.test("returns one ordered public round snapshot without credentials or receipt fields", async () => {

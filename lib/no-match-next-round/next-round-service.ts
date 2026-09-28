@@ -5,6 +5,7 @@ import { NO_MATCH_NEXT_ROUND_OUTCOME, type NoMatchNextRoundOutcome } from "@/lib
 import { hashStoredParticipantAccessToken } from "@/lib/participants/participant-token";
 import type { ParticipantRole } from "@/lib/participants/participant-role";
 import { sha256Hex } from "@/lib/sha256";
+import { isRoomExpired } from "@/lib/rooms/room-expiration";
 
 import type { NextRoundInput } from "@/lib/no-match-next-round/next-round-input";
 
@@ -73,7 +74,7 @@ export class NoMatchNextRoundService {
     const payloadHash = sha256Hex(JSON.stringify({ roomCode: input.roomCode, roundId: input.roundId }));
 
     return this.repository.inLockedRoom(input.roomCode, async (room, locked): Promise<NoMatchNextRoundResult> => {
-      if (room?.status !== "playing" || room.expiresAt.getTime() <= this.clock.now().getTime()) {
+      if (room?.status !== "playing" || isRoomExpired(room.expiresAt, this.clock.now())) {
         return { status: "unavailable" };
       }
 

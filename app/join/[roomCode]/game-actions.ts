@@ -5,7 +5,7 @@ import "server-only";
 import { cookies } from "next/headers";
 
 import { gameCommandInputSchema, type GameCommandInput } from "@/lib/game-rounds/game-command-input";
-import { restartMovieList, startGame } from "@/lib/game-rounds";
+import { closeMatchedRoom, restartMovieList, searchAgain, startGame } from "@/lib/game-rounds";
 import type { GameCommandResult } from "@/lib/game-rounds/game-round-service";
 import { getParticipantCookieName } from "@/lib/participants/participant-cookie";
 import { notifyRoomChanged } from "@/lib/realtime/participant-broadcast-server";
@@ -14,6 +14,7 @@ export type PublicGameCommandResult =
   | { status: "started" }
   | { status: "catalog_insufficient" }
   | { status: "list_exhausted" }
+  | { status: "closed" }
   | { status: "unavailable" }
   | { status: "validation_error" }
   | { status: "conflict" }
@@ -25,6 +26,14 @@ export async function startGameAction(input: GameCommandInput): Promise<PublicGa
 
 export async function restartMovieListAction(input: GameCommandInput): Promise<PublicGameCommandResult> {
   return runGameCommand(input, restartMovieList);
+}
+
+export async function searchAgainAction(input: GameCommandInput): Promise<PublicGameCommandResult> {
+  return runGameCommand(input, searchAgain);
+}
+
+export async function closeMatchedRoomAction(input: GameCommandInput): Promise<PublicGameCommandResult> {
+  return runGameCommand(input, closeMatchedRoom);
 }
 
 async function runGameCommand(

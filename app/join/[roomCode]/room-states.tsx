@@ -105,7 +105,7 @@ export function JoinedRoomState({
 
       return (
         <PageShell>
-          <RoundResult participantRole={participant.role} round={snapshot.currentRound} />
+          <RoundResult participantRole={participant.role} roomCode={roomCode} round={snapshot.currentRound} />
           {snapshot.currentRound.status === ROUND_STATUS.NO_MATCH && snapshot.noMatchReadiness !== undefined ? (
             <NoMatchNextRoundControl
               isNextRoundGenerating={isNextRoundGenerating}
@@ -122,6 +122,13 @@ export function JoinedRoomState({
           <h1 className="text-3xl font-bold tracking-tight">{t("status.exhaustedTitle")}</h1>
           <p className="mt-4 text-lg leading-8 text-slate-300">{t("status.exhaustedDescription")}</p>
           {participant.role === "host" ? <RestartListControl roomCode={roomCode} /> : null}
+        </PageShell>
+      );
+    case "closed":
+      return (
+        <PageShell>
+          <h1 className="text-3xl font-bold tracking-tight">{t("status.closedTitle")}</h1>
+          <p className="mt-4 text-lg leading-8 text-slate-300">{t("status.closedDescription")}</p>
         </PageShell>
       );
     case "advanced":

@@ -37,6 +37,7 @@ export type RoomParticipantSyncOptions<TSnapshot extends PublicParticipantSnapsh
 function shouldPoll(snapshot: PublicParticipantSnapshot): boolean {
   return (
     snapshot.roomState === "waiting" ||
+    snapshot.roomState === "matched" ||
     snapshot.roomState === "exhausted" ||
     (snapshot.roomState === "playing" &&
       ((snapshot.currentRound?.status === ROUND_STATUS.VOTING && snapshot.ballotProgress?.readyForResults === false) ||
