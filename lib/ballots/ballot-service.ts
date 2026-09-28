@@ -3,6 +3,7 @@ import { hashStoredParticipantAccessToken } from "@/lib/participants/participant
 import type { RoomStatus } from "@/lib/rooms/room-service";
 import { sha256Hex } from "@/lib/sha256";
 import { RoundResolver, type LockedRoundResolution } from "@/lib/matches/round-resolver";
+import { isRoomExpired } from "@/lib/rooms/room-expiration";
 
 import type { BallotInput } from "@/lib/ballots/ballot-input";
 import type { BallotVoteInput } from "@/lib/ballots/ballot-vote";
@@ -61,7 +62,7 @@ export class BallotService {
     const payloadHash = this.hashPayload(input);
 
     return this.repository.inLockedRoom(input.roomCode, async (room, locked): Promise<BallotSubmissionResult> => {
-      if (room === null || room.status === "closed" || room.expiresAt.getTime() <= this.clock.now().getTime()) {
+      if (room === null || room.status === "closed" || isRoomExpired(room.expiresAt, this.clock.now())) {
         return { status: "unavailable" };
       }
 

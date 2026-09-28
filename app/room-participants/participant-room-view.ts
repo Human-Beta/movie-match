@@ -2,7 +2,7 @@ import { assertNever } from "@/lib/assert-never";
 import { ROUND_STATUS, isTerminalRoundStatus } from "@/lib/game-rounds/round-status";
 import type { PublicParticipantSnapshot } from "@/lib/participants/public-participant-snapshot";
 
-export type ParticipantRoomView = "waiting" | "ready" | "playing" | "result" | "exhausted" | "unavailable" | "advanced";
+export type ParticipantRoomView = "waiting" | "ready" | "playing" | "result" | "exhausted" | "closed" | "unavailable" | "advanced";
 
 export function getParticipantRoomView(snapshot: PublicParticipantSnapshot): ParticipantRoomView {
   switch (snapshot.roomState) {
@@ -15,7 +15,7 @@ export function getParticipantRoomView(snapshot: PublicParticipantSnapshot): Par
     case "matched":
       return snapshot.currentRound?.status === ROUND_STATUS.MATCHED ? "result" : "advanced";
     case "closed":
-      return "unavailable";
+      return "closed";
     default:
       return assertNever(snapshot.roomState);
   }

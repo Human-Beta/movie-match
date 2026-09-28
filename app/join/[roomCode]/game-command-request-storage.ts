@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { GameCommand } from "@/lib/game-rounds/game-round-service";
+import type { GameCommand } from "@/lib/game-rounds/game-command";
 
 const pendingGameCommandSchema = z.strictObject({
   requestId: z.uuid(),

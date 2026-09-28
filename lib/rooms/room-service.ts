@@ -1,6 +1,7 @@
 import { SystemClock, type Clock } from "@/lib/clock";
 import { RoomCreationAttemptsExhaustedError, RoomCreationRequestUnavailableError } from "@/lib/rooms/errors";
 import { generateRoomCode, normalizeRoomCode } from "@/lib/rooms/room-code";
+import { isRoomExpired } from "@/lib/rooms/room-expiration";
 
 export const ROOM_CREATE_MAX_ATTEMPTS = 5;
 
@@ -38,7 +39,7 @@ export class RoomService {
   }
 
   isRoomAvailable(room: RoomSnapshot | null): room is RoomSnapshot {
-    return room !== null && room.status !== "closed" && room.expiresAt.getTime() > this.clock.now().getTime();
+    return room !== null && room.status !== "closed" && !isRoomExpired(room.expiresAt, this.clock.now());
   }
 
   async findAvailableRoom(roomCode: string): Promise<RoomSnapshot | null> {

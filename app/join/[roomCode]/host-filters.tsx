@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useTransition, type ReactNode } from "reac
 import { readRoomFiltersAction, saveRoomFiltersAction } from "@/app/join/[roomCode]/filter-actions";
 import { FilterRequestStorage } from "@/app/join/[roomCode]/filter-request-storage";
 import { startGameAction, type PublicGameCommandResult } from "@/app/join/[roomCode]/game-actions";
+import type { GameCommandFeedback } from "@/app/join/[roomCode]/game-command-feedback";
 import { GameCommandRequestStorage, type PendingGameCommand } from "@/app/join/[roomCode]/game-command-request-storage";
 import { PrimaryButton } from "@/app/ui/primary-button";
 import { assertNever } from "@/lib/assert-never";
@@ -30,8 +31,7 @@ type FilterLoadState =
     };
 type Feedback = "idle" | "saved" | "retry" | "storage" | "validation_error" | "conflict";
 type VisibleFeedback = Exclude<Feedback, "idle">;
-type GameFeedback =
-  "idle" | "retry" | "storage" | "started" | "catalog_insufficient" | "list_exhausted" | "unavailable" | "validation_error" | "conflict";
+type GameFeedback = GameCommandFeedback | "started" | "catalog_insufficient" | "list_exhausted";
 type VisibleGameFeedback = Exclude<GameFeedback, "idle">;
 
 export function HostFilters({ participantCount, roomCode }: Readonly<{ participantCount: number; roomCode: string }>): ReactNode {
@@ -277,6 +277,9 @@ function HostFilterForm({
       case "validation_error":
       case "conflict":
         setGameFeedback(result.status);
+        return;
+      case "closed":
+        setGameFeedback("unavailable");
         return;
       default:
         return assertNever(result);
