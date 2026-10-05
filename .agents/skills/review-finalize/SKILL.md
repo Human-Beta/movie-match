@@ -81,7 +81,7 @@ Report these gates in both modes:
 6. `pnpm verify` and task-specific checks pass for the current content.
 7. The pull request title and body accurately describe the final behavior and verification.
 8. No pending private review remains and revalidation of the durable review log finds no unresolved changed-line issue.
-9. GitHub checks are green for the current remote head. A history rewrite makes previous check results stale.
+9. Report GitHub check status for the current remote head. A history rewrite makes previous check results stale; pending or failing checks do not block apply after local verification, but must be reported accurately.
 10. Applicable documentation matches the current implementation, with no unresolved blocker-level mismatch.
 11. Automated tests cover the task's material acceptance, failure, boundary, concurrency, retry, and data-integrity behavior, or every remaining gap is explicitly reported and accepted with a reason.
 
@@ -96,7 +96,7 @@ Only in `apply` mode, after all approval and preflight conditions hold:
 5. Compare the resulting complete diff with the pre-rewrite content and approved convention edits. Stop before pushing if anything else changed.
 6. Run `pnpm verify` and every relevant task-specific check.
 7. Fetch the remote head again. Push rewritten history only with `--force-with-lease` against the exact expected remote SHA; never use an unconditional force push.
-8. Wait for fresh GitHub checks on the new head and report failures. Do not reuse checks from the old head.
+8. Read the current GitHub check status for the new head without waiting for completion. Report whether checks are pending, passing, or failing; never reuse checks from the old head.
 9. Append a compact finalization record to the durable review log: new head SHA, applied convention IDs, final commit list, verification, and check status. Never delete the review log.
 
 ## Report
