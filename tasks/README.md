@@ -1,6 +1,6 @@
 # Movie Match MVP — задачі
 
-Цей файл показує поточний статус і рекомендований порядок виконання задач. Деталі перших задач живуть в окремих task-файлах; короткі backlog-пункти будуть деталізовані ближче до реалізації, щоб не фіксувати передчасні рішення.
+Цей файл показує поточний статус і рекомендований порядок виконання задач. Детально описані задачі мають окремі task-файли; короткі backlog-пункти будуть деталізовані ближче до реалізації, щоб не фіксувати передчасні рішення.
 
 ## Детально описані задачі
 
@@ -25,11 +25,11 @@
 - [x] [013 — No-match next round](013-no-match-next-round.md)
 - [x] [014 — Match screen](014-match-screen.md)
 - [x] [015 — Search again or close room](015-search-again-or-close-room.md)
+- [ ] [016 — Room expiration and cascading cleanup](016-room-expiration-and-cascading-cleanup.md)
+- [ ] [017 — Polish and v0.1 deployment](017-polish-and-v0-1-deployment.md)
 
 ## Backlog
 
-- [ ] 016 — Room expiration and cascading cleanup of expired room data
-- [ ] 017 — Polish and deployment
 - [ ] [018 — Automated browser, Server Action, and database integration coverage](018-automated-integration-coverage.md)
 - [ ] [019 — Audit and refactor shared application code](019-refactor-shared-participant-access-and-ui-layouts.md)
 - [ ] [020 — Movie poster sourcing and licensing](020-movie-poster-sourcing-and-licensing.md)
