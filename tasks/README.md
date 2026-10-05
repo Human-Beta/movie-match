@@ -42,3 +42,4 @@
 - [ ] [027 — Audit shared translations and message namespaces](027-audit-shared-translations.md)
 - [ ] [028 — Audit participant name and role presentation](028-audit-participant-name-and-role-presentation.md)
 - [ ] [029 — Decide callback return-type linting](029-decide-callback-return-type-linting.md)
+- [ ] [030 — Audit and reorganize source-code layout](030-audit-and-reorganize-source-code-layout.md)
