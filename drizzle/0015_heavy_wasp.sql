@@ -1,0 +1,1 @@
+CREATE INDEX "rooms_expires_at_idx" ON "rooms" USING btree ("expires_at");

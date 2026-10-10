@@ -14,6 +14,7 @@ import type { ParticipantSnapshotActionResult, PublicParticipantSnapshot } from 
 const waitingSnapshot: PublicParticipantSnapshot = {
   ballotProgress: null,
   currentRound: null,
+  expiresAt: "2099-01-01T00:00:00.000Z",
   roomState: "waiting",
   participantCount: 1,
   participants: [{ name: "Олена", role: "host" }],
@@ -21,6 +22,7 @@ const waitingSnapshot: PublicParticipantSnapshot = {
 const readySnapshot: PublicParticipantSnapshot = {
   ballotProgress: null,
   currentRound: null,
+  expiresAt: "2099-01-01T00:00:00.000Z",
   roomState: "waiting",
   participantCount: 2,
   participants: [
@@ -30,6 +32,7 @@ const readySnapshot: PublicParticipantSnapshot = {
 };
 const playingSnapshot: PublicParticipantSnapshot = {
   ...readySnapshot,
+  expiresAt: "2099-01-01T00:00:00.000Z",
   roomState: "playing",
   currentRound: {
     roundId: "55555555-5555-4555-8555-555555555555",
@@ -45,10 +48,12 @@ const playingSnapshot: PublicParticipantSnapshot = {
 };
 const exhaustedSnapshot: PublicParticipantSnapshot = {
   ...readySnapshot,
+  expiresAt: "2099-01-01T00:00:00.000Z",
   roomState: "exhausted",
 };
 const matchedSnapshot: PublicParticipantSnapshot = {
   ...readySnapshot,
+  expiresAt: "2099-01-01T00:00:00.000Z",
   roomState: "matched",
 };
 
@@ -401,7 +406,18 @@ test("reports unavailable and error snapshot results without accepting their sta
   scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
   await flushPromises();
   assert.equal(failures, 2);
-  assert.deepEqual(snapshots, [{ ...playingSnapshot, roomState: "closed" }]);
+  assert.deepEqual(snapshots, [
+    {
+      ...playingSnapshot,
+      roomState: "closed",
+      participants: [],
+      participantCount: 0,
+      currentRound: null,
+      ballotProgress: null,
+      ownBallot: null,
+      noMatchReadiness: undefined,
+    },
+  ]);
   sync.stop();
 });
 
@@ -500,5 +516,74 @@ test("ignores a completed read after unmount", async () => {
 
   assert.equal(updates, 0);
   assert.equal(tracker.active, 0);
+  assert.equal(scheduler.timers.size, 0);
+});
+
+test("expiry requests authority at the deadline even when a playing result is not polled, retries errors, and stops at terminal", async () => {
+  const scheduler = new FakeScheduler();
+  const tracker = { active: 0, maxActive: 0 };
+  let now = 1_000;
+  const initialSnapshot: PublicParticipantSnapshot = {
+    ...playingSnapshot,
+    expiresAt: new Date(3_000).toISOString(),
+    ballotProgress: { submittedCount: 2, totalParticipants: 2, readyForResults: true },
+  };
+  let result: ParticipantSnapshotActionResult = { status: "ready", snapshot: initialSnapshot };
+  const snapshots: PublicParticipantSnapshot[] = [];
+  const sync = new RoomParticipantSync({
+    initialSnapshot,
+    realtimeTopic: "test",
+    scheduler,
+    now: (): number => now,
+    createSubscription: (): RoomParticipantSubscription => new FakeSubscription(tracker),
+    readSnapshot: async (): Promise<ParticipantSnapshotActionResult> => result,
+    onSnapshot: (snapshot): void => {
+      snapshots.push(snapshot);
+    },
+  });
+  sync.start();
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+  assert.equal(scheduler.count(2_000), 1);
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 0);
+  now = 3_000;
+  result = { status: "error" };
+  scheduler.run(2_000);
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+  assert.equal(snapshots.at(-1)?.roomState, "playing");
+  assert.equal(scheduler.count(PARTICIPANT_SNAPSHOT_POLL_MS), 1);
+  result = { status: "unavailable" };
+  scheduler.run(PARTICIPANT_SNAPSHOT_POLL_MS);
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+  assert.equal(snapshots.at(-1)?.roomState, "closed");
+  assert.equal(snapshots.at(-1)?.currentRound, null);
+  assert.deepEqual(snapshots.at(-1)?.participants, []);
+  assert.equal(scheduler.timers.size, 0);
+  sync.stop();
+});
+
+test("a fast client clock keeps the server state and retries at a bounded rate", async () => {
+  const scheduler = new FakeScheduler();
+  const tracker = { active: 0, maxActive: 0 };
+  const snapshots: PublicParticipantSnapshot[] = [];
+  const sync = new RoomParticipantSync({
+    initialSnapshot: waitingSnapshot,
+    realtimeTopic: "test",
+    scheduler,
+    now: (): number => Date.parse(waitingSnapshot.expiresAt) + 1000,
+    createSubscription: (): RoomParticipantSubscription => new FakeSubscription(tracker),
+    readSnapshot: async (): Promise<ParticipantSnapshotActionResult> => ({ status: "ready", snapshot: waitingSnapshot }),
+    onSnapshot: (snapshot): void => {
+      snapshots.push(snapshot);
+    },
+  });
+  sync.start();
+  scheduler.run(PARTICIPANT_SNAPSHOT_COALESCE_MS);
+  await flushPromises();
+  assert.equal(snapshots.at(-1)?.roomState, "waiting");
+  assert.equal(scheduler.count(0), 0);
+  sync.stop();
   assert.equal(scheduler.timers.size, 0);
 });

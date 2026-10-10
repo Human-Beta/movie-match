@@ -123,3 +123,16 @@ test("keeps a catalog-insufficient result local while a changed filter contract 
   assert.deepEqual(await service.save({ ...input, requestId: randomUUID() }, hostToken), { status: "unavailable" });
   assert.deepEqual(await service.save({ ...input, requestId: randomUUID() }, guestToken), { status: "unavailable" });
 });
+
+test("saved filter receipts and reads are unavailable exactly at expiry", async () => {
+  const repository = new MemoryFilterRepository();
+  const service = new RoomFilterService(repository, { now: (): Date => now });
+  const input = { roomCode: "ABCD", requestId: randomUUID(), filters: { ...defaults, netflixOnly: true } };
+  assert.ok(repository.room);
+  repository.room.expiresAt = new Date(now.getTime() + 1);
+  assert.equal((await service.save(input, hostToken)).status, "saved");
+  repository.room.expiresAt = now;
+  assert.deepEqual(await service.save(input, hostToken), { status: "unavailable" });
+  assert.deepEqual(await service.read("ABCD", hostToken), { status: "unavailable" });
+  assert.equal(repository.writes, 1);
+});

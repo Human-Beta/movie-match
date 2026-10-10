@@ -174,3 +174,15 @@ test("rejects incomplete, duplicate, foreign, inactive, expired, and anonymous b
   assert.deepEqual(await service.submit(input(), participantToken), { status: "unavailable" });
   assert.equal(repository.savedVotes.length, 0);
 });
+
+test("an accepted ballot receipt and valid participant session cannot bypass the expiry boundary", async () => {
+  const repository = new StubBallotRepository();
+  const service = new BallotService(repository, { now: (): Date => now });
+  const request = input();
+  assert.ok(repository.room);
+  repository.room.expiresAt = new Date(now.getTime() + 1);
+  assert.equal((await service.submit(request, participantToken)).status, "completed");
+  repository.room.expiresAt = now;
+  assert.deepEqual(await service.submit(request, participantToken), { status: "unavailable" });
+  assert.equal(repository.savedVotes.length, 1);
+});

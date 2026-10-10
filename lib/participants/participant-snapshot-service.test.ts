@@ -63,6 +63,7 @@ test("sanitizes the authoritative snapshot to state, count, name, and role", () 
   assert.deepEqual(snapshot, {
     ballotProgress: null,
     currentRound: null,
+    expiresAt: "2026-08-23T13:00:00.000Z",
     roomState: "waiting",
     participantCount: 2,
     participants: [
@@ -100,6 +101,7 @@ test("returns a snapshot by topic without reflecting forged payload state", asyn
   assert.deepEqual(snapshot, {
     ballotProgress: null,
     currentRound: null,
+    expiresAt: "2026-08-23T13:00:00.000Z",
     roomState: "waiting",
     participantCount: 2,
     participants: [
@@ -242,4 +244,34 @@ test("retains a closed room snapshot only for its terminal presentation", async 
 
   assert.equal((await service.getTvRoomState("ABC123"))?.snapshot.roomState, "closed");
   assert.equal((await service.getClientRoomState(roomId, "abcdefghijklmnopqrstuvwxyzABCDEFG01234567_-"))?.snapshot.roomState, "closed");
+});
+
+test("expiry at the exact deadline removes participant and game data from every refresh payload", async () => {
+  const record = makeRecord();
+  record.room.expiresAt = now;
+  record.room.status = "matched";
+  record.ownBallot = {
+    status: "submitted",
+    votes: [
+      { movieId: 1, value: "want_to_watch" },
+      { movieId: 2, value: "no" },
+      { movieId: 3, value: "no" },
+    ],
+  };
+  record.noMatchReadyCount = 1;
+  record.ownNoMatchReady = true;
+  const service = makeService(record);
+  const terminal = {
+    expiresAt: now.toISOString(),
+    roomState: "closed",
+    participantCount: 0,
+    participants: [],
+    currentRound: null,
+    ballotProgress: null,
+  };
+  assert.deepEqual(await service.getSnapshotForTopic(createParticipantRealtimeTopic(roomId)), terminal);
+  assert.deepEqual(
+    await service.getSnapshotForTopicForParticipant(createParticipantRealtimeTopic(roomId), "abcdefghijklmnopqrstuvwxyzABCDEFG01234567_-"),
+    { ...terminal, ownBallot: null },
+  );
 });

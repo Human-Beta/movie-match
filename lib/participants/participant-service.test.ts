@@ -270,6 +270,7 @@ test("returns form, full, unavailable, and restored page states", async () => {
   });
   assert.deepEqual(await service.getJoinRoomView("abc123", null), {
     status: "form",
+    expiresAt: expirationTime.toISOString(),
     roomCode: "ABC123",
   });
 
@@ -294,4 +295,17 @@ test("returns form, full, unavailable, and restored page states", async () => {
   assert.deepEqual(await service.getJoinRoomView("ABC123", null), { status: "unavailable" });
 
   assert.equal(repository.participants.at(0)?.accessTokenHash, hashParticipantAccessToken(hostToken));
+});
+
+test("join-token replay and restored session are rejected exactly at expiry", async () => {
+  const repository = new SerializedParticipantRepository();
+  const service = makeService(repository);
+  const token = makeAccessToken(22);
+  assertJoined(await service.joinParticipant(joinInput("Настя", token), null));
+  assert.ok(repository.room);
+  repository.room.expiresAt = currentTime;
+  assert.deepEqual(await service.joinParticipant(joinInput("Настя", token), null), { status: "unavailable" });
+  assert.deepEqual(await service.getJoinRoomView("ABC123", token), { status: "unavailable" });
+  assert.equal(await service.getJoinRequestExpiresAt("ABC123"), null);
+  assert.equal(repository.participants.length, 1);
 });

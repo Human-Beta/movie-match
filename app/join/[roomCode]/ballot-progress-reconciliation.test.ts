@@ -22,6 +22,7 @@ function votingSnapshot(overrides: Partial<ParticipantClientSnapshot> = {}): Par
     ownBallot: { status: "not_submitted", votes: [] },
     participantCount: 2,
     participants: [],
+    expiresAt: "2099-01-01T00:00:00.000Z",
     roomState: "playing",
     ...overrides,
   };

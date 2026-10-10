@@ -167,6 +167,17 @@ export class ParticipantSnapshotService {
 
   toPublicSnapshot(record: ParticipantSnapshotRecord): PublicParticipantSnapshot {
     const roomState = this.getPublicRoomState(record.room.status, record.room.expiresAt);
+    if (roomState === "closed") {
+      return {
+        expiresAt: record.room.expiresAt.toISOString(),
+        roomState,
+        participantCount: 0,
+        participants: [],
+        currentRound: null,
+        ballotProgress: null,
+      };
+    }
+
     const participants = record.participants
       .map((participant): PublicRoomParticipant => ({
         name: participant.name,
@@ -176,6 +187,7 @@ export class ParticipantSnapshotService {
     const ballotProgress = this.toBallotProgress(record, participants.length);
 
     return {
+      expiresAt: record.room.expiresAt.toISOString(),
       roomState,
       participantCount: participants.length,
       participants,
@@ -187,7 +199,7 @@ export class ParticipantSnapshotService {
 
   private toParticipantSnapshot(record: ParticipantSnapshotRecord): ParticipantClientSnapshot {
     const publicSnapshot = this.toPublicSnapshot(record);
-    const ownBallot = this.copyOwnBallot(record.ownBallot);
+    const ownBallot = publicSnapshot.roomState === "closed" ? null : this.copyOwnBallot(record.ownBallot);
     const { noMatchReadiness, ...snapshot } = publicSnapshot;
 
     return {

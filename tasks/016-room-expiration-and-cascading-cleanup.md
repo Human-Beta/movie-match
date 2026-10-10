@@ -44,6 +44,11 @@
 - Hosted smoke: у відокремленому середовищі створити test fixtures з контрольованими `created_at` і `expires_at`, зберігши різницю рівно в годину; перевірити terminal state до фізичного видалення, один scheduled cleanup run і відсутність room data після нього. Не змінювати production clock або живі кімнати для тесту.
 - `pnpm verify` і перевірка конфігурації розкладу, доступів та non-secret execution logs.
 
+## Verification Record
+
+- 2026-10-10: власник продукту підтвердив виконання обов’язкових hosted tests під час фіналізації PR #52. Це підтвердження людини; агент не повторював hosted перевірки й не змінював hosted середовище.
+- Локальна фіналізація перевірила `pnpm verify` (133 unit tests і production build), усі шість PostgreSQL integration suites (40 tests), fresh migrations та backfill creation keys у міграції 0016.
+
 ## Out of Scope
 
 - Продовження терміну життя кімнати, idle timeout, інші правила для закритої кімнати чи auto-close до `expires_at`.

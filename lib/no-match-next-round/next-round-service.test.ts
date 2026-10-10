@@ -115,3 +115,17 @@ test("invalid authority, stale round, and exhausted candidates leave no successo
   assert.equal(exhausted.room?.status, "exhausted");
   assert.deepEqual(exhausted.rounds, []);
 });
+
+test("readiness receipts cannot start or restore a round exactly at expiry", async () => {
+  const repository = new MemoryNoMatchRepository();
+  const instance = service(repository);
+  const input = { roomCode: "ABCD", roundId, requestId: randomUUID() };
+  assert.ok(repository.room);
+  repository.room.expiresAt = new Date(now.getTime() + 1);
+  assert.equal((await instance.confirm(input, hostToken)).status, "completed");
+  repository.room.expiresAt = now;
+  assert.deepEqual(await instance.confirm(input, hostToken), { status: "unavailable" });
+  assert.deepEqual(await instance.confirm({ ...input, requestId: randomUUID() }, guestToken), { status: "unavailable" });
+  assert.equal(repository.readiness.length, 1);
+  assert.equal(repository.rounds.length, 0);
+});

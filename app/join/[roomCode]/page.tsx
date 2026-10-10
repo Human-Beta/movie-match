@@ -43,7 +43,7 @@ export default async function JoinRoomPage({
       );
     }
     case "form":
-      return <JoinRoomForm roomCode={view.roomCode} />;
+      return <JoinRoomForm roomCode={view.roomCode} expiresAt={view.expiresAt} />;
     default:
       return assertNever(view);
   }

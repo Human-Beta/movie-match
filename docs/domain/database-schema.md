@@ -90,6 +90,12 @@ A many-to-many join between movies and genres.
 
 The pair `(movie_id, genre_id)` is the primary key. An additional `(genre_id, movie_id)` index supports genre-first filtering.
 
+### `room_creation_requests`
+
+A server-only registry of consumed room-creation idempotency keys. Its single `request_id` UUID primary key is recorded in the same transaction as the new room. It stores no room identity, participant, credential, or game data, has no foreign key to a room, and remains after room cleanup so a lost-response replay cannot create another session with the same key. Keys are retained indefinitely; removing them would permit old requests to create new rooms again.
+
+Migration `0016_brave_lady_bullseye.sql` backfills every non-null existing `rooms.creation_request_id`. RLS is enabled, no browser policies are defined, and all privileges are explicitly revoked from `anon` and `authenticated`. A key with a deleted room produces the existing unavailable-creation-request outcome.
+
 ### `rooms`
 
 One shared movie-selection session displayed on a TV and controlled from phones.
@@ -247,3 +253,9 @@ The unique `(room_id, participant_id, request_id)` constraint prevents cross-rou
 ## Browser access and RLS
 
 Every product table has Row Level Security enabled. Browser roles receive no product-table access by default. Product mutations and protected reads go through validated Next.js server boundaries and Drizzle. Any future browser read or Realtime exposure must add an explicit least-privilege `SELECT` grant and RLS policy in the same migration; browser roles must never receive product-table `INSERT`, `UPDATE`, or `DELETE` privileges.
+
+## Expired room cleanup
+
+Migration `0015_heavy_wasp.sql` adds `rooms_expires_at_idx` over all room expirations, including closed rooms. The existing active-room index remains available for active-room queries. No table grants, RLS policies, foreign keys, or lifetime constraints change.
+
+The scheduled cleanup selects at most 100 rooms with `expires_at <= statement_timestamp()` per transaction, in expiration order, using `FOR UPDATE SKIP LOCKED`. Deleting those room rows cascades through participants, selected genres, filter-save and game-command receipts, rounds, round movies, votes, ballot receipts, and no-match readiness. Shared movies, genres, and movie-genre links remain intact. Each transaction has a one-second lock timeout and four-second statement timeout. A run makes at most ten batch attempts; a failed batch rolls back while earlier completed batches remain committed.

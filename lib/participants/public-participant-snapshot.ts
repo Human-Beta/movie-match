@@ -65,6 +65,7 @@ export type ParticipantNoMatchReadiness = PublicNoMatchReadiness & { ownReady: b
 export type ParticipantOwnBallot = { status: "not_submitted"; votes: [] } | { status: "submitted"; votes: BallotVoteInput[] };
 
 export type PublicParticipantSnapshot = {
+  expiresAt: string;
   roomState: RoomStatus;
   participantCount: number;
   participants: PublicRoomParticipant[];

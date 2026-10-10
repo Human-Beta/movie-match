@@ -86,6 +86,10 @@ export const movieGenres = pgTable(
   ],
 ).enableRLS();
 
+export const roomCreationRequests = pgTable("room_creation_requests", {
+  requestId: uuid("request_id").primaryKey(),
+}).enableRLS();
+
 export const rooms = pgTable(
   "rooms",
   {
@@ -106,6 +110,7 @@ export const rooms = pgTable(
     unique("rooms_creation_request_id_unique").on(table.creationRequestId),
     check("rooms_code_format_check", sql`${table.code} ~ '^[A-Z0-9]{4,8}$'`),
     check("rooms_lifetime_check", sql`${table.expiresAt} = ${table.createdAt} + interval '1 hour'`),
+    index("rooms_expires_at_idx").on(table.expiresAt),
     index("rooms_active_expires_at_idx")
       .on(table.expiresAt)
       .where(sql`${table.status} <> 'closed'`),

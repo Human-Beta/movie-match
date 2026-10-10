@@ -23,6 +23,7 @@ export function useAuthenticatedParticipantRoomSnapshot({
   const readSnapshot = useCallback(() => readParticipantClientSnapshotAction(realtimeTopic, roomCode), [realtimeTopic, roomCode]);
   const resetSnapshot = useMemo<ParticipantClientSnapshot>(
     () => ({
+      expiresAt: initialSnapshot.expiresAt,
       ballotProgress: null,
       currentRound: null,
       ownBallot: null,
@@ -30,7 +31,7 @@ export function useAuthenticatedParticipantRoomSnapshot({
       participants: [],
       roomState: initialSnapshot.roomState,
     }),
-    [initialSnapshot.participantCount, initialSnapshot.roomState],
+    [initialSnapshot.expiresAt, initialSnapshot.participantCount, initialSnapshot.roomState],
   );
 
   return useSyncedParticipantRoomSnapshot({
