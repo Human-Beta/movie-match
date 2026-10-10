@@ -45,7 +45,7 @@ export type JoinParticipantInput = JoinRoomInput & {
 };
 
 export type JoinRoomView =
-  | { status: "form"; roomCode: string }
+  | { status: "form"; roomCode: string; expiresAt: string }
   | { status: "full" }
   | { status: "unavailable" }
   | { status: "joined"; roomId: string; participant: ParticipantIdentity };
@@ -115,7 +115,7 @@ export class ParticipantService {
       return { status: "full" };
     }
 
-    return { status: "form", roomCode: room.code };
+    return { status: "form", roomCode: room.code, expiresAt: room.expiresAt.toISOString() };
   }
 
   async joinParticipant(input: JoinParticipantInput, storedAccessToken: string | null): Promise<JoinParticipantResult> {

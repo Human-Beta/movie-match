@@ -57,6 +57,7 @@ If documents allow different interpretations of the current product scope, follo
 - Keep credential-bearing fields out of reusable domain or public query selections. Select them only in the narrow repository operation that needs them, and explicitly rebuild every server-to-client result from an allowlist of public fields.
 - When the same credential format enters through more than one untrusted boundary, define one parser and reuse it before hashing, comparing, or persisting the value.
 - For browser mutations that may be retried, reloaded, or lose their response, persist an idempotency key before sending the request, enforce uniqueness server-side, and clear it only after a confirmed terminal outcome.
+- For idempotent create operations whose resources are cleaned up, retain consumed keys for the supported replay period, reject reuse after deletion, and commit key consumption atomically with resource creation.
 - Use the browser Supabase integration only for explicitly approved read or Realtime capabilities. Do not expose the full browser `SupabaseClient` or call the Supabase Data API for product mutations.
 - Keep Data API access opt-in. For every product table in an exposed schema, enable RLS and grant `anon` or `authenticated` only the minimum read access and policies required by the feature. Never grant those roles `INSERT`, `UPDATE`, or `DELETE` for product tables.
 - Treat the restricted TypeScript API as a developer guardrail, not a security boundary. Enforce browser access with Postgres privileges and RLS in the same migration that introduces or exposes a table.
@@ -68,6 +69,7 @@ If documents allow different interpretations of the current product scope, follo
 - Treat functions returned by hooks or providers as referentially unstable unless their API explicitly guarantees stable identity. Do not use such a function as an Effect dependency when that Effect updates state or invokes a Server Action that can trigger a React tree refresh; derive the required stable primitive value before the Effect or restructure the Effect around stable inputs.
 - Remember that setting or deleting cookies in a Server Action refreshes the current Next.js React tree. For every Server Action invoked automatically from an Effect, verify in a real browser that the action settles, runs only for its intended stable inputs, and does not enter a render/action loop.
 - Render terminal workflow state from an authoritative persisted status, never from aggregate progress or a Broadcast payload; treat events only as invalidation hints.
+- When a client must reconcile a server-owned deadline, keep a bounded authoritative refresh path independent of the client wall clock; never use a local deadline as the sole refresh trigger.
 - Keep client-only lifecycle or version metadata separate from server-authoritative snapshot contracts; never add it to public snapshot DTOs.
 
 ## Code Review Rules

@@ -175,7 +175,7 @@ In `apply` mode the skill:
 4. proves the final tree is unchanged except for approved convention edits;
 5. runs local verification;
 6. pushes only with `--force-with-lease` against the expected remote SHA;
-7. waits for fresh GitHub checks on the new head;
+7. reads and reports fresh GitHub check status on the new head without waiting for completion;
 8. appends the finalization result to the durable review log.
 
 It never merges the pull request.

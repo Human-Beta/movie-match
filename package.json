@@ -29,7 +29,9 @@
     "format:check": "prettier --check .",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck",
     "verify": "pnpm check && pnpm test && pnpm build",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:expiration:db": "tsx --conditions=react-server --test lib/room-cleanup/room-cleanup-repository.integration.ts",
+    "test:rooms:db": "tsx --conditions=react-server --test lib/rooms/room-repository.integration.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.3",

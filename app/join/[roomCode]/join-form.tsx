@@ -8,6 +8,7 @@ import { joinRoomAction, prepareJoinRoomAction } from "@/app/join/[roomCode]/act
 import type { PrepareJoinRoomResult } from "@/app/join/[roomCode]/actions";
 import type { JoinRoomActionState } from "@/app/join/[roomCode]/join-action-state";
 import { FullRoomState, JoinedRoomState, UnavailableRoomState } from "@/app/join/[roomCode]/room-states";
+import { useRoomExpirationRefresh } from "@/app/join/[roomCode]/use-room-expiration-refresh";
 import { PrimaryButton } from "@/app/ui/primary-button";
 import { assertNever } from "@/lib/assert-never";
 
@@ -35,7 +36,8 @@ function getSubmitLabelKey(isPreparing: boolean, isJoining: boolean): "form.prep
   return "form.join";
 }
 
-export function JoinRoomForm({ roomCode }: Readonly<{ roomCode: string }>): ReactNode {
+export function JoinRoomForm({ roomCode, expiresAt }: Readonly<{ roomCode: string; expiresAt: string }>): ReactNode {
+  useRoomExpirationRefresh(expiresAt);
   const t = useTranslations("JoinRoom");
   const preparationFallbackMessage = t("error.prepare");
   const [state, formAction, isJoining] = useActionState(joinRoomAction, { status: "form" });

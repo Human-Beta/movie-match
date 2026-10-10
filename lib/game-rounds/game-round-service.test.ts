@@ -276,3 +276,25 @@ test("search again exhausts a matched room without a partial round and close pre
   assert.equal((await closeService.close(closeInput, hostToken)).status, "completed");
   assert.deepEqual(await closeService.searchAgain(closeInput, hostToken), { status: "conflict" });
 });
+
+test("all completed game-command receipts stop replaying at the expiry boundary", async () => {
+  for (const command of ["start", "restart", "searchAgain", "close"] as const) {
+    const repository = new MemoryGameRoundRepository();
+    assert.ok(repository.room);
+    repository.room.expiresAt = new Date(now.getTime() + 1);
+    if (command === "restart") {
+      repository.room.status = "exhausted";
+    }
+    if (command === "searchAgain" || command === "close") {
+      markMatched(repository);
+    }
+    const service = makeService(repository);
+    const input = { roomCode: "ABCD", requestId: randomUUID() };
+    assert.equal((await service[command](input, hostToken)).status, "completed");
+    assert.ok(repository.room);
+    repository.room.expiresAt = now;
+    const writes = repository.statusWrites;
+    assert.deepEqual(await service[command](input, hostToken), { status: "unavailable" });
+    assert.equal(repository.statusWrites, writes);
+  }
+});

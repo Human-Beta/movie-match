@@ -25,7 +25,7 @@
 - [x] [013 — No-match next round](013-no-match-next-round.md)
 - [x] [014 — Match screen](014-match-screen.md)
 - [x] [015 — Search again or close room](015-search-again-or-close-room.md)
-- [ ] [016 — Room expiration and cascading cleanup](016-room-expiration-and-cascading-cleanup.md)
+- [x] [016 — Room expiration and cascading cleanup](016-room-expiration-and-cascading-cleanup.md)
 - [ ] [017 — Polish and v0.1 deployment](017-polish-and-v0-1-deployment.md)
 
 ## Backlog

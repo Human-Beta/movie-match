@@ -32,6 +32,7 @@ export type RoomParticipantSyncOptions<TSnapshot extends PublicParticipantSnapsh
   scheduler?: ParticipantSyncScheduler;
   coalesceMs?: number;
   pollMs?: number;
+  now?: () => number;
 };
 
 function shouldPoll(snapshot: PublicParticipantSnapshot): boolean {
@@ -67,6 +68,8 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
   private readonly realtimeTopic: string;
   private readonly scheduler: ParticipantSyncScheduler;
 
+  private readonly now: () => number;
+  private expirationTimer: TimerId | null = null;
   private active = false;
   private currentSnapshot: TSnapshot;
   private currentTransportStatus: ParticipantRealtimeTransportStatus = "connecting";
@@ -78,6 +81,7 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
   private subscription: RoomParticipantSubscription | null = null;
 
   constructor(options: RoomParticipantSyncOptions<TSnapshot>) {
+    this.now = options.now ?? Date.now;
     this.coalesceMs = options.coalesceMs ?? PARTICIPANT_SNAPSHOT_COALESCE_MS;
     this.createSubscription = options.createSubscription;
     this.currentSnapshot = options.initialSnapshot;
@@ -117,6 +121,7 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
     });
     this.requestRefresh();
     this.updatePolling();
+    this.updateExpirationTimer();
   }
 
   stop(): void {
@@ -129,6 +134,7 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
     this.refreshQueued = false;
     this.clearRefreshTimer();
     this.clearPollTimer();
+    this.clearExpirationTimer();
     this.subscription?.dispose();
     this.subscription = null;
   }
@@ -204,18 +210,51 @@ export class RoomParticipantSync<TSnapshot extends PublicParticipantSnapshot = P
         this.currentSnapshot = result.snapshot;
         this.onSnapshot(result.snapshot);
         this.updatePolling();
+        this.updateExpirationTimer();
         return;
       case "unavailable":
         this.onSnapshotReadFailed?.();
-        this.currentSnapshot = { ...this.currentSnapshot, roomState: "closed" };
+        this.currentSnapshot = {
+          ...this.currentSnapshot,
+          roomState: "closed",
+          participants: [],
+          participantCount: 0,
+          currentRound: null,
+          ballotProgress: null,
+          ownBallot: null,
+          noMatchReadiness: undefined,
+        };
         this.onSnapshot(this.currentSnapshot);
         this.updatePolling();
+        this.updateExpirationTimer();
         return;
       case "error":
         this.onSnapshotReadFailed?.();
         return;
       default:
         return assertNever(result);
+    }
+  }
+
+  private updateExpirationTimer(): void {
+    this.clearExpirationTimer();
+    if (!this.active || this.currentSnapshot.roomState === "closed") {
+      return;
+    }
+    // A fast client clock must not invent a terminal state or cause a tight retry loop.
+    const remaining = Date.parse(this.currentSnapshot.expiresAt) - this.now();
+    const delay = remaining > 0 ? Math.min(2_147_483_647, remaining) : this.pollMs;
+    this.expirationTimer = this.scheduler.setTimeout(() => {
+      this.expirationTimer = null;
+      this.requestRefresh();
+      this.updateExpirationTimer();
+    }, delay);
+  }
+
+  private clearExpirationTimer(): void {
+    if (this.expirationTimer !== null) {
+      this.scheduler.clearTimeout(this.expirationTimer);
+      this.expirationTimer = null;
     }
   }
 

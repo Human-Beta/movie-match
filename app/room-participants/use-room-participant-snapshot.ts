@@ -21,13 +21,14 @@ export function useRoomParticipantSnapshot({
   const readSnapshot = useCallback(() => readParticipantSnapshotAction(realtimeTopic), [realtimeTopic]);
   const resetSnapshot = useMemo<PublicParticipantSnapshot>(
     () => ({
+      expiresAt: initialSnapshot.expiresAt,
       ballotProgress: null,
       currentRound: null,
       participantCount: initialSnapshot.participantCount,
       participants: [],
       roomState: initialSnapshot.roomState,
     }),
-    [initialSnapshot.participantCount, initialSnapshot.roomState],
+    [initialSnapshot.expiresAt, initialSnapshot.participantCount, initialSnapshot.roomState],
   );
 
   return useSyncedParticipantRoomSnapshot({
