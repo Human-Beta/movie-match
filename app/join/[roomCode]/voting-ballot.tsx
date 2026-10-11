@@ -150,7 +150,7 @@ function VoteOptions({
       <legend className="sr-only">{t("selectionLabel", { title: movie.title })}</legend>
       {voteOptions.map(option => (
         <label
-          className={`flex min-h-12 items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center text-xs leading-tight font-semibold transition sm:px-3 sm:text-sm ${
+          className={`flex min-h-12 items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center text-xs leading-tight font-semibold transition has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-amber-300 sm:px-3 sm:text-sm ${
             disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"
           } ${
             selected === option.value

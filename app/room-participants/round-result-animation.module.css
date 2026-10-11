@@ -99,6 +99,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .selectedCard,
+  .selectedLabel,
   .mutedCard,
   .noMatchBackdrop {
     animation: none;
