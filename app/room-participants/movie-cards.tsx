@@ -12,10 +12,12 @@ const GAME_ROUND_NAMESPACE = "GameRound";
 
 export function MovieCards({
   compactOnNarrow = false,
+  compactForTv = false,
   round,
   renderFooter,
 }: Readonly<{
   compactOnNarrow?: boolean;
+  compactForTv?: boolean;
   round: PublicRoomRound;
   renderFooter?: (movie: PublicRoomMovie) => ReactNode;
 }>): ReactNode {
@@ -46,8 +48,12 @@ export function MovieCards({
               className={`relative flex h-full min-w-0 flex-col overflow-hidden bg-slate-900 ring-1 ring-white/10 ${compactOnNarrow ? "rounded-2xl sm:rounded-3xl" : "rounded-3xl"} ${resultClassName ?? ""}`}
               key={movie.movieId}
             >
-              <MoviePoster hiddenOnNarrow={compactOnNarrow} movie={movie} />
-              <div className={compactOnNarrow ? "flex flex-1 flex-col p-4 sm:p-5" : "flex flex-1 flex-col p-5"}>
+              <MoviePoster compactForTv={compactForTv} hiddenOnNarrow={compactOnNarrow} movie={movie} />
+              <div
+                className={
+                  compactOnNarrow ? "flex flex-1 flex-col p-4 sm:p-5" : compactForTv ? "flex flex-1 flex-col p-4" : "flex flex-1 flex-col p-5"
+                }
+              >
                 <p className="text-xs font-semibold tracking-[0.2em] text-amber-400 uppercase">{t("position", { position: movie.position })}</p>
                 <h3 className={`mt-2 font-bold break-words text-white ${compactOnNarrow ? "text-lg sm:text-xl" : "text-xl"}`}>{movie.title}</h3>
                 <p className={`mt-3 text-sm text-slate-300 ${compactOnNarrow ? "hidden sm:block" : ""}`}>
@@ -76,14 +82,18 @@ export function MovieCards({
   );
 }
 
-function MoviePoster({ hiddenOnNarrow = false, movie }: Readonly<{ hiddenOnNarrow?: boolean; movie: PublicRoomMovie }>): ReactNode {
+function MoviePoster({
+  compactForTv,
+  hiddenOnNarrow = false,
+  movie,
+}: Readonly<{ compactForTv: boolean; hiddenOnNarrow?: boolean; movie: PublicRoomMovie }>): ReactNode {
   const t = useTranslations(GAME_ROUND_NAMESPACE);
   const [failed, setFailed] = useState(false);
 
   if (movie.posterPath === null || failed) {
     return (
       <div
-        className={`flex aspect-[2/3] items-center justify-center bg-slate-800 p-5 text-center text-sm text-slate-400 ${hiddenOnNarrow ? "hidden sm:flex" : ""}`}
+        className={`flex aspect-[2/3] items-center justify-center bg-slate-800 p-5 text-center text-sm text-slate-400 ${hiddenOnNarrow ? "hidden sm:flex" : ""} ${compactForTv ? "max-h-[16vh]" : ""}`}
         role="img"
         aria-label={t("posterFallback", { title: movie.title })}
       >
@@ -102,7 +112,7 @@ function MoviePoster({ hiddenOnNarrow = false, movie }: Readonly<{ hiddenOnNarro
     // eslint-disable-next-line @next/next/no-img-element
     <img
       alt={t("posterAlt", { title: movie.title })}
-      className={`aspect-[2/3] w-full bg-slate-800 object-cover ${hiddenOnNarrow ? "hidden sm:block" : ""}`}
+      className={`aspect-[2/3] w-full bg-slate-800 ${hiddenOnNarrow ? "hidden sm:block" : ""} ${compactForTv ? "max-h-[16vh] object-contain" : "object-cover"}`}
       onError={() => {
         setFailed(true);
       }}

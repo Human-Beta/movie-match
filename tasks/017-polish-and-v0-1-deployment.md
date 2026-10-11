@@ -54,3 +54,16 @@
 
 - Джерела істини: [active specification](../docs/v0.1.md), [vision](../docs/vision.md), [stack](../docs/stack.md), [database/release workflow](../docs/database.md#production-release), [review workflow](../docs/review.md) і `AGENTS.md`.
 - Production уже містить розгорнуту апку й перевірений deployment workflow після 009.1. Ця задача завершує, перевіряє та оформлює повний v0.1 у наявному середовищі; це не перший запуск апки в production і не створення другого hosting stack.
+
+## Pre-merge verification evidence
+
+Локальний прохід 2026-10-10–11 виконано після інтеграції 016, на ізольованому PostgreSQL з актуальними migrations і curated catalog. Окремі Chromium contexts: TV 1280×720 та 1920×1080, host 390×844, guest 360×800.
+
+- Create/restore, join, host filters до приєднання guest, збереження та відновлення після перерваної відповіді, start, private ballot і reload пройдено. До другого ballot TV має лише aggregate progress; guest не отримує host controls.
+- Пройдено no-match → підтвердження обох учасників → match → Search again → другий match → Close room; offline/reload відновлює authoritative state, а fallback працює без доступного Realtime.
+- Netflix-only каталог із рівно трьома фільмами дає exhausted; лише host може Restart list. Restart залишає room, participants, filters і годинний lifetime, створює round 1 та прибирає попередні votes.
+- Виправлено видимість keyboard focus на ballot labels, reduced-motion для selected label та TV overflow: раніше при 1280×720 document мав висоту 1060 px, а назви фільмів були поза viewport; voting, no-match і match тепер вміщуються без прокрутки. Phone widths 390/360 px не мають горизонтального overflow.
+- Контрольований локальний expiry fixture зі збереженою різницею created_at/expires_at рівно в годину перевів три відкриті екрани в terminal state без reload після дедлайну. Authenticated cleanup видалив expired rooms; shared catalog залишився.
+- Усі 40 focused PostgreSQL integration checks пройшли в окремій test database: rooms, participants/snapshots, filters, rounds, ballots, expiration/cleanup. Browser fixtures і test-suite fixtures ізольовано одне від одного.
+
+Це pre-merge evidence, не production release. Задача залишається незавершеною до human review/merge, зеленого Verify на exact main SHA, deployment через production-release workflow, hosted Realtime/cleanup та production three-screen smoke, annotated tag і GitHub Release. Локальний database-only PostgreSQL не підтверджує hosted Realtime або scheduled Vercel invocation.

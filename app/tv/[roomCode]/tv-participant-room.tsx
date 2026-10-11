@@ -102,7 +102,7 @@ function TvPlayingRoom({
   const showNoMatchReaction = round?.status === ROUND_STATUS.NO_MATCH && round.result?.status === ROUND_STATUS.NO_MATCH;
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-50 sm:py-16">
+    <main className="min-h-screen bg-slate-950 px-6 py-4 text-slate-50">
       <div className="mx-auto max-w-6xl">
         <p className="mb-4 text-sm font-semibold tracking-[0.3em] text-amber-400 uppercase">Movie Match</p>
         {round === null ? (
@@ -111,20 +111,20 @@ function TvPlayingRoom({
           </p>
         ) : (
           <>
-            <header className={match === null ? "hidden" : "mb-8 max-w-3xl"}>
+            <header className={match === null ? "hidden" : "mb-4 max-w-3xl"}>
               {match === null ? null : (
                 <>
                   <p className="text-sm font-semibold tracking-[0.2em] text-emerald-300 uppercase">{tResult("matchStatus")}</p>
-                  <h1 className="mt-2 text-4xl font-black tracking-tight text-white sm:text-6xl">{tResult("matchTitle")}</h1>
-                  <p className="mt-3 text-lg leading-8 text-slate-300">{tResult(`finalMessages.${match.finalMessageKey}`)}</p>
+                  <h1 className="mt-2 text-4xl font-black tracking-tight text-white">{tResult("matchTitle")}</h1>
+                  <p className="mt-2 text-lg leading-7 text-slate-300">{tResult(`finalMessages.${match.finalMessageKey}`)}</p>
                 </>
               )}
             </header>
             {showNoMatchReaction ? (
-              <section className="mb-6 rounded-3xl bg-slate-900 p-6 ring-1 ring-white/10" role="status">
-                <h2 className="text-3xl font-bold">{tResult("noMatchTitle")}</h2>
-                <p className="mt-3 text-lg leading-8 text-slate-200">{tResult(getNoMatchMessageKey(round.roundId))}</p>
-                <p className="mt-4 text-xl font-semibold">{tResult("nextQuestion")}</p>
+              <section className="mb-4 rounded-3xl bg-slate-900 p-4 ring-1 ring-white/10" role="status">
+                <h2 className="text-2xl font-bold">{tResult("noMatchTitle")}</h2>
+                <p className="mt-2 text-lg leading-7 text-slate-200">{tResult(getNoMatchMessageKey(round.roundId))}</p>
+                <p className="mt-2 text-xl font-semibold">{tResult("nextQuestion")}</p>
               </section>
             ) : null}
             {isNextRoundGenerating ? (
@@ -133,6 +133,7 @@ function TvPlayingRoom({
               </p>
             ) : null}
             <MovieCards
+              compactForTv
               renderFooter={
                 result === undefined
                   ? undefined
@@ -144,7 +145,7 @@ function TvPlayingRoom({
               round={round}
             />
             {round.status === ROUND_STATUS.VOTING && snapshot.ballotProgress !== null ? (
-              <p className="mt-8 rounded-2xl bg-slate-900 p-5 text-lg text-slate-200 ring-1 ring-white/10" role="status">
+              <p className="mt-4 rounded-2xl bg-slate-900 p-3 text-lg text-slate-200 ring-1 ring-white/10" role="status">
                 {snapshot.ballotProgress.readyForResults
                   ? t("game.readyForResults")
                   : t("game.votingProgress", {
@@ -154,7 +155,7 @@ function TvPlayingRoom({
               </p>
             ) : null}
             {match !== null ? (
-              <p className="mt-8 rounded-2xl bg-slate-900 p-5 text-lg text-slate-200 ring-1 ring-white/10" role="status">
+              <p className="mt-4 rounded-2xl bg-slate-900 p-3 text-lg text-slate-200 ring-1 ring-white/10" role="status">
                 {t("game.hostPostMatch")}
               </p>
             ) : null}
