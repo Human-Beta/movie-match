@@ -67,4 +67,4 @@ pnpm exec prettier --write .agents/skills/openspec-*/SKILL.md
 pnpm verify
 ```
 
-For recovery of the current Codex integration, use `pnpm exec openspec init --tools codex --profile core --language English --no-animation`. Review changes to `openspec/config.yaml`; preserve its project-specific guidance. Claude integration, model routing, automatic review/fix loops, and deployment commands are not configured by WF-01.
+For recovery of the current Codex integration, use `pnpm exec openspec init --tools codex --profile core --language English --no-animation`. Review changes to `openspec/config.yaml`; preserve its project-specific guidance. Claude integration, model routing, automatic review/fix loops, and deployment commands are not configured by WF-01. Their agreed follow-up work, including automatic request routing in WF-06, is recorded in the [Agent workflow roadmap](workflow-roadmap.md).

@@ -15,6 +15,7 @@ When a new version becomes active, update this section to point to its specifica
 - [Technology stack](stack.md) — agreed technologies and architectural boundaries.
 - [Database development](database.md) — Supabase configuration and migration workflow.
 - [Domain documentation](domain/README.md) — business concepts and the current data model.
+- [Agent workflow roadmap](workflow-roadmap.md) — stable WF task IDs, agreed decisions, and handoff instructions for separate chats.
 - [OpenSpec workflow](openspec.md) — planning artifacts, capability ownership, legacy backlog migration, and Codex skills.
 - [Review workflow](review.md) — automated checks, AI review, human review, and follow-up commands.
 - [Future ideas](ideas.md) — ideas that are outside the active specification.

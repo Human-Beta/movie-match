@@ -9,6 +9,7 @@
 - `openspec/specs/<capability>/spec.md` records accepted requirements for capabilities adopted into OpenSpec. `openspec/changes/<change>/` holds the proposal, design, requirement deltas, and implementation checklist for an active change.
 - `tasks/README.md` preserves backlog order and legacy task status. An unmigrated `tasks/<id>-*.md` owns its task acceptance criteria; a migrated ticket links to its OpenSpec change instead of duplicating those criteria or its checklist.
 - `docs/openspec.md` defines artifact ownership, incremental adoption, and the Codex workflow.
+- `docs/workflow-roadmap.md` preserves the agreed WF task scope and decisions across chats. Read the selected WF entry before planning that task and update the roadmap when its decisions or status change; planned policies do not override current instructions before implementation.
 
 If documents allow different interpretations of the current product scope, follow the active specification linked from `docs/README.md`. OpenSpec changes must remain within that scope unless the user explicitly approves a scope change and the active specification is updated. When implementing a task or change, satisfy its acceptance criteria without expanding that scope.
 

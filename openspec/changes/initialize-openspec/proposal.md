@@ -10,6 +10,7 @@ Movie Match needs a repeatable specification and implementation workflow before 
 - Configure English artifacts and project-specific discovery, scope, and verification guidance.
 - Define ownership and incremental migration between product docs, capability specs, changes, and legacy tickets.
 - Include artifact validation in the existing local and CI verification command.
+- Preserve the agreed WF roadmap and subsequent request-routing decision in repository documentation so future chats can pick up individual tasks without this conversation.
 
 ## Capabilities
 
