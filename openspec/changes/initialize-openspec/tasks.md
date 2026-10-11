@@ -10,6 +10,8 @@
 - [x] 2.1 Document incremental adoption and backlog ownership, update repository entry points, and preserve product scope and review gates; verify links resolve and the diff contains no runtime changes or duplicated product specs.
 - [x] 2.2 Add strict active/spec validation and archived-task checking to `pnpm verify`; verify `pnpm openspec:validate` and a deliberately invalid disposable delta prove the validation gate rejects malformed requirements.
 
+- [x] 2.3 Preserve the agreed WF roadmap and WF-06 routing policy, link it from the documentation index and agent instructions, and verify its task IDs, links, and distinction between planned and active policies.
+
 ## 3. Repository verification
 
 - [x] 3.1 Run `pnpm verify` and inspect the final diff for unintended files, secrets, scope expansion, or changes to legacy history.
