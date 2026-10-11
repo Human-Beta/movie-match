@@ -21,6 +21,10 @@ This document records the technology decisions for the movie-matching MVP. The s
 | Package manager | **pnpm**                   | Manage dependencies and project commands                                                     |
 | QR code         | **react-qr-code**          | Generate the room join QR code without scanner or external-service scope                     |
 
+## Development workflow
+
+Use the locally pinned OpenSpec CLI and generated Codex skills for change planning; see [OpenSpec workflow](openspec.md). This is development tooling, not an application dependency or a separate service.
+
 ## Why Next.js and React
 
 Next.js was chosen both as a technical solution and for the career value of React and Next.js experience. Since there is already experience with Vue, this project should provide practical experience in another major frontend ecosystem and result in a finished portfolio product.

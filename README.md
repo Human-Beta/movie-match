@@ -10,7 +10,8 @@ The product launches as a small but complete Ukrainian-language experience. Supp
 - [Product vision](docs/vision.md) — the problem, audience, principles, and product direction.
 - [Technology stack](docs/stack.md) — the agreed technologies and architectural boundaries.
 - [Future ideas](docs/ideas.md) — features that are outside the current scope.
-- [Task list](tasks/README.md) — implementation order and current progress.
+- [Task list](tasks/README.md) — existing backlog order and legacy progress.
+- [OpenSpec workflow](docs/openspec.md) — new change proposals, specifications, design, and implementation checklists.
 
 Repository working rules are documented in [AGENTS.md](AGENTS.md).
 
@@ -33,8 +34,7 @@ See [Database development](docs/database.md) for Supabase variables and migratio
 ## Checks
 
 ```bash
-pnpm build
-pnpm typecheck
-pnpm lint
-pnpm format:check
+pnpm check             # Formatting, lint, and types while iterating
+pnpm openspec:validate # Planning artifact validation
+pnpm verify            # All required checks, unit tests, and build
 ```

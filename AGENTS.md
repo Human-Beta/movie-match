@@ -6,25 +6,27 @@
 - `docs/vision.md` explains the product goal and principles.
 - `docs/stack.md` records the agreed technologies and architectural boundaries.
 - `docs/ideas.md` contains ideas that are outside the active product scope.
-- `tasks/README.md` defines task order and status, while the relevant `tasks/<id>-*.md` defines the scope and acceptance criteria for a specific task.
+- `openspec/specs/<capability>/spec.md` records accepted requirements for capabilities adopted into OpenSpec. `openspec/changes/<change>/` holds the proposal, design, requirement deltas, and implementation checklist for an active change.
+- `tasks/README.md` preserves backlog order and legacy task status. An unmigrated `tasks/<id>-*.md` owns its task acceptance criteria; a migrated ticket links to its OpenSpec change instead of duplicating those criteria or its checklist.
+- `docs/openspec.md` defines artifact ownership, incremental adoption, and the Codex workflow.
 
-If documents allow different interpretations of the current product scope, follow the active specification linked from `docs/README.md`. When implementing a task, satisfy its acceptance criteria without expanding that scope.
+If documents allow different interpretations of the current product scope, follow the active specification linked from `docs/README.md`. OpenSpec changes must remain within that scope unless the user explicitly approves a scope change and the active specification is updated. When implementing a task or change, satisfy its acceptance criteria without expanding that scope.
 
 ## Language
 
 - Keep permanent repository documentation and agent instructions in English.
 - Keep every file under `docs/` in English.
-- Files under `tasks/` may be written in Ukrainian.
+- Write all new task files and OpenSpec artifacts in English. Preserve existing Ukrainian task history; do not translate it as incidental cleanup.
 - Use English for code identifiers, code comments, and commit messages.
 - Follow the active specification for product UI languages and localization scope; do not infer them from the repository documentation language.
 
 ## Working rules
 
-1. Before implementation, read the relevant task file, `docs/README.md`, the active specification it links to, and the applicable parts of `docs/stack.md`.
+1. Before implementation, read `docs/README.md`, the active specification it links to, and the applicable parts of `docs/stack.md`. For a legacy task, read its task file. For an OpenSpec change, read its proposal, design, tasks, delta specs, and the relevant accepted capability specs. Inspect existing implementation and tests before choosing reuse or new abstractions.
 2. Do not add product scope without an explicit user decision. Record future ideas in `docs/ideas.md`.
 3. Do not add technologies speculatively or create a separate backend unless the specification requires it.
 4. Never commit secrets, local `.env` files, or disposable build artifacts. Commit database migrations together with the schema changes that generated them.
-5. Before completing a task, run the relevant checks. Update its status in `tasks/README.md` only after its acceptance criteria are satisfied.
+5. Before completing a task or change, run `pnpm verify` and the relevant task-specific checks. Update its checklist and any linked backlog status only after its acceptance criteria are satisfied. Use `pnpm exec openspec` for CLI operations so the pinned local version is used; generated skills using bare `openspec` commands must follow this convention. Keep review gates from `docs/review.md`; archive an OpenSpec change only after those gates are satisfied.
 6. Publish every completed, locally verified AI change batch so it is available for review in GitHub. Before editing on `main`, create a short-lived branch. After the required local checks pass, commit only the intended changes, push the branch, and create or update its pull request without waiting for GitHub CI to finish unless the user asks. Report pending or failed CI accurately; the human will merge only after CI passes on the current pull request head. Target `main` unless the branch is an explicitly declared member of a dependent pull-request stack; a stacked pull request targets its immediate predecessor branch and must identify that dependency. Verify that the pull request head matches the pushed commit. After an upstream branch is rewritten or merged, restack affected descendants in dependency order, retarget them when appropriate, rerun required checks and review, and never merge a descendant before its dependencies. Temporary implementation and review-fix commits are acceptable because `$review-finalize` will fold them into the approved logical history. Do not publish read-only work, failed or unresolved changes, unrelated working-tree content, secrets, or explicitly local experiments, and honor an explicit user request not to publish.
 7. When a schema migration changes an enum, table, field, relationship, constraint, or browser-access boundary, update `docs/domain/database-schema.md` in the same change.
 8. Keep progress updates sparse: send a concise update before substantial work and when a material finding, blocker, or plan change occurs. Skip routine step-by-step status messages and do not repeat unchanged state.
