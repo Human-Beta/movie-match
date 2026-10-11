@@ -43,3 +43,7 @@
 - [ ] [028 — Audit participant name and role presentation](028-audit-participant-name-and-role-presentation.md)
 - [ ] [029 — Decide callback return-type linting](029-decide-callback-return-type-linting.md)
 - [ ] [030 — Audit and reorganize source-code layout](030-audit-and-reorganize-source-code-layout.md)
+
+## OpenSpec changes
+
+New changes use the [OpenSpec workflow](../docs/openspec.md). Existing tickets retain their IDs and backlog order. When a ticket is migrated, its file links to the OpenSpec change instead of maintaining a second copy of scope, acceptance criteria, or the implementation checklist. Existing Ukrainian task history is preserved; new artifacts are written in English.

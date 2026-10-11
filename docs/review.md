@@ -49,7 +49,7 @@ It runs formatting validation, ESLint, and TypeScript. Before handing work off, 
 pnpm verify
 ```
 
-It adds the production build. The existing pre-commit hook continues to format and lint staged files; it is a convenience, not a substitute for these full checks or CI.
+It adds OpenSpec artifact validation, unit tests, and the production build. The existing pre-commit hook continues to format and lint staged files; it is a convenience, not a substitute for these full checks or CI.
 
 ## Complete solo review flow
 

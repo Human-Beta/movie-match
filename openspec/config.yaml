@@ -1,0 +1,36 @@
+schema: spec-driven
+
+context: |
+  Language: English. Write all artifacts in English; keep structural headings and SHALL/MUST keywords in English.
+  Movie Match is one Next.js/React/TypeScript app with Supabase Postgres/Realtime, Drizzle, Zod, next-intl, Tailwind, and pnpm.
+  Follow AGENTS.md. Read docs/README.md for the active product scope and docs/stack.md for architectural boundaries.
+  Follow docs/openspec.md for artifact ownership and incremental adoption. Existing Ukrainian tasks are legacy history.
+  Read relevant accepted specs and inspect existing modules, tests, and callers before proposing implementation.
+  Use pnpm exec openspec for the pinned local CLI. pnpm verify includes OpenSpec validation, formatting, lint, types, unit tests, and build.
+  Product scope and docs/review.md gates remain in force. Release through the existing production-release GitHub workflow; this setup does not authorize a release.
+
+rules:
+  proposal:
+    - State the user-visible outcome, acceptance boundaries, and what is out of scope.
+    - For a migrated backlog ticket, retain its ID and point its legacy file to the change; do not keep two copies of acceptance criteria or checklists.
+    - For tooling, documentation, or pure refactors without behavior changes, set skip_specs in change metadata; do not invent product requirements.
+  specs:
+    - Use observable acceptance scenarios, including material failure and boundary cases. Do not copy architecture or task steps into requirements.
+    - Reuse the exact capability path for existing requirements and keep each requirement in one accepted spec.
+  design:
+    - Identify the existing modules, collaborators, tests, and reusable code inspected, with concrete paths. Explain any new responsibility or abstraction.
+    - Keep business rules testable without Next.js, the browser, or PostgreSQL. Prefer real collaborating objects and minimal test doubles; add focused database or browser checks for behavior that needs those boundaries.
+    - Explain affected runtime and trust boundaries, migrations, and documentation, or state why none change.
+  tasks:
+    - Give each tracked task a concrete verification step and include the tests and documentation alongside its implementation.
+    - Include pnpm verify and any task-specific integration or browser checks before completion; leave publication, review, and archive as untracked workflow follow-up steps.
+
+operations:
+  apply:
+    guidance:
+      - Follow the approved change and AGENTS.md; satisfy its acceptance criteria before marking tasks complete.
+      - Run pnpm verify plus task-specific checks and publish verified changes through the existing pull-request workflow.
+  archive:
+    guidance:
+      - Archive only after the review gates in docs/review.md are satisfied. Do not use force or skip validation to bypass an unresolved check.
+      - Synchronize product requirement deltas into accepted specs, keep linked backlog status accurate, and run pnpm openspec:validate after archive.
